@@ -185,6 +185,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .t-gold{background:#fdf3dc;color:#a07830;}
 .t-platinum{background:#e8f4fd;color:#1565c0;}
 .t-diamond{background:#fce4ec;color:#c2185b;}
+.t-vip{background:linear-gradient(135deg,#fff8dc,#ffd700);color:#8B6914;border:1px solid #d4a842;}
 .pts-form{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem;}
 .pts-form-title{font-size:0.88rem;font-weight:500;margin-bottom:1rem;color:var(--g800);}
 .mgr-inp{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.88rem;background:#fff;margin-top:4px;}
@@ -279,9 +280,13 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
         <span class="card-pts-num" id="home-pts">0</span>
         <span class="card-pts-lbl">điểm tích lũy</span>
       </div>
-      <div class="card-tier-bdg" id="home-tier-bdg">🌱 Thành viên</div>
+      <div class="card-tier-bdg" id="home-tier-bdg">🥉 Đồng</div>
       <div class="tier-bar"><div class="tier-fill" id="tier-fill" style="width:0%"></div></div>
       <div class="tier-next" id="tier-next"></div>
+      <div style="margin-top:10px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;align-items:center;">
+        <span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">🎁 Điểm Reward</span>
+        <span style="font-size:0.88rem;font-weight:500;" id="home-reward-pts">0 điểm reward</span>
+      </div>
     </div>
     <div class="quick-actions">
       <div class="qa" id="qa-booking"><span class="qa-icon">📅</span><div class="qa-lbl">Đặt lịch</div></div>
@@ -296,8 +301,6 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
   <div class="page" id="page-booking">
     <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1.25rem;">Đặt lịch dịch vụ</div>
     <div id="step-svc">
-      <div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.75rem;">1. Chọn dịch vụ</div>
-      <div class="svc-grid" id="svc-grid"></div>
     </div>
     <div id="step-staff" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
@@ -326,9 +329,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 
   <div class="page" id="page-rewards">
     <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1.25rem;">Đổi điểm &amp; Cấp bậc</div>
-    <div class="rwd-hdr">
-      <div><div class="rwd-pts" id="rwd-pts">0<small>điểm khả dụng</small></div></div>
-      <div class="rwd-info">1.000 điểm<br>= 1.000đ giảm giá</div>
+    <div class="rwd-hdr" style="flex-direction:column;align-items:stretch;gap:0;">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><div class="rwd-pts" id="rwd-pts">0<small>điểm reward khả dụng</small></div></div>
+        <div class="rwd-info">1 điểm reward<br>= 1đ giảm giá<br>Tối thiểu: 50.000đ</div>
+      </div>
+      <div id="rwd-hdr-info"></div>
     </div>
     <div class="sec-title">Ưu đãi đổi điểm</div>
     <div class="rwd-cards" id="rwd-cards"></div>
@@ -352,8 +358,9 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
       <div class="prof-av">🌸</div>
       <div class="prof-name" id="prof-name">Tên</div>
       <div class="prof-phone" id="prof-phone">SĐT</div>
-      <div class="spend-stats">
-        <div class="stat-box"><div class="stat-num" id="ps-pts">0</div><div class="stat-lbl">Điểm</div></div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin:1rem 0;">
+        <div class="stat-box"><div class="stat-num" id="ps-pts">0</div><div class="stat-lbl">Điểm xếp hạng</div></div>
+        <div class="stat-box"><div class="stat-num" id="ps-reward">0</div><div class="stat-lbl">Điểm reward</div></div>
         <div class="stat-box"><div class="stat-num" id="ps-visits">0</div><div class="stat-lbl">Lần đến</div></div>
         <div class="stat-box"><div class="stat-num" id="ps-spend">0</div><div class="stat-lbl">Triệu đồng</div></div>
       </div>
@@ -422,13 +429,14 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
       <div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div>
       <div class="fg"><label>Loại thao tác</label>
         <select id="pts-type" class="mgr-inp">
-          <option value="add">➕ Cộng điểm</option>
-          <option value="sub">➖ Trừ điểm</option>
-          <option value="topup">💰 Nạp điểm (từ giao dịch)</option>
+          <option value="add">➕ Cộng điểm xếp hạng</option>
+          <option value="sub">➖ Trừ điểm xếp hạng</option>
+          <option value="topup">💰 Nhập giao dịch VNĐ (tự tính RP)</option>
         </select>
       </div>
-      <div class="fg"><label>Số điểm</label><input type="number" id="pts-amount" class="mgr-inp" placeholder="Nhập số điểm..."></div>
+      <div class="fg"><label>Số điểm / Số tiền VNĐ (nếu nhập giao dịch)</label><input type="number" id="pts-amount" class="mgr-inp" placeholder="VD: 100000 (= 100.000đ)"></div>
       <div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div>
+      <div id="pts-preview" style="background:var(--g50);border-radius:8px;padding:10px;margin-bottom:10px;font-size:0.8rem;color:var(--g800);display:none;"></div>
       <button class="btn-green" id="btn-adj-pts">Thực hiện</button>
     </div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử điểm</div>
@@ -478,19 +486,51 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 // ===== DATA =====
 var DB = {
   customers: [
-    {id:1,name:'Nguyễn Thị Lan',phone:'0901234567',dob:'1990-05-14',pass:'123456',points:4800,totalSpend:4800000,visits:12},
-    {id:2,name:'Trần Minh Châu',phone:'0912345678',dob:'1988-09-22',pass:'123456',points:15200,totalSpend:15200000,visits:38},
-    {id:3,name:'Lê Thị Hoa',phone:'0923456789',dob:'1995-03-10',pass:'123456',points:890,totalSpend:890000,visits:3},
-    {id:4,name:'Phạm Quốc Bảo',phone:'0934567890',dob:'1985-11-30',pass:'123456',points:52000,totalSpend:52000000,visits:95},
-    {id:5,name:'Hoàng Thu Hằng',phone:'0945678901',dob:'1993-07-18',pass:'123456',points:8300,totalSpend:8300000,visits:21}
+    {id:1,name:'Nguyễn Thị Lan',phone:'0901234567',dob:'1990-05-14',pass:'123456',points:4500,rankPoints:4500,rewardPoints:0,totalSpend:4500000,visits:12},
+    {id:2,name:'Trần Minh Châu',phone:'0912345678',dob:'1988-09-22',pass:'123456',points:18500,rankPoints:18500,rewardPoints:0,totalSpend:18500000,visits:38},
+    {id:3,name:'Lê Thị Hoa',phone:'0923456789',dob:'1995-03-10',pass:'123456',points:800,rankPoints:800,rewardPoints:0,totalSpend:800000,visits:3},
+    {id:4,name:'Phạm Quốc Bảo',phone:'0934567890',dob:'1985-11-30',pass:'123456',points:35000,rankPoints:35000,rewardPoints:0,totalSpend:35000000,visits:95},
+    {id:5,name:'Hoàng Thu Hằng',phone:'0945678901',dob:'1993-07-18',pass:'123456',points:9500,rankPoints:9500,rewardPoints:0,totalSpend:9500000,visits:21}
   ],
   services: [
-    {id:1,name:'Massage Thư Giãn',cat:'Massage',price:350000,duration:60,icon:'💆'},
-    {id:2,name:'Chăm Sóc Da Mặt',cat:'Da mặt',price:450000,duration:75,icon:'✨'},
-    {id:3,name:'Đắp Mặt Nạ Vàng',cat:'Da mặt',price:600000,duration:90,icon:'👑'},
-    {id:4,name:'Tắm Trắng Toàn Thân',cat:'Body',price:800000,duration:120,icon:'🌸'},
-    {id:5,name:'Massage Đá Nóng',cat:'Massage',price:500000,duration:90,icon:'🪨'},
-    {id:6,name:'Gội Đầu Dưỡng Sinh',cat:'Tóc',price:200000,duration:45,icon:'💧'}
+    // ===== 01 GỘI ĐẦU CÙNG GREEN =====
+    {id:1,name:'Libra – Gội & Massage Đầu',cat:'Gội đầu',price:60000,duration:30,icon:'💆',desc:'Massage đầu, gội sạch 2 lần, ủ tóc, sấy tóc'},
+    {id:2,name:'Aries – Gội & Massage Đầu + Mặt',cat:'Gội đầu',price:120000,duration:55,icon:'🌿',desc:'Khai huyệt, massage đầu, tẩy trang, rửa mặt, đắp mặt nạ, gội 2 lần, ủ tóc, massage vai cổ gáy, sấy tóc'},
+    {id:3,name:'Taurus – Gội + Massage Mặt + Vai Cổ Gáy',cat:'Gội đầu',price:180000,duration:70,icon:'🌸',desc:'Khai huyệt, đả thông kinh lạc đầu, massage đầu/mặt/vai cổ gáy/tay chân, đắp mặt nạ, gội 2 lần, ủ tóc, sấy tóc'},
+    {id:4,name:'Galaxy – Gội Full Massage',cat:'Gội đầu',price:300000,duration:85,icon:'✨',desc:'Khai huyệt vùng đầu, massage đầu, tẩy trang, rửa mặt, đắp mặt nạ, gội 2 lần, ủ tóc, massage vai cổ gáy bằng ngọc thạch, massage tay chân'},
+    // ===== 02 LÀM ĐẸP VIRGO =====
+    {id:5,name:'Virgo – Làm Đẹp Mặt + Vai Cổ Gáy',cat:'Làm đẹp',price:240000,duration:60,icon:'💎',desc:'Đả thông kinh lạc vùng mặt bằng ngọc thạch, massage nâng cơ, đắp mặt nạ, massage vai cổ gáy, xịt hoa hồng, thoa tinh dầu tía tô'},
+    // ===== 03 TRỊ LIỆU CHUYÊN SÂU GEMINI =====
+    {id:6,name:'Gemini – Vai Gáy Cổ (30ph)',cat:'Trị liệu',price:140000,duration:30,icon:'💪',desc:'Massage đầu/gáy, massage cổ khô, khai huyệt, đả thông kinh lạc tay, vận động các khớp tay và vai'},
+    {id:7,name:'Gemini – Lưng Eo Thận (30ph)',cat:'Trị liệu',price:140000,duration:30,icon:'🦴',desc:'Khai huyệt, xoa bóp lưng eo, ấn huyệt phần chân, massage đầu'},
+    {id:8,name:'Gemini – Thông Kinh Lạc Chân (30ph)',cat:'Trị liệu',price:140000,duration:30,icon:'🦶',desc:'Khai huyệt, xoa bóp day huyệt mặt sau và mặt trước, massage đầu'},
+    // ===== LION – VAI CỔ GÁY 60ph =====
+    {id:9,name:'Lion – Vai Cổ Gáy (60ph)',cat:'Trị liệu',price:240000,duration:60,icon:'🦁',desc:'Đắp khăn ấm vai, massage đầu/gáy, day huyệt cổ khô, khai huyệt, đả thông kinh lạc vai cổ gáy, khai huyệt từng tay, diện chẩn vùng mặt, massage đầu'},
+    {id:10,name:'Lưng Eo Thận (60ph)',cat:'Trị liệu',price:240000,duration:60,icon:'⚡',desc:'Đắp khăn ấm vùng thận, khai huyệt, đả thông kinh lạc, xoa bóp giảm đau lưng eo, cốc giác, diện chẩn, massage đầu'},
+    {id:11,name:'Thông Kinh Lạc Chân (60ph)',cat:'Trị liệu',price:240000,duration:60,icon:'🌊',desc:'Ngâm chân thảo dược 5 phút, khai huyệt 2 chân, đả thông kinh lạc, xoa bóp, vận động khớp, diện chẩn, massage đầu'},
+    {id:12,name:'Thông Kinh Lạc Tay (60ph)',cat:'Trị liệu',price:240000,duration:60,icon:'🤲',desc:'Khai huyệt từng tay vai mặt sau/trước, đả thông kinh lạc tay, xoa bóp, vận động khớp, diện chẩn, massage đầu'},
+    // ===== 04 GÓI VIP GALAXY =====
+    {id:13,name:'VIP Galaxy (100ph)',cat:'Gói VIP',price:400000,duration:100,icon:'👑',desc:'Full body: vai cổ gáy + lưng eo thận + chân trước sau + diện chẩn + massage đầu. Tặng cốc giác chân không'},
+    // ===== 05 NAIL =====
+    {id:14,name:'Tháo Sơn Gel',cat:'Nail',price:20000,duration:20,icon:'💅',desc:'Gel Remover'},
+    {id:15,name:'Tháo Đắp Gel/Bột',cat:'Nail',price:50000,duration:30,icon:'💅',desc:'Gel Nails/Acrylic Nails Remover'},
+    {id:16,name:'Cắt Da Sửa Móng Nữ (tay/chân)',cat:'Nail',price:30000,duration:30,icon:'💅',desc:'Women Manicure/Pedicure 30.000đ/40.000đ'},
+    {id:17,name:'Cắt Da Sửa Móng Nam',cat:'Nail',price:100000,duration:30,icon:'💅',desc:'Men Manicure/Pedicure: cắt da, dũa, làm sạch'},
+    {id:18,name:'Cắt Da Sửa Móng Em Bé',cat:'Nail',price:80000,duration:20,icon:'🍼',desc:'Dưới 10 tuổi: cắt da, dũa, sơn organic'},
+    {id:19,name:'Sơn Dưỡng OPI',cat:'Nail',price:10000,duration:10,icon:'✨',desc:'OPI Nail Envy'},
+    {id:20,name:'Sơn Thường OPI',cat:'Nail',price:70000,duration:20,icon:'💅',desc:'OPI Polish'},
+    {id:21,name:'Sơn Organic Zoya',cat:'Nail',price:100000,duration:25,icon:'🌿',desc:'Non-Toxic Organic Zoya Polish'},
+    {id:22,name:'Sơn Gel Nhật/Mỹ',cat:'Nail',price:120000,duration:30,icon:'💅',desc:'Japan/USA Gellac'},
+    {id:23,name:'Sơn Gel Cao Cấp Hàn Quốc',cat:'Nail',price:150000,duration:35,icon:'💅',desc:'Korea Gel Polish'},
+    {id:24,name:'Đắp Gel IBD',cat:'Nail',price:200000,duration:60,icon:'💎',desc:'IBD Gel Nails'},
+    {id:25,name:'Đắp Bột Acrylic',cat:'Nail',price:250000,duration:60,icon:'💎',desc:'Acrylic Nails'},
+    {id:26,name:'Móng Úp Nail Tip',cat:'Nail',price:100000,duration:30,icon:'💅',desc:'Nail Tip'},
+    // ===== 06 TRANG ĐIỂM LÀM ĐẸP =====
+    {id:27,name:'Cạo Mặt & Tạo Dáng Chân Mày',cat:'Trang điểm',price:20000,duration:15,icon:'🌸',desc:'Làm đẹp cơ bản'},
+    {id:28,name:'Đắp Mặt Nạ',cat:'Trang điểm',price:40000,duration:20,icon:'🌿',desc:'30.000đ – 50.000đ tùy loại'},
+    {id:29,name:'Trang Điểm Cơ Bản',cat:'Trang điểm',price:150000,duration:45,icon:'💄',desc:'Makeup đơn giản'},
+    {id:30,name:'Tạo Kiểu Tóc Đơn Giản',cat:'Trang điểm',price:150000,duration:30,icon:'💇',desc:'Basic hair styling'},
+    {id:31,name:'Makeup Đặc Biệt',cat:'Trang điểm',price:500000,duration:90,icon:'👑',desc:'Makeup đặc biệt tại store'}
   ],
   staff: [
     {id:1,name:'Chị Mai Anh',spec:'Massage chuyên nghiệp',rating:4.9,icon:'👩'},
@@ -514,11 +554,54 @@ var DB = {
 };
 
 var TIERS = [
-  {name:'Thành viên',min:0,max:999,icon:'🌱',cls:'t-member',bonus:0},
-  {name:'Bạc',min:1000,max:4999,icon:'🥈',cls:'t-silver',bonus:5},
-  {name:'Vàng',min:5000,max:14999,icon:'🥇',cls:'t-gold',bonus:10},
-  {name:'Bạch Kim',min:15000,max:49999,icon:'💎',cls:'t-platinum',bonus:15},
-  {name:'Kim Cương',min:50000,max:999999999,icon:'👑',cls:'t-diamond',bonus:20}
+  {name:'Đồng',min:0,max:1999,icon:'🥉',cls:'t-member',earnRate:2,useMin:2,useMax:20,
+   vouchers:[
+     {id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:299000,desc:'HĐ từ 299.000đ'},
+     {id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:499000,desc:'HĐ từ 499.000đ'},
+     {id:'a1',name:'Thêm khăn nóng',rp:20000,value:20000,minBill:0,desc:'Add-on dịch vụ',addon:true},
+     {id:'a2',name:'Thêm 10 phút massage',rp:35000,value:35000,minBill:0,desc:'Add-on dịch vụ',addon:true}
+   ]},
+  {name:'Bạc',min:2000,max:5999,icon:'🥈',cls:'t-silver',earnRate:3,useMin:3,useMax:25,
+   vouchers:[
+     {id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:299000,desc:'HĐ từ 299.000đ'},
+     {id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:499000,desc:'HĐ từ 499.000đ'},
+     {id:'a1',name:'Thêm khăn nóng',rp:20000,value:20000,minBill:0,desc:'Add-on dịch vụ',addon:true},
+     {id:'a2',name:'Thêm 10 phút massage',rp:35000,value:35000,minBill:0,desc:'Add-on dịch vụ',addon:true},
+     {id:'a3',name:'Chườm thảo dược',rp:40000,value:40000,minBill:0,desc:'Add-on dịch vụ',addon:true}
+   ]},
+  {name:'Vàng',min:6000,max:11999,icon:'🥇',cls:'t-gold',earnRate:4,useMin:4,useMax:30,
+   vouchers:[
+     {id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:299000,desc:'HĐ từ 299.000đ'},
+     {id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:499000,desc:'HĐ từ 499.000đ'},
+     {id:'v150',name:'Voucher 150.000đ',rp:150000,value:150000,minBill:599000,desc:'HĐ từ 599.000đ'},
+     {id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:799000,desc:'HĐ từ 799.000đ'},
+     {id:'a3',name:'Chườm thảo dược',rp:40000,value:40000,minBill:0,desc:'Add-on cao cấp',addon:true},
+     {id:'a4',name:'Tinh dầu massage cao cấp',rp:55000,value:55000,minBill:0,desc:'Add-on cao cấp',addon:true}
+   ]},
+  {name:'Bạch Kim',min:12000,max:19999,icon:'💎',cls:'t-platinum',earnRate:5,useMin:5,useMax:35,
+   vouchers:[
+     {id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:499000,desc:'HĐ từ 499.000đ'},
+     {id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:799000,desc:'HĐ từ 799.000đ'},
+     {id:'v300',name:'Voucher 300.000đ',rp:300000,value:300000,minBill:999000,desc:'HĐ từ 999.000đ'},
+     {id:'a4',name:'Tinh dầu massage cao cấp',rp:55000,value:55000,minBill:0,desc:'Add-on cao cấp',addon:true},
+     {id:'a5',name:'Combo add-on 3 món',rp:90000,value:90000,minBill:0,desc:'Khăn nóng + chườm + tinh dầu',addon:true}
+   ]},
+  {name:'Kim Cương',min:20000,max:29999,icon:'👑',cls:'t-diamond',earnRate:6,useMin:6,useMax:40,
+   vouchers:[
+     {id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:799000,desc:'HĐ từ 799.000đ'},
+     {id:'v300',name:'Voucher 300.000đ',rp:300000,value:300000,minBill:999000,desc:'HĐ từ 999.000đ'},
+     {id:'v500',name:'Voucher 500.000đ',rp:500000,value:500000,minBill:1499000,desc:'HĐ từ 1.499.000đ'},
+     {id:'a5',name:'Combo add-on 3 món',rp:90000,value:90000,minBill:0,desc:'Khăn nóng + chườm + tinh dầu',addon:true},
+     {id:'a6',name:'Ưu tiên đặt giờ vàng',rp:0,value:0,minBill:0,desc:'Quyền ưu tiên đặt lịch',special:true}
+   ]},
+  {name:'VIP',min:30000,max:999999999,icon:'⭐',cls:'t-vip',earnRate:7,useMin:7,useMax:50,
+   vouchers:[
+     {id:'v300',name:'Voucher 300.000đ',rp:300000,value:300000,minBill:999000,desc:'HĐ từ 999.000đ'},
+     {id:'v500',name:'Voucher 500.000đ',rp:500000,value:500000,minBill:1499000,desc:'HĐ từ 1.499.000đ'},
+     {id:'a5',name:'Combo add-on 3 món',rp:90000,value:90000,minBill:0,desc:'Khăn nóng + chườm + tinh dầu',addon:true},
+     {id:'a6',name:'Ưu tiên đặt giờ vàng',rp:0,value:0,minBill:0,desc:'Quyền ưu tiên đặt lịch',special:true},
+     {id:'a7',name:'Combo VIP full service',rp:150000,value:150000,minBill:0,desc:'Tất cả add-on cao cấp',addon:true}
+   ]}
 ];
 
 var currentUser = null;
@@ -664,19 +747,23 @@ function refreshHome() {
   if (!c) return;
   currentUser = c;
   var tier = getTier(c.points);
+  var rankPts = c.rankPoints||c.points;
+  var rewardPts = c.rewardPoints||0;
   document.getElementById('home-name').textContent = c.name;
-  document.getElementById('home-pts').textContent = fmt(c.points);
+  document.getElementById('home-pts').textContent = fmt(rankPts);
   document.getElementById('home-tier-bdg').textContent = tier.icon + ' ' + tier.name;
 
   var nextTier = null;
   for (var i = 0; i < TIERS.length; i++) {
-    if (TIERS[i].min > c.points) { nextTier = TIERS[i]; break; }
+    if (TIERS[i].min > rankPts) { nextTier = TIERS[i]; break; }
   }
-  var pct = nextTier ? Math.min(100, ((c.points - tier.min) / (nextTier.min - tier.min)) * 100) : 100;
+  var pct = nextTier ? Math.min(100, ((rankPts - tier.min) / (nextTier.min - tier.min)) * 100) : 100;
   document.getElementById('tier-fill').style.width = pct + '%';
   document.getElementById('tier-next').textContent = nextTier
-    ? 'Còn ' + fmt(nextTier.min - c.points) + ' điểm lên ' + nextTier.icon + ' ' + nextTier.name
+    ? 'Còn ' + fmt(nextTier.min - rankPts) + ' điểm lên ' + nextTier.icon + ' ' + nextTier.name
     : '🏆 Bạn đã đạt cấp bậc cao nhất!';
+  var rwdEl = document.getElementById('home-reward-pts');
+  if (rwdEl) rwdEl.textContent = fmt(rewardPts) + ' RP';
 
   var txs = [];
   for (var j = 0; j < DB.transactions.length; j++) {
@@ -692,12 +779,13 @@ function refreshHome() {
   for (var k = 0; k < txs.length; k++) {
     var t = txs[k];
     var earn = t.pts > 0;
+    var rwdLine = t.reward ? '<div style="font-size:0.7rem;color:#a07830;">+' + fmt(t.reward) + ' RP</div>' : (t.reward < 0 ? '<div style="font-size:0.7rem;color:#e65c00;">'+fmt(t.reward)+' RP</div>' : '');
     html += '<div class="act-item">' +
       '<div class="act-left">' +
       '<div class="act-ic" style="background:' + (earn ? 'var(--g50)' : '#fff3e0') + '">' + (earn ? '⭐' : '🎁') + '</div>' +
       '<div><div class="act-name">' + t.note + '</div><div class="act-date">' + t.date + '</div></div>' +
       '</div>' +
-      '<div class="act-pts ' + (earn ? 'pts-earn' : 'pts-use') + '">' + (earn ? '+' : '') + fmt(t.pts) + ' đ</div>' +
+      '<div style="text-align:right"><div class="act-pts ' + (earn ? 'pts-earn' : 'pts-use') + '">' + (earn ? '+' : '') + fmt(t.pts) + ' đ</div>' + rwdLine + '</div>' +
       '</div>';
   }
   list.innerHTML = html;
@@ -707,16 +795,57 @@ function refreshHome() {
 function initBooking() {
   bkState = {svcId:null,staffId:null,date:null,time:null};
   showStep('svc');
-  var html = '';
-  for (var i = 0; i < DB.services.length; i++) {
-    var s = DB.services[i];
-    html += '<div class="svc-card" id="svc-' + s.id + '" data-id="' + s.id + '">' +
-      '<div class="svc-img">' + s.icon + '</div>' +
-      '<div class="svc-body"><div class="svc-name">' + s.name + '</div>' +
-      '<div class="svc-price">' + fmt(s.price) + 'đ · ' + s.duration + 'ph</div></div>' +
-      '</div>';
+  // Build category filter
+  var cats = [];
+  for (var ci = 0; ci < DB.services.length; ci++) {
+    var cat = DB.services[ci].cat;
+    var found = false;
+    for (var cj = 0; cj < cats.length; cj++) { if (cats[cj] === cat) { found = true; break; } }
+    if (!found) cats.push(cat);
   }
-  document.getElementById('svc-grid').innerHTML = html;
+  var catHtml = '<div class="filter-tabs" style="margin-bottom:1rem;" id="svc-cats">' +
+    '<button class="ftab active" data-cat="all">Tất cả</button>';
+  for (var ck = 0; ck < cats.length; ck++) {
+    catHtml += '<button class="ftab" data-cat="' + cats[ck] + '">' + cats[ck] + '</button>';
+  }
+  catHtml += '</div><div class="svc-grid" id="svc-grid"></div>';
+  document.querySelector('#step-svc').innerHTML = '<div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.5rem;">1. Chọn dịch vụ</div>' + catHtml;
+
+  function renderSvcGrid(filterCat) {
+    var html = '';
+    for (var i = 0; i < DB.services.length; i++) {
+      var s = DB.services[i];
+      if (filterCat && filterCat !== 'all' && s.cat !== filterCat) continue;
+      html += '<div class="svc-card" id="svc-' + s.id + '" data-id="' + s.id + '">' +
+        '<div class="svc-img">' + s.icon + '</div>' +
+        '<div class="svc-body">' +
+        '<div class="svc-name">' + s.name + '</div>' +
+        '<div class="svc-price">' + fmt(s.price) + 'đ · ' + s.duration + 'ph</div>' +
+        (s.desc ? '<div style="font-size:0.68rem;color:var(--muted);margin-top:3px;line-height:1.3;">' + s.desc.substring(0,50) + (s.desc.length>50?'...':'') + '</div>' : '') +
+        '</div></div>';
+    }
+    document.getElementById('svc-grid').innerHTML = html;
+    var cards = document.querySelectorAll('.svc-card');
+    for (var j = 0; j < cards.length; j++) {
+      cards[j].addEventListener('click', function() {
+        bkState.svcId = parseInt(this.getAttribute('data-id'));
+        var all = document.querySelectorAll('.svc-card');
+        for (var k = 0; k < all.length; k++) all[k].classList.remove('sel');
+        this.classList.add('sel');
+        setTimeout(function() { showStep('staff'); renderStaff(); }, 150);
+      });
+    }
+  }
+  renderSvcGrid('all');
+  var catBtns = document.querySelectorAll('#svc-cats .ftab');
+  for (var cm = 0; cm < catBtns.length; cm++) {
+    catBtns[cm].addEventListener('click', function() {
+      var allCats = document.querySelectorAll('#svc-cats .ftab');
+      for (var cn = 0; cn < allCats.length; cn++) allCats[cn].classList.remove('active');
+      this.classList.add('active');
+      renderSvcGrid(this.getAttribute('data-cat'));
+    });
+  }
   var cards = document.querySelectorAll('.svc-card');
   for (var j = 0; j < cards.length; j++) {
     cards[j].addEventListener('click', function() {
@@ -793,17 +922,65 @@ function renderConfirm() {
   for (var i = 0; i < DB.services.length; i++) { if (DB.services[i].id === bkState.svcId) svc = DB.services[i]; }
   for (var j = 0; j < DB.staff.length; j++) { if (DB.staff[j].id === bkState.staffId) stf = DB.staff[j]; }
   if (!svc || !stf) return;
-  var pts = Math.floor(svc.price / 1000);
-  var c = currentUser ? getCust(currentUser.id) : null;
-  var tier = c ? getTier(c.points) : TIERS[0];
-  var bonus = Math.floor(pts * tier.bonus / 100);
+  var c2 = currentUser ? getCust(currentUser.id) : null;
+  var tier2 = c2 ? getTier(c2.rankPoints||c2.points) : TIERS[0];
+  var availRP = c2 ? (c2.rewardPoints||0) : 0;
+  var maxRPpct = Math.floor(svc.price * tier2.useMax / 100);
+  var maxRP = Math.min(availRP, maxRPpct);
+  bkState.rpUsed = 0;
+
+  function updateConfirmCalc(rpUsed) {
+    bkState.rpUsed = rpUsed;
+    var actualPaid = svc.price - rpUsed;
+    var earnRank = Math.floor(actualPaid / 1000);
+    var earnRP = Math.floor(actualPaid * tier2.earnRate / 100);
+    var el = document.getElementById('cfm-calc');
+    if (!el) return;
+    el.innerHTML =
+      '<div class="sum-row sum-total"><span>Giá gốc</span><span>' + fmt(svc.price) + 'đ</span></div>' +
+      (rpUsed > 0 ? '<div class="sum-row" style="color:#e65c00"><span>🎁 Dùng RP</span><span>-' + fmt(rpUsed) + ' RP (-' + fmt(rpUsed) + 'đ)</span></div>' : '') +
+      '<div class="sum-row sum-total" style="font-size:1rem;"><span>Thực trả</span><span style="color:var(--g800);">' + fmt(actualPaid) + 'đ</span></div>' +
+      '<div style="background:#f0faf4;border-radius:8px;padding:10px;margin-top:8px;">' +
+      '<div class="sum-row" style="color:var(--g600)"><span>🏅 Điểm xếp hạng</span><span>+' + earnRank + ' đ</span></div>' +
+      '<div class="sum-row" style="color:#a07830"><span>🎁 RP (' + fmt(actualPaid) + 'đ × ' + tier2.earnRate + '%)</span><span style="font-weight:500;">+' + fmt(earnRP) + ' RP</span></div>' +
+      '</div>';
+  }
+
+  var rpSlider = (availRP >= 50000 && maxRP > 0)
+    ? '<div style="background:#fffbf0;border:1px solid #fde68a;border-radius:10px;padding:12px;margin-bottom:10px;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:0.8rem;margin-bottom:6px;">' +
+      '<span style="color:#92400e;font-weight:500;">🎁 Dùng Reward Points</span>' +
+      '<span style="color:#a07830;">Có: <b>' + fmt(availRP) + ' RP</b> | Max: ' + tier2.useMax + '%</span>' +
+      '</div>' +
+      '<input type="range" id="rp-slider" min="0" max="' + maxRP + '" step="1000" value="0" style="width:100%;">' +
+      '<div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--muted);margin-top:2px;">' +
+      '<span>0 RP</span><span id="rp-slider-val" style="color:#a07830;font-weight:500;">0 RP dùng</span><span>' + fmt(maxRP) + ' RP</span>' +
+      '</div>' +
+      '<div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Chỉ dùng 1 voucher/hóa đơn · Tối thiểu đổi: 50.000 RP</div>' +
+      '</div>'
+    : (availRP > 0 ? '<div style="background:#fff3e0;border-radius:8px;padding:8px 10px;margin-bottom:8px;font-size:0.75rem;color:#e65c00;">⚠️ Cần tối thiểu 50.000 RP để dùng. Bạn có ' + fmt(availRP) + ' RP</div>' : '');
+
   document.getElementById('bk-sum').innerHTML =
     '<div class="sum-row"><span>Dịch vụ</span><span>' + svc.name + '</span></div>' +
     '<div class="sum-row"><span>Nhân viên</span><span>' + stf.name + '</span></div>' +
     '<div class="sum-row"><span>Ngày</span><span>' + (bkState.date||'Hôm nay') + '</span></div>' +
     '<div class="sum-row"><span>Giờ</span><span>' + (bkState.time||'--') + '</span></div>' +
-    '<div class="sum-row sum-total"><span>Tổng tiền</span><span>' + fmt(svc.price) + 'đ</span></div>' +
-    '<div class="sum-row" style="color:var(--g600)"><span>⭐ Điểm tích lũy</span><span>+' + (pts+bonus) + ' điểm' + (bonus>0?' (bonus '+tier.bonus+'%)':'') + '</span></div>';
+    '<div class="sum-row"><span>Thời gian</span><span>' + svc.duration + ' phút</span></div>' +
+    rpSlider +
+    '<div id="cfm-calc"></div>';
+
+  updateConfirmCalc(0);
+
+  setTimeout(function() {
+    var sl = document.getElementById('rp-slider');
+    if (sl) {
+      sl.addEventListener('input', function() {
+        var v = parseInt(this.value);
+        document.getElementById('rp-slider-val').textContent = fmt(v) + ' RP dùng';
+        updateConfirmCalc(v);
+      });
+    }
+  }, 100);
 }
 
 function confirmBooking() {
@@ -813,21 +990,30 @@ function confirmBooking() {
   for (var j = 0; j < DB.staff.length; j++) { if (DB.staff[j].id === bkState.staffId) stf = DB.staff[j]; }
   if (!svc || !stf || !bkState.time) { showToast('❌ Chọn đầy đủ thông tin'); return; }
   var c = getCust(currentUser.id);
-  var tier = getTier(c.points);
-  var pts = Math.floor(svc.price / 1000);
-  var bonus = Math.floor(pts * tier.bonus / 100);
-  var total = pts + bonus;
+  var tier = getTier(c.rankPoints||c.points);
+  // rpUsed: amount of RP applied to this booking (set before confirm)
+  var rpUsed = bkState.rpUsed || 0;
+  var actualPaid = svc.price - rpUsed;
+  if (actualPaid < 0) actualPaid = 0;
+  var rankPts = Math.floor(actualPaid / 1000);
+  var rewardEarned = Math.floor(actualPaid * tier.earnRate / 100);
   var bk = {id:DB.nextBkId++,custId:currentUser.id,service:svc.name,staff:stf.name,
     date:bkState.date||new Date().toISOString().split('T')[0],time:bkState.time,
-    amount:svc.price,status:'confirmed',ptsEarned:total};
+    amount:svc.price,rpUsed:rpUsed,actualPaid:actualPaid,
+    status:'confirmed',ptsEarned:rankPts,rewardEarned:rewardEarned};
   DB.bookings.push(bk);
-  c.points += total;
-  c.totalSpend += svc.price;
+  c.points += rankPts;
+  c.rankPoints = (c.rankPoints||0) + rankPts;
+  if (rpUsed > 0) c.rewardPoints = Math.max(0,(c.rewardPoints||0) - rpUsed);
+  c.rewardPoints = (c.rewardPoints||0) + rewardEarned;
+  c.totalSpend += actualPaid;
   c.visits++;
-  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'earn',pts:total,
-    note:svc.name + ' - ' + bkState.time,date:bk.date});
+  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'earn',pts:rankPts,reward:rewardEarned,
+    rpUsed:rpUsed,note:svc.name + ' - ' + bkState.time,date:bk.date});
   currentUser = c;
-  showToast('✅ Đặt lịch thành công! +' + total + ' điểm');
+  var msg = '✅ Đặt lịch xong! +' + rankPts + ' đ | +' + fmt(rewardEarned) + ' RP';
+  if (rpUsed > 0) msg += ' | Đã dùng ' + fmt(rpUsed) + ' RP';
+  showToast(msg);
   showPage('home');
 }
 
@@ -835,58 +1021,122 @@ function confirmBooking() {
 function refreshRewards() {
   if (!currentUser) return;
   var c = getCust(currentUser.id);
-  document.getElementById('rwd-pts').innerHTML = fmt(c.points) + '<small>điểm khả dụng</small>';
-  var rewards = [
-    {val:'50.000đ',desc:'Giảm giá trực tiếp',cost:50},
-    {val:'100.000đ',desc:'Voucher dịch vụ',cost:100},
-    {val:'200.000đ',desc:'Voucher dịch vụ',cost:200},
-    {val:'500.000đ',desc:'Voucher cao cấp',cost:500}
-  ];
+  var rankPts = c.rankPoints||c.points;
+  var rwd = c.rewardPoints||0;
+  var tier = getTier(rankPts);
+  var minRedeem = 50000;
+
+  // Header
+  document.getElementById('rwd-pts').innerHTML =
+    '<div style="font-size:1.6rem;font-weight:500;line-height:1;">' + fmt(rwd) + '</div>' +
+    '<div style="font-size:0.72rem;opacity:0.75;margin-top:2px;">điểm Reward (RP) khả dụng</div>' +
+    '<div style="font-size:0.7rem;opacity:0.6;margin-top:1px;">⚠️ Sắp hết hạn: ' + Math.floor(rwd*0.1) + ' RP (30 ngày)</div>';
+
+  var info = document.getElementById('rwd-hdr-info');
+  if (info) info.innerHTML =
+    '<div style="background:rgba(255,255,255,0.15);border-radius:8px;padding:8px 12px;font-size:0.75rem;line-height:1.6;">' +
+    '<b>' + tier.icon + ' ' + tier.name + '</b>: Tích <b>' + tier.earnRate + '%</b> hóa đơn | ' +
+    'Dùng tối thiểu ' + tier.useMin + '% – tối đa ' + tier.useMax + '% / hóa đơn<br>' +
+    '<span style="opacity:0.8;">Đổi tối thiểu: 50.000 RP · Chỉ dùng 1 voucher/hóa đơn</span>' +
+    '</div>';
+
+  // Voucher catalog
+  var vouchers = tier.vouchers;
   var html = '';
-  for (var i = 0; i < rewards.length; i++) {
-    var r = rewards[i];
-    html += '<div class="rwd-card" data-cost="' + r.cost + '" data-val="' + r.val + '">' +
-      '<div class="rwd-val">' + r.val + '</div>' +
-      '<div class="rwd-desc">' + r.desc + '</div>' +
-      '<div class="rwd-cost">⭐ ' + fmt(r.cost) + ' điểm</div>' +
-      '</div>';
+
+  if (rwd < minRedeem) {
+    html = '<div style="grid-column:span 2;background:#fffbf0;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;">' +
+      '<div style="font-size:1.5rem;margin-bottom:6px;">🎁</div>' +
+      '<div style="font-size:0.88rem;font-weight:500;color:#92400e;">Chưa đủ điểm để đổi</div>' +
+      '<div style="font-size:0.78rem;color:#a16207;margin-top:4px;">Cần tối thiểu <b>50.000 RP</b></div>' +
+      '<div style="margin-top:10px;background:#fef3c7;border-radius:8px;padding:8px;">' +
+      '<div style="font-size:0.75rem;color:#92400e;">Bạn có: <b>' + fmt(rwd) + ' RP</b> · Còn thiếu: <b>' + fmt(minRedeem-rwd) + ' RP</b></div>' +
+      '<div style="background:#fde68a;border-radius:100px;height:6px;margin-top:6px;overflow:hidden;">' +
+      '<div style="background:#d97706;height:100%;border-radius:100px;width:' + Math.min(100,Math.floor(rwd/minRedeem*100)) + '%;"></div></div>' +
+      '</div></div>';
+  } else {
+    for (var i = 0; i < vouchers.length; i++) {
+      var v = vouchers[i];
+      var canUse = v.rp === 0 || rwd >= v.rp;
+      var isSpecial = v.special;
+      var isAddon = v.addon;
+      var color = isAddon ? '#0f6e56' : (isSpecial ? '#1565c0' : '#a07830');
+      var bg = isAddon ? '#e1f5ee' : (isSpecial ? '#e8f4fd' : '#fdf3dc');
+      var tag = isAddon ? 'Add-on' : (isSpecial ? 'Đặc quyền' : 'Voucher');
+      html += '<div class="rwd-card" style="opacity:' + (canUse?'1':'0.5') + ';position:relative;" ' +
+        (canUse && v.rp>0 ? 'data-vid="'+v.id+'" data-rp="'+v.rp+'" data-name="'+v.name+'" data-minbill="'+v.minBill+'"' : '') + '>' +
+        '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+        '<span style="background:'+bg+';color:'+color+';font-size:0.65rem;font-weight:500;padding:2px 8px;border-radius:100px;">' + tag + '</span>' +
+        (canUse && v.rp>0 ? '<span style="background:var(--g50);color:var(--g600);font-size:0.68rem;padding:2px 7px;border-radius:100px;">Đổi ngay</span>' : '') +
+        (isSpecial ? '<span style="background:#e8f4fd;color:#1565c0;font-size:0.68rem;padding:2px 7px;border-radius:100px;">Tự động</span>' : '') +
+        '</div>' +
+        '<div style="font-size:1.1rem;font-weight:500;color:' + color + ';margin-bottom:2px;">' + v.name + '</div>' +
+        '<div style="font-size:0.75rem;color:var(--muted);">' + v.desc + '</div>' +
+        (v.minBill>0 ? '<div style="font-size:0.7rem;color:#e65c00;margin-top:3px;">HĐ tối thiểu ' + fmt(v.minBill) + 'đ</div>' : '') +
+        (v.rp>0 ? '<div style="font-size:0.8rem;font-weight:500;color:'+color+';margin-top:8px;padding-top:8px;border-top:1px solid var(--border);">⭐ ' + fmt(v.rp) + ' RP</div>' : '') +
+        '</div>';
+    }
   }
   document.getElementById('rwd-cards').innerHTML = html;
-  var cards = document.querySelectorAll('.rwd-card');
+
+  // Bind click on redeemable cards
+  var cards = document.querySelectorAll('.rwd-card[data-vid]');
   for (var j = 0; j < cards.length; j++) {
     cards[j].addEventListener('click', function() {
-      var cost = parseInt(this.getAttribute('data-cost'));
-      var val = this.getAttribute('data-val');
-      redeemReward(cost, val);
+      var vid = this.getAttribute('data-vid');
+      var rp = parseInt(this.getAttribute('data-rp'));
+      var name = this.getAttribute('data-name');
+      var minBill = parseInt(this.getAttribute('data-minbill'));
+      redeemReward(vid, rp, name, minBill);
     });
   }
-  var tier = getTier(c.points);
-  var thtml = '';
+
+  // Tier table
+  var thtml = '<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:0.8rem;">' +
+    '<thead><tr style="background:var(--g50);">' +
+    '<th style="padding:8px 10px;text-align:left;font-weight:500;color:var(--muted);">Cấp</th>' +
+    '<th style="padding:8px 6px;text-align:center;font-weight:500;color:var(--muted);">Tích RP</th>' +
+    '<th style="padding:8px 6px;text-align:center;font-weight:500;color:var(--muted);">Dùng min</th>' +
+    '<th style="padding:8px 6px;text-align:center;font-weight:500;color:var(--muted);">Dùng max</th>' +
+    '</tr></thead><tbody>';
   for (var k = 0; k < TIERS.length; k++) {
     var t = TIERS[k];
     var isCur = t.name === tier.name;
-    thtml += '<div class="tier-row' + (isCur?' cur':'') + '">' +
-      '<div class="tier-ic" style="background:' + (isCur?'var(--g100)':'#f5f5f5') + '">' + t.icon + '</div>' +
-      '<div><div class="tier-row-name">' + t.icon + ' ' + t.name + (isCur?' <span style="font-size:0.72rem;color:var(--g600);">← Hiện tại</span>':'') + '</div>' +
-      '<div class="tier-row-range">' + (t.max===999999999?'Từ '+fmt(t.min)+' điểm':fmt(t.min)+' – '+fmt(t.max)+' điểm') + (t.bonus>0?' · Bonus +'+t.bonus+'%':'') + '</div>' +
-      '</div></div>';
+    thtml += '<tr style="' + (isCur?'background:var(--g50);font-weight:500;':'') + 'border-top:1px solid var(--border);">' +
+      '<td style="padding:9px 10px;">' + t.icon + ' ' + t.name + (isCur?' <span style="font-size:0.65rem;color:var(--g600);">● Bạn</span>':'') + '</td>' +
+      '<td style="padding:9px 6px;text-align:center;color:var(--g600);">' + t.earnRate + '%</td>' +
+      '<td style="padding:9px 6px;text-align:center;">' + t.useMin + '%</td>' +
+      '<td style="padding:9px 6px;text-align:center;color:#a07830;">' + t.useMax + '%</td>' +
+      '</tr>';
   }
+  thtml += '</tbody></table></div>';
   document.getElementById('tier-overview').innerHTML = thtml;
 }
 
-function redeemReward(pts, val) {
+
+function redeemReward(vid, rp, name, minBill) {
   var c = getCust(currentUser.id);
-  if (c.points < pts) { showToast('❌ Không đủ điểm'); return; }
-  if (!confirm('Đổi ' + pts + ' điểm lấy voucher ' + val + '?')) return;
-  c.points -= pts;
-  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'redeem',pts:-pts,
-    note:'Đổi voucher ' + val,date:new Date().toISOString().split('T')[0]});
+  var tier = getTier(c.rankPoints||c.points);
+  var rwd = c.rewardPoints||0;
+  if (rwd < 50000) { showToast('❌ Cần tối thiểu 50.000 RP để đổi'); return; }
+  if (rwd < rp) { showToast('❌ Không đủ RP. Bạn có ' + fmt(rwd) + ' RP'); return; }
+  var maxAllowed = Math.floor(rwd * tier.useMax / 100);
+  if (rp > maxAllowed) {
+    showToast('❌ Vượt giới hạn ' + tier.useMax + '% cấp ' + tier.name + ' (' + fmt(maxAllowed) + ' RP tối đa)');
+    return;
+  }
+  var msg = 'Đổi ' + fmt(rp) + ' RP lấy "' + name + '"?';
+  if (minBill > 0) msg += '\nÁp dụng cho hóa đơn từ ' + fmt(minBill) + 'đ\nChỉ dùng 1 voucher/hóa đơn';
+  if (!confirm(msg)) return;
+  c.rewardPoints = rwd - rp;
+  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'redeem',pts:0,reward:-rp,
+    note:'Đổi: ' + name,date:new Date().toISOString().split('T')[0]});
   currentUser = c;
-  showToast('🎁 Đã đổi voucher ' + val);
+  showToast('🎁 Đã đổi: ' + name + ' (-' + fmt(rp) + ' RP)');
   refreshRewards();
 }
 
-// ===== HISTORY =====
+
 function renderHistory(filter) {
   if (!currentUser) return;
   var c = getCust(currentUser.id);
@@ -958,7 +1208,8 @@ function refreshProfile() {
   var c = getCust(currentUser.id);
   document.getElementById('prof-name').textContent = c.name;
   document.getElementById('prof-phone').textContent = c.phone;
-  document.getElementById('ps-pts').textContent = fmt(c.points);
+  document.getElementById('ps-pts').textContent = fmt(c.rankPoints||c.points);
+  document.getElementById('ps-reward').textContent = fmt(c.rewardPoints||0);
   document.getElementById('ps-visits').textContent = c.visits;
   document.getElementById('ps-spend').textContent = (c.totalSpend/1000000).toFixed(1) + 'M';
 }
@@ -1101,7 +1352,19 @@ function adjustPoints() {
   var delta = (type === 'sub') ? -amount : amount;
   if (type === 'sub' && c.points < amount) { showToast('❌ Không đủ điểm'); return; }
   c.points += delta;
-  if (type === 'topup') c.totalSpend += amount * 1000;
+  if (delta > 0) {
+    c.rankPoints = (c.rankPoints||0) + delta;
+    var tier2 = getTier(c.rankPoints);
+    // topup: nhập số VNĐ thực (ví dụ amount=100000 => nhập 100000)
+    // RP = VNĐ × earnRate%
+    var rpDelta = (type === 'topup')
+      ? Math.floor(amount * tier2.earnRate / 100)
+      : (type === 'add' ? 0 : 0); // add/sub chỉ ảnh hưởng rankPoints, không ảnh hưởng RP
+    if (type === 'topup') c.rewardPoints = (c.rewardPoints||0) + rpDelta;
+  } else {
+    // sub: trừ rankPoints, không trừ RP tự động
+  }
+  if (type === 'topup') c.totalSpend += amount;
   DB.transactions.push({id:Date.now(),custId:custId,type:type==='sub'?'redeem':'earn',
     pts:delta,note:note,date:new Date().toISOString().split('T')[0]});
   document.getElementById('pts-amount').value = '';
@@ -1305,6 +1568,40 @@ window.addEventListener('load', function() {
   // Manager actions
   document.getElementById('cust-search').addEventListener('input', renderCustomers);
   document.getElementById('btn-adj-pts').addEventListener('click', adjustPoints);
+
+  // Live RP preview in manager
+  function updatePtsPreview() {
+    var type = document.getElementById('pts-type').value;
+    var amount = parseInt(document.getElementById('pts-amount').value)||0;
+    var custId = parseInt(document.getElementById('pts-cust').value);
+    var preview = document.getElementById('pts-preview');
+    if (!preview || !amount) { if(preview) preview.style.display='none'; return; }
+    var c = getCust(custId);
+    if (!c) return;
+    var tier = getTier(c.rankPoints||c.points);
+    preview.style.display = 'block';
+    if (type === 'topup') {
+      var rpEarned = Math.floor(amount * tier.earnRate / 100);
+      preview.innerHTML =
+        '📊 <b>Xem trước:</b> Nhập ' + fmt(amount) + 'đ cho ' + c.name + '<br>' +
+        '🏅 Điểm xếp hạng: +' + fmt(Math.floor(amount/1000)) + ' đ<br>' +
+        '🎁 RP: ' + fmt(amount) + ' × ' + tier.earnRate + '% = <b>+' + fmt(rpEarned) + ' RP</b>';
+    } else if (type === 'add') {
+      preview.innerHTML = '📊 <b>Xem trước:</b> Cộng ' + fmt(amount) + ' điểm xếp hạng cho ' + c.name;
+    } else {
+      var after = Math.max(0,(c.rankPoints||0)-amount);
+      preview.innerHTML = '📊 <b>Xem trước:</b> Trừ ' + fmt(amount) + ' điểm → còn ' + fmt(after) + ' đ';
+    }
+  }
+
+  setTimeout(function() {
+    var amtEl = document.getElementById('pts-amount');
+    var typeEl = document.getElementById('pts-type');
+    var custEl = document.getElementById('pts-cust');
+    if (amtEl) amtEl.addEventListener('input', updatePtsPreview);
+    if (typeEl) typeEl.addEventListener('change', updatePtsPreview);
+    if (custEl) custEl.addEventListener('change', updatePtsPreview);
+  }, 500);
   document.getElementById('btn-add-svc').addEventListener('click', openAddService);
 
   // Booking filter
