@@ -4,300 +4,259 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Green Life Spa</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
-  :root {
-    --green-50: #f0faf4;
-    --green-100: #d1f0dc;
-    --green-200: #a3e0b9;
-    --green-400: #4caf7d;
-    --green-600: #2d7a52;
-    --green-800: #1a4d33;
-    --green-900: #0e2d1e;
-    --gold-100: #fdf3dc;
-    --gold-400: #d4a842;
-    --gold-600: #a07830;
-    --cream: #fafaf7;
-    --text: #1a2018;
-    --text-muted: #6b7c6a;
-    --border: rgba(44,90,50,0.12);
-    --radius: 12px;
-    --radius-lg: 20px;
-    --shadow: 0 2px 20px rgba(0,0,0,0.06);
-  }
-  * { margin:0; padding:0; box-sizing:border-box; }
-  body { font-family: 'DM Sans', sans-serif; background: var(--cream); color: var(--text); min-height: 100vh; }
-  
-  /* ===== SCREENS ===== */
-  .screen { display:none; min-height:100vh; }
-  .screen.active { display:block; }
+:root {
+  --g50:#f0faf4;--g100:#d1f0dc;--g200:#a3e0b9;--g400:#4caf7d;
+  --g600:#2d7a52;--g800:#1a4d33;--g900:#0e2d1e;
+  --gold:#d4a842;--gold2:#a07830;
+  --cream:#fafaf7;--text:#1a2018;--muted:#6b7c6a;
+  --border:rgba(44,90,50,0.12);--radius:12px;--radius2:20px;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);min-height:100vh;}
 
-  /* ===== SPLASH ===== */
-  #splash { background: linear-gradient(160deg, #1a4d33 0%, #0e2d1e 100%); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:2rem; }
-  .splash-logo { width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.1); display:flex; align-items:center; justify-content:center; margin-bottom:1.5rem; font-size:2rem; }
-  .splash-title { font-family:'Cormorant Garamond',serif; font-size:2.8rem; color:#fff; letter-spacing:0.05em; line-height:1.1; }
-  .splash-sub { font-size:0.85rem; color:rgba(255,255,255,0.5); letter-spacing:0.2em; text-transform:uppercase; margin:0.5rem 0 2.5rem; }
-  .splash-btns { display:flex; flex-direction:column; gap:12px; width:100%; max-width:320px; }
-  .btn-primary { background:#4caf7d; color:#fff; border:none; padding:14px 24px; border-radius:100px; font-size:0.95rem; font-family:'DM Sans',sans-serif; cursor:pointer; font-weight:500; transition:all 0.2s; }
-  .btn-primary:hover { background:#3d9e6e; transform:translateY(-1px); }
-  .btn-outline { background:transparent; color:rgba(255,255,255,0.8); border:1px solid rgba(255,255,255,0.25); padding:14px 24px; border-radius:100px; font-size:0.95rem; font-family:'DM Sans',sans-serif; cursor:pointer; font-weight:400; transition:all 0.2s; }
-  .btn-outline:hover { background:rgba(255,255,255,0.08); }
-  .btn-link { background:none; border:none; color:rgba(255,255,255,0.4); font-size:0.82rem; cursor:pointer; font-family:'DM Sans',sans-serif; margin-top:0.5rem; }
+/* SCREENS */
+.screen{display:none;min-height:100vh;}
+.screen.active{display:block;}
+#splash.active{display:flex;}
+#mgr-login.active{display:block;}
 
-  /* ===== AUTH ===== */
-  #auth { background:var(--cream); }
-  .auth-header { background: linear-gradient(160deg, #1a4d33 0%, #2d7a52 100%); padding:3rem 1.5rem 2rem; text-align:center; }
-  .auth-logo { font-family:'Cormorant Garamond',serif; font-size:1.8rem; color:#fff; }
-  .auth-logo span { font-size:0.7rem; display:block; letter-spacing:0.2em; color:rgba(255,255,255,0.5); text-transform:uppercase; margin-top:2px; }
-  .auth-body { padding:2rem 1.5rem; max-width:440px; margin:0 auto; }
-  .auth-tabs { display:flex; background:var(--green-50); border-radius:100px; padding:4px; margin-bottom:2rem; }
-  .auth-tab { flex:1; padding:10px; text-align:center; border-radius:100px; font-size:0.88rem; cursor:pointer; color:var(--text-muted); transition:all 0.2s; border:none; background:none; font-family:'DM Sans',sans-serif; }
-  .auth-tab.active { background:#fff; color:var(--green-800); font-weight:500; box-shadow:0 1px 8px rgba(0,0,0,0.08); }
-  .form-group { margin-bottom:1rem; }
-  .form-group label { font-size:0.82rem; color:var(--text-muted); display:block; margin-bottom:6px; font-weight:500; letter-spacing:0.02em; }
-  .form-group input, .form-group select { width:100%; padding:12px 16px; border:1px solid var(--border); border-radius:var(--radius); font-size:0.92rem; font-family:'DM Sans',sans-serif; background:#fff; color:var(--text); outline:none; transition:border 0.2s; }
-  .form-group input:focus, .form-group select:focus { border-color:var(--green-400); }
-  .btn-green { width:100%; background:var(--green-600); color:#fff; border:none; padding:14px; border-radius:100px; font-size:0.95rem; font-family:'DM Sans',sans-serif; cursor:pointer; font-weight:500; margin-top:0.5rem; transition:all 0.2s; }
-  .btn-green:hover { background:var(--green-800); }
-  .auth-back { display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:0.85rem; cursor:pointer; margin-bottom:1.5rem; border:none; background:none; font-family:'DM Sans',sans-serif; }
+/* SPLASH */
+#splash{background:linear-gradient(160deg,#1a4d33 0%,#0e2d1e 100%);flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:2rem;}
+.splash-logo{width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.1);display:flex;align-items:center;justify-content:center;margin-bottom:1.5rem;font-size:2rem;}
+.splash-title{font-family:'Cormorant Garamond',serif;font-size:2.8rem;color:#fff;letter-spacing:0.05em;line-height:1.1;}
+.splash-sub{font-size:0.85rem;color:rgba(255,255,255,0.5);letter-spacing:0.2em;text-transform:uppercase;margin:0.5rem 0 2.5rem;}
+.splash-btns{display:flex;flex-direction:column;gap:12px;width:100%;max-width:320px;}
+.btn-white{background:#4caf7d;color:#fff;border:none;padding:14px 24px;border-radius:100px;font-size:0.95rem;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;}
+.btn-ghost{background:transparent;color:rgba(255,255,255,0.8);border:1px solid rgba(255,255,255,0.25);padding:14px 24px;border-radius:100px;font-size:0.95rem;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn-link{background:none;border:none;color:rgba(255,255,255,0.4);font-size:0.82rem;cursor:pointer;font-family:'DM Sans',sans-serif;margin-top:0.5rem;}
 
-  /* ===== APP SHELL ===== */
-  #app { background:var(--cream); padding-bottom:70px; }
-  .topbar { background:#fff; border-bottom:1px solid var(--border); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
-  .topbar-brand { font-family:'Cormorant Garamond',serif; font-size:1.4rem; color:var(--green-800); }
-  .topbar-user { display:flex; align-items:center; gap:8px; font-size:0.85rem; color:var(--text-muted); cursor:pointer; }
-  .avatar { width:32px; height:32px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:500; color:var(--green-800); }
-  .bottomnav { position:fixed; bottom:0; left:0; right:0; background:#fff; border-top:1px solid var(--border); display:flex; z-index:100; }
-  .nav-item { flex:1; padding:10px 4px 8px; text-align:center; cursor:pointer; border:none; background:none; font-family:'DM Sans',sans-serif; color:var(--text-muted); font-size:0.65rem; transition:color 0.2s; }
-  .nav-item.active { color:var(--green-600); }
-  .nav-icon { font-size:1.3rem; display:block; margin-bottom:2px; }
-  .page { display:none; padding:1.25rem; }
-  .page.active { display:block; }
+/* AUTH */
+#auth{background:var(--cream);}
+.auth-hdr{background:linear-gradient(160deg,#1a4d33 0%,#2d7a52 100%);padding:3rem 1.5rem 2rem;text-align:center;}
+.auth-logo{font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:#fff;}
+.auth-logo span{font-size:0.7rem;display:block;letter-spacing:0.2em;color:rgba(255,255,255,0.5);text-transform:uppercase;margin-top:2px;}
+.auth-body{padding:2rem 1.5rem;max-width:440px;margin:0 auto;}
+.auth-tabs{display:flex;background:var(--g50);border-radius:100px;padding:4px;margin-bottom:2rem;}
+.auth-tab{flex:1;padding:10px;text-align:center;border-radius:100px;font-size:0.88rem;cursor:pointer;color:var(--muted);border:none;background:none;font-family:'DM Sans',sans-serif;}
+.auth-tab.active{background:#fff;color:var(--g800);font-weight:500;box-shadow:0 1px 8px rgba(0,0,0,0.08);}
+.fg{margin-bottom:1rem;}
+.fg label{font-size:0.82rem;color:var(--muted);display:block;margin-bottom:6px;font-weight:500;}
+.fg input,.fg select{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-size:0.92rem;font-family:'DM Sans',sans-serif;background:#fff;color:var(--text);outline:none;}
+.fg input:focus{border-color:var(--g400);}
+.btn-green{width:100%;background:var(--g600);color:#fff;border:none;padding:14px;border-radius:100px;font-size:0.95rem;font-family:'DM Sans',sans-serif;cursor:pointer;font-weight:500;margin-top:0.5rem;}
+.back-btn{display:flex;align-items:center;gap:6px;color:rgba(255,255,255,0.6);font-size:0.85rem;cursor:pointer;margin-bottom:1.5rem;border:none;background:none;font-family:'DM Sans',sans-serif;}
 
-  /* ===== HOME ===== */
-  .member-card { background:linear-gradient(135deg, var(--green-800) 0%, var(--green-600) 60%, #4caf7d 100%); border-radius:var(--radius-lg); padding:1.5rem; color:#fff; margin-bottom:1.5rem; position:relative; overflow:hidden; }
-  .member-card::before { content:''; position:absolute; right:-20px; top:-20px; width:120px; height:120px; border-radius:50%; background:rgba(255,255,255,0.06); }
-  .member-card::after { content:''; position:absolute; right:30px; bottom:-30px; width:80px; height:80px; border-radius:50%; background:rgba(255,255,255,0.04); }
-  .card-tier { font-size:0.7rem; letter-spacing:0.15em; text-transform:uppercase; color:rgba(255,255,255,0.6); margin-bottom:4px; }
-  .card-name { font-family:'Cormorant Garamond',serif; font-size:1.6rem; margin-bottom:0.8rem; }
-  .card-points { display:flex; align-items:baseline; gap:6px; margin-bottom:4px; }
-  .card-pts-num { font-size:2.2rem; font-weight:500; line-height:1; }
-  .card-pts-label { font-size:0.8rem; color:rgba(255,255,255,0.65); }
-  .card-tier-badge { display:inline-flex; align-items:center; gap:4px; background:rgba(255,255,255,0.15); border-radius:100px; padding:4px 10px; font-size:0.75rem; margin-top:8px; }
-  .tier-bar { background:rgba(255,255,255,0.2); border-radius:100px; height:4px; margin-top:10px; overflow:hidden; }
-  .tier-fill { background:#fff; border-radius:100px; height:100%; transition:width 0.6s ease; }
-  .tier-next { font-size:0.72rem; color:rgba(255,255,255,0.6); margin-top:6px; }
-  
-  .section-title { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:var(--green-800); margin-bottom:1rem; }
-  .quick-actions { display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin-bottom:1.5rem; }
-  .quick-action { background:#fff; border-radius:var(--radius); padding:12px 6px; text-align:center; cursor:pointer; border:1px solid var(--border); transition:all 0.2s; }
-  .quick-action:hover { border-color:var(--green-400); transform:translateY(-2px); }
-  .qa-icon { font-size:1.4rem; display:block; margin-bottom:4px; }
-  .qa-label { font-size:0.68rem; color:var(--text-muted); line-height:1.2; }
-  .activity-list { display:flex; flex-direction:column; gap:8px; }
-  .activity-item { background:#fff; border-radius:var(--radius); padding:12px 14px; border:1px solid var(--border); display:flex; align-items:center; justify-content:space-between; }
-  .activity-left { display:flex; align-items:center; gap:10px; }
-  .activity-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
-  .activity-icon.earn { background:var(--green-50); }
-  .activity-icon.use { background:#fff3e0; }
-  .activity-info { flex:1; }
-  .activity-name { font-size:0.88rem; font-weight:500; margin-bottom:2px; }
-  .activity-date { font-size:0.75rem; color:var(--text-muted); }
-  .activity-pts { font-size:0.88rem; font-weight:500; }
-  .activity-pts.earn { color:var(--green-600); }
-  .activity-pts.use { color:#e65c00; }
+/* APP SHELL */
+#app{background:var(--cream);padding-bottom:70px;}
+.topbar{background:#fff;border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.topbar-brand{font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);}
+.topbar-user{display:flex;align-items:center;gap:8px;font-size:0.85rem;color:var(--muted);cursor:pointer;}
+.av{width:32px;height:32px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:500;color:var(--g800);}
+.bottomnav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--border);display:flex;z-index:100;}
+.nav-item{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;color:var(--muted);font-size:0.65rem;}
+.nav-item.active{color:var(--g600);}
+.nav-icon{font-size:1.3rem;display:block;margin-bottom:2px;}
+.page{display:none;padding:1.25rem;}
+.page.active{display:block;}
 
-  /* ===== BOOKING ===== */
-  .services-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-bottom:1.5rem; }
-  .service-card { background:#fff; border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; cursor:pointer; transition:all 0.2s; }
-  .service-card:hover, .service-card.selected { border-color:var(--green-400); box-shadow:0 0 0 2px rgba(76,175,125,0.15); }
-  .service-img { width:100%; height:90px; background:var(--green-50); display:flex; align-items:center; justify-content:center; font-size:2rem; }
-  .service-body { padding:10px; }
-  .service-name { font-size:0.85rem; font-weight:500; margin-bottom:2px; }
-  .service-price { font-size:0.78rem; color:var(--text-muted); }
-  .staff-list { display:flex; flex-direction:column; gap:8px; margin-bottom:1.5rem; }
-  .staff-item { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:12px; display:flex; align-items:center; gap:12px; cursor:pointer; transition:all 0.2s; }
-  .staff-item:hover, .staff-item.selected { border-color:var(--green-400); }
-  .staff-av { width:44px; height:44px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; font-size:1.1rem; flex-shrink:0; }
-  .staff-info { flex:1; }
-  .staff-name { font-size:0.9rem; font-weight:500; }
-  .staff-spec { font-size:0.75rem; color:var(--text-muted); }
-  .stars { color:#f5a623; font-size:0.75rem; }
-  .time-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin-bottom:1.5rem; }
-  .time-slot { background:#fff; border:1px solid var(--border); border-radius:8px; padding:10px; text-align:center; font-size:0.82rem; cursor:pointer; transition:all 0.2s; }
-  .time-slot:hover, .time-slot.selected { background:var(--green-600); color:#fff; border-color:var(--green-600); }
-  .time-slot.disabled { opacity:0.35; cursor:not-allowed; }
-  .booking-summary { background:var(--green-50); border-radius:var(--radius); padding:1rem; margin-bottom:1.5rem; border:1px solid var(--green-100); }
-  .summary-row { display:flex; justify-content:space-between; font-size:0.85rem; padding:4px 0; }
-  .summary-row.total { font-weight:500; border-top:1px solid var(--green-200); margin-top:6px; padding-top:10px; font-size:0.92rem; }
-  .date-input-row { display:flex; gap:10px; margin-bottom:1.5rem; }
-  .date-input-row input { flex:1; padding:12px 14px; border:1px solid var(--border); border-radius:var(--radius); font-family:'DM Sans',sans-serif; font-size:0.88rem; background:#fff; }
+/* HOME */
+.member-card{background:linear-gradient(135deg,var(--g800) 0%,var(--g600) 60%,#4caf7d 100%);border-radius:var(--radius2);padding:1.5rem;color:#fff;margin-bottom:1.5rem;position:relative;overflow:hidden;}
+.member-card::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.06);}
+.card-tier-lbl{font-size:0.7rem;letter-spacing:0.15em;text-transform:uppercase;color:rgba(255,255,255,0.6);margin-bottom:4px;}
+.card-name{font-family:'Cormorant Garamond',serif;font-size:1.6rem;margin-bottom:0.8rem;}
+.card-pts-row{display:flex;align-items:baseline;gap:6px;margin-bottom:4px;}
+.card-pts-num{font-size:2.2rem;font-weight:500;line-height:1;}
+.card-pts-lbl{font-size:0.8rem;color:rgba(255,255,255,0.65);}
+.card-tier-bdg{display:inline-flex;align-items:center;gap:4px;background:rgba(255,255,255,0.15);border-radius:100px;padding:4px 10px;font-size:0.75rem;margin-top:8px;}
+.tier-bar{background:rgba(255,255,255,0.2);border-radius:100px;height:4px;margin-top:10px;overflow:hidden;}
+.tier-fill{background:#fff;border-radius:100px;height:100%;}
+.tier-next{font-size:0.72rem;color:rgba(255,255,255,0.6);margin-top:6px;}
+.sec-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--g800);margin-bottom:1rem;}
+.quick-actions{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem;}
+.qa{background:#fff;border-radius:var(--radius);padding:12px 6px;text-align:center;cursor:pointer;border:1px solid var(--border);}
+.qa-icon{font-size:1.4rem;display:block;margin-bottom:4px;}
+.qa-lbl{font-size:0.68rem;color:var(--muted);line-height:1.2;}
+.act-item{background:#fff;border-radius:var(--radius);padding:12px 14px;border:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.act-left{display:flex;align-items:center;gap:10px;}
+.act-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.act-name{font-size:0.88rem;font-weight:500;margin-bottom:2px;}
+.act-date{font-size:0.75rem;color:var(--muted);}
+.act-pts{font-size:0.88rem;font-weight:500;}
+.pts-earn{color:var(--g600);}
+.pts-use{color:#e65c00;}
 
-  /* ===== REWARDS ===== */
-  .reward-header { background:linear-gradient(135deg,#a07830,#d4a842); border-radius:var(--radius-lg); padding:1.25rem; color:#fff; margin-bottom:1.5rem; display:flex; align-items:center; justify-content:space-between; }
-  .reward-pts { font-size:2rem; font-weight:500; }
-  .reward-pts small { font-size:0.75rem; display:block; opacity:0.7; }
-  .redeem-info { font-size:0.75rem; opacity:0.75; text-align:right; line-height:1.5; }
-  .reward-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:1.5rem; }
-  .reward-card { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:14px; cursor:pointer; transition:all 0.2s; }
-  .reward-card:hover { border-color:var(--gold-400); }
-  .reward-val { font-size:1.2rem; font-weight:500; color:var(--gold-600); }
-  .reward-desc { font-size:0.78rem; color:var(--text-muted); margin-top:2px; }
-  .reward-cost { font-size:0.75rem; color:var(--green-600); margin-top:6px; }
-  .tier-overview { display:flex; flex-direction:column; gap:8px; }
-  .tier-row { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:12px 14px; display:flex; align-items:center; gap:12px; }
-  .tier-icon { width:36px; height:36px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1rem; flex-shrink:0; }
-  .tier-row-info { flex:1; }
-  .tier-row-name { font-size:0.88rem; font-weight:500; }
-  .tier-row-range { font-size:0.75rem; color:var(--text-muted); }
-  .tier-row.current { border-color:var(--green-400); background:var(--green-50); }
+/* BOOKING */
+.svc-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:1.5rem;}
+.svc-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer;}
+.svc-card.sel{border-color:var(--g400);box-shadow:0 0 0 2px rgba(76,175,125,0.15);}
+.svc-img{width:100%;height:90px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:2rem;}
+.svc-body{padding:10px;}
+.svc-name{font-size:0.85rem;font-weight:500;margin-bottom:2px;}
+.svc-price{font-size:0.78rem;color:var(--muted);}
+.staff-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;margin-bottom:8px;}
+.staff-item.sel{border-color:var(--g400);}
+.staff-av{width:44px;height:44px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+.staff-name{font-size:0.9rem;font-weight:500;}
+.staff-spec{font-size:0.75rem;color:var(--muted);}
+.stars{color:#f5a623;font-size:0.75rem;}
+.time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:1.5rem;}
+.time-slot{background:#fff;border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center;font-size:0.82rem;cursor:pointer;}
+.time-slot.sel{background:var(--g600);color:#fff;border-color:var(--g600);}
+.time-slot.off{opacity:0.35;cursor:default;}
+.bk-sum{background:var(--g50);border-radius:var(--radius);padding:1rem;margin-bottom:1.5rem;border:1px solid var(--g100);}
+.sum-row{display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;}
+.sum-total{font-weight:500;border-top:1px solid var(--g200);margin-top:6px;padding-top:10px;font-size:0.92rem;}
+.back-step{border:none;background:none;cursor:pointer;color:var(--muted);font-size:0.85rem;font-family:'DM Sans',sans-serif;}
 
-  /* ===== HISTORY ===== */
-  .filter-tabs { display:flex; gap:8px; margin-bottom:1.25rem; overflow-x:auto; padding-bottom:4px; }
-  .filter-tab { padding:7px 14px; border-radius:100px; border:1px solid var(--border); font-size:0.8rem; white-space:nowrap; cursor:pointer; background:#fff; color:var(--text-muted); font-family:'DM Sans',sans-serif; }
-  .filter-tab.active { background:var(--green-600); color:#fff; border-color:var(--green-600); }
-  .history-item { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:14px; margin-bottom:8px; }
-  .history-top { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:6px; }
-  .history-service { font-size:0.9rem; font-weight:500; }
-  .history-amount { font-size:0.9rem; font-weight:500; color:var(--green-600); }
-  .history-meta { font-size:0.78rem; color:var(--text-muted); display:flex; gap:12px; }
-  .rating-row { display:flex; align-items:center; gap:6px; margin-top:8px; padding-top:8px; border-top:1px solid var(--border); }
-  .star-btn { background:none; border:none; font-size:1.2rem; cursor:pointer; transition:transform 0.1s; }
-  .star-btn:hover { transform:scale(1.2); }
-  .rating-label { font-size:0.78rem; color:var(--text-muted); }
+/* REWARDS */
+.rwd-hdr{background:linear-gradient(135deg,#a07830,#d4a842);border-radius:var(--radius2);padding:1.25rem;color:#fff;margin-bottom:1.5rem;display:flex;align-items:center;justify-content:space-between;}
+.rwd-pts{font-size:2rem;font-weight:500;}
+.rwd-pts small{font-size:0.75rem;display:block;opacity:0.7;}
+.rwd-info{font-size:0.75rem;opacity:0.75;text-align:right;line-height:1.5;}
+.rwd-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem;}
+.rwd-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;cursor:pointer;}
+.rwd-val{font-size:1.2rem;font-weight:500;color:var(--gold2);}
+.rwd-desc{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+.rwd-cost{font-size:0.75rem;color:var(--g600);margin-top:6px;}
+.tier-row{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px;}
+.tier-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.tier-row-name{font-size:0.88rem;font-weight:500;}
+.tier-row-range{font-size:0.75rem;color:var(--muted);}
+.tier-row.cur{border-color:var(--g400);background:var(--g50);}
 
-  /* ===== PROFILE ===== */
-  .profile-hero { background:linear-gradient(135deg,var(--green-800),var(--green-600)); border-radius:var(--radius-lg); padding:1.5rem; color:#fff; text-align:center; margin-bottom:1.5rem; }
-  .profile-av { width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.2); margin:0 auto 0.75rem; display:flex; align-items:center; justify-content:center; font-size:1.6rem; }
-  .profile-name { font-family:'Cormorant Garamond',serif; font-size:1.4rem; }
-  .profile-phone { font-size:0.82rem; opacity:0.6; margin-top:2px; }
-  .spend-stats { display:grid; grid-template-columns:repeat(3,1fr); gap:8px; margin:1rem 0; }
-  .stat-box { background:rgba(255,255,255,0.1); border-radius:10px; padding:10px; text-align:center; }
-  .stat-num { font-size:1.1rem; font-weight:500; }
-  .stat-lbl { font-size:0.65rem; opacity:0.65; margin-top:2px; }
-  .menu-list { background:#fff; border-radius:var(--radius); border:1px solid var(--border); overflow:hidden; margin-bottom:1rem; }
-  .menu-item { padding:14px 16px; display:flex; align-items:center; gap:12px; border-bottom:1px solid var(--border); cursor:pointer; transition:background 0.15s; }
-  .menu-item:last-child { border-bottom:none; }
-  .menu-item:hover { background:var(--green-50); }
-  .menu-icon { width:32px; text-align:center; font-size:1.1rem; }
-  .menu-text { flex:1; font-size:0.88rem; }
-  .menu-arrow { color:var(--text-muted); font-size:0.8rem; }
-  .logout-btn { width:100%; background:none; border:1px solid #ffcdd2; color:#c0392b; padding:13px; border-radius:100px; font-size:0.9rem; font-family:'DM Sans',sans-serif; cursor:pointer; transition:all 0.2s; }
-  .logout-btn:hover { background:#ffebee; }
+/* HISTORY */
+.filter-tabs{display:flex;gap:8px;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:4px;}
+.ftab{padding:7px 14px;border-radius:100px;border:1px solid var(--border);font-size:0.8rem;white-space:nowrap;cursor:pointer;background:#fff;color:var(--muted);font-family:'DM Sans',sans-serif;}
+.ftab.active{background:var(--g600);color:#fff;border-color:var(--g600);}
+.hist-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;margin-bottom:8px;}
+.hist-top{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;}
+.hist-svc{font-size:0.9rem;font-weight:500;}
+.hist-amt{font-size:0.9rem;font-weight:500;color:var(--g600);}
+.hist-meta{font-size:0.78rem;color:var(--muted);display:flex;gap:12px;flex-wrap:wrap;}
+.rat-row{display:flex;align-items:center;gap:6px;margin-top:8px;padding-top:8px;border-top:1px solid var(--border);}
+.star-btn{background:none;border:none;font-size:1.2rem;cursor:pointer;}
+.rat-lbl{font-size:0.78rem;color:var(--muted);}
 
-  /* ===== MANAGER ===== */
-  #mgr { background:var(--cream); padding-bottom:70px; }
-  .mgr-topbar { background:var(--green-900); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
-  .mgr-brand { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:#fff; }
-  .mgr-brand span { font-size:0.65rem; display:block; color:rgba(255,255,255,0.4); letter-spacing:0.1em; text-transform:uppercase; }
-  .mgr-nav { position:fixed; bottom:0; left:0; right:0; background:var(--green-900); border-top:1px solid rgba(255,255,255,0.08); display:flex; z-index:100; }
-  .mgr-nav-item { flex:1; padding:10px 4px 8px; text-align:center; cursor:pointer; border:none; background:none; font-family:'DM Sans',sans-serif; color:rgba(255,255,255,0.4); font-size:0.63rem; transition:color 0.2s; }
-  .mgr-nav-item.active { color:#4caf7d; }
-  .mgr-page { display:none; padding:1.25rem; }
-  .mgr-page.active { display:block; }
-  
-  .stat-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:10px; margin-bottom:1.5rem; }
-  .stat-card { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:14px; }
-  .stat-card-label { font-size:0.75rem; color:var(--text-muted); margin-bottom:4px; }
-  .stat-card-value { font-size:1.4rem; font-weight:500; color:var(--green-800); }
-  .stat-card-sub { font-size:0.72rem; color:var(--green-600); margin-top:2px; }
-  
-  .mgr-section { margin-bottom:1.5rem; }
-  .mgr-section-title { font-family:'Cormorant Garamond',serif; font-size:1.2rem; color:var(--green-800); margin-bottom:0.8rem; display:flex; align-items:center; justify-content:space-between; }
-  .btn-sm { background:var(--green-600); color:#fff; border:none; padding:7px 14px; border-radius:100px; font-size:0.78rem; font-family:'DM Sans',sans-serif; cursor:pointer; }
-  .btn-sm.outline { background:none; color:var(--green-600); border:1px solid var(--green-400); }
-  
-  .customer-item { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; gap:12px; }
-  .customer-av { width:40px; height:40px; border-radius:50%; background:var(--green-100); display:flex; align-items:center; justify-content:center; font-size:0.9rem; font-weight:500; color:var(--green-800); flex-shrink:0; }
-  .customer-info { flex:1; }
-  .customer-name { font-size:0.9rem; font-weight:500; }
-  .customer-meta { font-size:0.75rem; color:var(--text-muted); }
-  .tier-badge { padding:3px 8px; border-radius:100px; font-size:0.68rem; font-weight:500; }
-  .tier-member { background:var(--green-50); color:var(--green-800); }
-  .tier-silver { background:#f5f5f5; color:#555; }
-  .tier-gold { background:var(--gold-100); color:var(--gold-600); }
-  .tier-platinum { background:#e8f4fd; color:#1565c0; }
-  .tier-diamond { background:#fce4ec; color:#c2185b; }
-  
-  .points-form { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:1.25rem; margin-bottom:1rem; }
-  .points-form-title { font-size:0.88rem; font-weight:500; margin-bottom:1rem; color:var(--green-800); }
-  
-  .service-mgr-item { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:12px 14px; margin-bottom:8px; display:flex; align-items:center; justify-content:space-between; }
-  .service-mgr-info .s-name { font-size:0.9rem; font-weight:500; }
-  .service-mgr-info .s-cat { font-size:0.75rem; color:var(--text-muted); }
-  .service-mgr-price { font-size:0.95rem; font-weight:500; color:var(--green-600); }
-  
-  .search-bar { display:flex; align-items:center; gap:8px; background:#fff; border:1px solid var(--border); border-radius:100px; padding:8px 16px; margin-bottom:1rem; }
-  .search-bar input { flex:1; border:none; outline:none; font-size:0.88rem; font-family:'DM Sans',sans-serif; }
-  
-  .booking-mgr-item { background:#fff; border-radius:var(--radius); border:1px solid var(--border); padding:12px 14px; margin-bottom:8px; }
-  .booking-mgr-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
-  .booking-mgr-name { font-size:0.9rem; font-weight:500; }
-  .status-badge { padding:3px 8px; border-radius:100px; font-size:0.7rem; }
-  .status-pending { background:#fff8e1; color:#f57f17; }
-  .status-confirmed { background:var(--green-50); color:var(--green-800); }
-  .status-done { background:#e8f5e9; color:#2e7d32; }
-  .status-cancelled { background:#ffebee; color:#c62828; }
-  .booking-mgr-meta { font-size:0.78rem; color:var(--text-muted); }
-  
-  /* Modal */
-  .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:200; display:flex; align-items:flex-end; opacity:0; pointer-events:none; transition:opacity 0.25s; }
-  .modal-overlay.open { opacity:1; pointer-events:all; }
-  .modal-box { background:#fff; border-radius:var(--radius-lg) var(--radius-lg) 0 0; padding:1.5rem; width:100%; max-height:85vh; overflow-y:auto; transform:translateY(30px); transition:transform 0.25s; }
-  .modal-overlay.open .modal-box { transform:translateY(0); }
-  .modal-title { font-family:'Cormorant Garamond',serif; font-size:1.3rem; color:var(--green-800); margin-bottom:1.25rem; }
-  .modal-close { position:absolute; right:1.5rem; top:1.5rem; background:none; border:none; font-size:1.2rem; cursor:pointer; color:var(--text-muted); }
-  
-  .toast { position:fixed; top:80px; left:50%; transform:translateX(-50%) translateY(-10px); background:var(--green-800); color:#fff; padding:10px 20px; border-radius:100px; font-size:0.85rem; z-index:999; opacity:0; transition:all 0.3s; pointer-events:none; white-space:nowrap; }
-  .toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
-  
-  .empty-state { text-align:center; padding:3rem 1rem; color:var(--text-muted); }
-  .empty-icon { font-size:2.5rem; margin-bottom:0.75rem; }
-  .empty-text { font-size:0.88rem; }
+/* PROFILE */
+.prof-hero{background:linear-gradient(135deg,var(--g800),var(--g600));border-radius:var(--radius2);padding:1.5rem;color:#fff;text-align:center;margin-bottom:1.5rem;}
+.prof-av{width:64px;height:64px;border-radius:50%;background:rgba(255,255,255,0.2);margin:0 auto 0.75rem;display:flex;align-items:center;justify-content:center;font-size:1.6rem;}
+.prof-name{font-family:'Cormorant Garamond',serif;font-size:1.4rem;}
+.prof-phone{font-size:0.82rem;opacity:0.6;margin-top:2px;}
+.spend-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:1rem 0;}
+.stat-box{background:rgba(255,255,255,0.1);border-radius:10px;padding:10px;text-align:center;}
+.stat-num{font-size:1.1rem;font-weight:500;}
+.stat-lbl{font-size:0.65rem;opacity:0.65;margin-top:2px;}
+.menu-list{background:#fff;border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;margin-bottom:1rem;}
+.menu-item{padding:14px 16px;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);cursor:pointer;}
+.menu-item:last-child{border-bottom:none;}
+.menu-ic{width:32px;text-align:center;font-size:1.1rem;}
+.menu-txt{flex:1;font-size:0.88rem;}
+.menu-arr{color:var(--muted);font-size:0.8rem;}
+.logout-btn{width:100%;background:none;border:1px solid #ffcdd2;color:#c0392b;padding:13px;border-radius:100px;font-size:0.9rem;font-family:'DM Sans',sans-serif;cursor:pointer;}
 
-  input[type=date] { color-scheme:light; }
-  
-  @media(max-width:360px) { .services-grid { grid-template-columns:1fr; } }
+/* MANAGER */
+#mgr{background:var(--cream);padding-bottom:70px;}
+.mgr-top{background:var(--g900);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;}
+.mgr-brand{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:#fff;}
+.mgr-brand span{font-size:0.65rem;display:block;color:rgba(255,255,255,0.4);letter-spacing:0.1em;text-transform:uppercase;}
+.mgr-nav{position:fixed;bottom:0;left:0;right:0;background:var(--g900);border-top:1px solid rgba(255,255,255,0.08);display:flex;z-index:100;}
+.mgr-nav-item{flex:1;padding:10px 4px 8px;text-align:center;cursor:pointer;border:none;background:none;font-family:'DM Sans',sans-serif;color:rgba(255,255,255,0.4);font-size:0.63rem;}
+.mgr-nav-item.active{color:#4caf7d;}
+.mgr-page{display:none;padding:1.25rem;}
+.mgr-page.active{display:block;}
+.stat-cards{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:1.5rem;}
+.stat-card{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:14px;}
+.stat-card-lbl{font-size:0.75rem;color:var(--muted);margin-bottom:4px;}
+.stat-card-val{font-size:1.4rem;font-weight:500;color:var(--g800);}
+.stat-card-sub{font-size:0.72rem;color:var(--g600);margin-top:2px;}
+.mgr-sec{margin-bottom:1.5rem;}
+.mgr-sec-title{font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;display:flex;align-items:center;justify-content:space-between;}
+.btn-sm{background:var(--g600);color:#fff;border:none;padding:7px 14px;border-radius:100px;font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.btn-sm-out{background:none;color:var(--g600);border:1px solid var(--g400);padding:7px 14px;border-radius:100px;font-size:0.78rem;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.cust-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;gap:12px;cursor:pointer;}
+.cust-av{width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:0.9rem;font-weight:500;color:var(--g800);flex-shrink:0;}
+.cust-name{font-size:0.9rem;font-weight:500;}
+.cust-meta{font-size:0.75rem;color:var(--muted);}
+.tier-bdg{padding:3px 8px;border-radius:100px;font-size:0.68rem;font-weight:500;}
+.t-member{background:var(--g50);color:var(--g800);}
+.t-silver{background:#f5f5f5;color:#555;}
+.t-gold{background:#fdf3dc;color:#a07830;}
+.t-platinum{background:#e8f4fd;color:#1565c0;}
+.t-diamond{background:#fce4ec;color:#c2185b;}
+.pts-form{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:1.25rem;margin-bottom:1rem;}
+.pts-form-title{font-size:0.88rem;font-weight:500;margin-bottom:1rem;color:var(--g800);}
+.mgr-inp{width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.88rem;background:#fff;margin-top:4px;}
+.svc-mgr-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;}
+.s-name{font-size:0.9rem;font-weight:500;}
+.s-cat{font-size:0.75rem;color:var(--muted);}
+.s-price{font-size:0.95rem;font-weight:500;color:var(--g600);}
+.search-bar{display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--border);border-radius:100px;padding:8px 16px;margin-bottom:1rem;}
+.search-bar input{flex:1;border:none;outline:none;font-size:0.88rem;font-family:'DM Sans',sans-serif;background:transparent;}
+.bk-item{background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:12px 14px;margin-bottom:8px;}
+.bk-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;}
+.bk-name{font-size:0.9rem;font-weight:500;}
+.st-bdg{padding:3px 8px;border-radius:100px;font-size:0.7rem;}
+.st-pending{background:#fff8e1;color:#f57f17;}
+.st-confirmed{background:var(--g50);color:var(--g800);}
+.st-done{background:#e8f5e9;color:#2e7d32;}
+.st-cancelled{background:#ffebee;color:#c62828;}
+.bk-meta{font-size:0.78rem;color:var(--muted);}
+
+/* MODAL */
+.modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;}
+.modal-ov.open{opacity:1;pointer-events:all;}
+.modal-box{background:#fff;border-radius:var(--radius2) var(--radius2) 0 0;padding:1.5rem;width:100%;max-height:85vh;overflow-y:auto;position:relative;}
+.modal-title{font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--g800);margin-bottom:1.25rem;}
+.modal-close{position:absolute;right:1.5rem;top:1.5rem;background:none;border:none;font-size:1.2rem;cursor:pointer;color:var(--muted);}
+
+/* TOAST */
+.toast{position:fixed;top:80px;left:50%;transform:translateX(-50%) translateY(-10px);background:var(--g800);color:#fff;padding:10px 20px;border-radius:100px;font-size:0.85rem;z-index:999;opacity:0;pointer-events:none;white-space:nowrap;}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted);}
+.empty-icon{font-size:2.5rem;margin-bottom:0.75rem;}
+.empty-text{font-size:0.88rem;}
 </style>
 </head>
 <body>
 
-<!-- TOAST -->
 <div class="toast" id="toast"></div>
 
 <!-- SPLASH -->
 <div class="screen active" id="splash">
   <div class="splash-logo">🌿</div>
   <div class="splash-title">Green Life</div>
-  <div class="splash-sub">Spa & Wellness</div>
+  <div class="splash-sub">Spa &amp; Wellness</div>
   <div class="splash-btns">
-    <button class="btn-primary" onclick="go('auth')">Đăng nhập / Đăng ký</button>
-    <button class="btn-link" onclick="go('mgr-login')">🔐 Dành cho Quản lý</button>
+    <button class="btn-white" id="btn-to-auth">Đăng nhập / Đăng ký</button>
+    <button class="btn-link" id="btn-to-mgr">🔐 Dành cho Quản lý</button>
   </div>
 </div>
 
-<!-- AUTH SCREEN -->
+<!-- AUTH -->
 <div class="screen" id="auth">
-  <div class="auth-header">
-    <button class="auth-back" onclick="go('splash')" style="color:rgba(255,255,255,0.6);margin-bottom:1rem;">← Quay lại</button>
-    <div class="auth-logo">Green Life <span>Spa & Wellness</span></div>
+  <div class="auth-hdr">
+    <button class="back-btn" id="auth-back">← Quay lại</button>
+    <div class="auth-logo">Green Life <span>Spa &amp; Wellness</span></div>
   </div>
   <div class="auth-body">
     <div class="auth-tabs">
-      <button class="auth-tab active" id="tab-login" onclick="switchAuthTab('login')">Đăng nhập</button>
-      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Đăng ký</button>
+      <button class="auth-tab active" id="tab-login">Đăng nhập</button>
+      <button class="auth-tab" id="tab-reg">Đăng ký</button>
     </div>
     <div id="login-form">
-      <div class="form-group"><label>Số điện thoại</label><input type="tel" id="login-phone" placeholder="0901 234 567" /></div>
-      <div class="form-group"><label>Mật khẩu</label><input type="password" id="login-pass" placeholder="••••••••" /></div>
-      <button class="btn-green" onclick="doLogin()">Đăng nhập</button>
+      <div class="fg"><label>Số điện thoại</label><input type="tel" id="login-phone" placeholder="0901 234 567"></div>
+      <div class="fg"><label>Mật khẩu</label><input type="password" id="login-pass" placeholder="••••••••"></div>
+      <button class="btn-green" id="btn-login">Đăng nhập</button>
     </div>
-    <div id="register-form" style="display:none">
-      <div class="form-group"><label>Họ và tên</label><input type="text" id="reg-name" placeholder="Nguyễn Thị Lan" /></div>
-      <div class="form-group"><label>Số điện thoại</label><input type="tel" id="reg-phone" placeholder="0901 234 567" /></div>
-      <div class="form-group"><label>Ngày sinh</label><input type="date" id="reg-dob" /></div>
-      <div class="form-group"><label>Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự" /></div>
-      <button class="btn-green" onclick="doRegister()">Tạo tài khoản</button>
+    <div id="reg-form" style="display:none">
+      <div class="fg"><label>Họ và tên</label><input type="text" id="reg-name" placeholder="Nguyễn Thị Lan"></div>
+      <div class="fg"><label>Số điện thoại</label><input type="tel" id="reg-phone" placeholder="0901 234 567"></div>
+      <div class="fg"><label>Ngày sinh</label><input type="date" id="reg-dob"></div>
+      <div class="fg"><label>Mật khẩu</label><input type="password" id="reg-pass" placeholder="Ít nhất 6 ký tự"></div>
+      <button class="btn-green" id="btn-reg">Tạo tài khoản</button>
     </div>
   </div>
 </div>
@@ -306,883 +265,1066 @@
 <div class="screen" id="app">
   <div class="topbar">
     <div class="topbar-brand">🌿 Green Life</div>
-    <div class="topbar-user" onclick="showPage('profile')">
-      <div class="avatar" id="topbar-av">KH</div>
-      <span id="topbar-name">Khách hàng</span>
+    <div class="topbar-user" id="topbar-user">
+      <div class="av" id="topbar-av">KH</div>
+      <span id="topbar-name">Khách</span>
     </div>
   </div>
 
-  <!-- HOME -->
   <div class="page active" id="page-home">
     <div class="member-card">
-      <div class="card-tier">Thành viên</div>
-      <div class="card-name" id="home-name">Nguyễn Thị Lan</div>
-      <div class="card-points">
+      <div class="card-tier-lbl">Thành viên</div>
+      <div class="card-name" id="home-name">Tên khách hàng</div>
+      <div class="card-pts-row">
         <span class="card-pts-num" id="home-pts">0</span>
-        <span class="card-pts-label">điểm tích lũy</span>
+        <span class="card-pts-lbl">điểm tích lũy</span>
       </div>
-      <div class="card-tier-badge" id="home-tier-badge">🌱 Thành viên</div>
+      <div class="card-tier-bdg" id="home-tier-bdg">🌱 Thành viên</div>
       <div class="tier-bar"><div class="tier-fill" id="tier-fill" style="width:0%"></div></div>
       <div class="tier-next" id="tier-next"></div>
     </div>
     <div class="quick-actions">
-      <div class="quick-action" onclick="showPage('booking')"><span class="qa-icon">📅</span><div class="qa-label">Đặt lịch</div></div>
-      <div class="quick-action" onclick="showPage('rewards')"><span class="qa-icon">🎁</span><div class="qa-label">Đổi điểm</div></div>
-      <div class="quick-action" onclick="showPage('history')"><span class="qa-icon">📊</span><div class="qa-label">Lịch sử</div></div>
-      <div class="quick-action" onclick="showPage('profile')"><span class="qa-icon">👤</span><div class="qa-label">Tài khoản</div></div>
+      <div class="qa" id="qa-booking"><span class="qa-icon">📅</span><div class="qa-lbl">Đặt lịch</div></div>
+      <div class="qa" id="qa-rewards"><span class="qa-icon">🎁</span><div class="qa-lbl">Đổi điểm</div></div>
+      <div class="qa" id="qa-history"><span class="qa-icon">📊</span><div class="qa-lbl">Lịch sử</div></div>
+      <div class="qa" id="qa-profile"><span class="qa-icon">👤</span><div class="qa-lbl">Tài khoản</div></div>
     </div>
-    <div class="section-title">Hoạt động gần đây</div>
-    <div class="activity-list" id="activity-list">
-      <div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động nào</div></div>
-    </div>
+    <div class="sec-title">Hoạt động gần đây</div>
+    <div id="activity-list"><div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động</div></div></div>
   </div>
 
-  <!-- BOOKING -->
   <div class="page" id="page-booking">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.25rem;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--green-800);">Đặt lịch dịch vụ</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1.25rem;">Đặt lịch dịch vụ</div>
+    <div id="step-svc">
+      <div style="font-size:0.9rem;color:var(--muted);margin-bottom:0.75rem;">1. Chọn dịch vụ</div>
+      <div class="svc-grid" id="svc-grid"></div>
     </div>
-    <!-- Step 1: Service -->
-    <div id="step-service">
-      <div class="section-title" style="font-size:1rem;color:var(--text-muted);margin-bottom:0.75rem;">1. Chọn dịch vụ</div>
-      <div class="services-grid" id="services-grid"></div>
-    </div>
-    <!-- Step 2: Staff -->
     <div id="step-staff" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
-        <button onclick="showBookingStep(1)" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;">← Quay lại</button>
-        <div class="section-title" style="font-size:1rem;color:var(--text-muted);margin:0;">2. Chọn nhân viên</div>
+        <button class="back-step" id="back-to-svc">← Quay lại</button>
+        <div style="font-size:0.9rem;color:var(--muted);">2. Chọn nhân viên</div>
       </div>
-      <div class="staff-list" id="staff-list"></div>
+      <div id="staff-list"></div>
     </div>
-    <!-- Step 3: Date/Time -->
-    <div id="step-datetime" style="display:none">
+    <div id="step-dt" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
-        <button onclick="showBookingStep(2)" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;">← Quay lại</button>
-        <div class="section-title" style="font-size:1rem;color:var(--text-muted);margin:0;">3. Chọn ngày & giờ</div>
+        <button class="back-step" id="back-to-staff">← Quay lại</button>
+        <div style="font-size:0.9rem;color:var(--muted);">3. Chọn ngày &amp; giờ</div>
       </div>
-      <div class="date-input-row">
-        <input type="date" id="booking-date" />
-      </div>
+      <div style="margin-bottom:1.5rem;"><input type="date" id="bk-date" class="mgr-inp" style="width:100%;"></div>
       <div class="time-grid" id="time-grid"></div>
     </div>
-    <!-- Step 4: Confirm -->
-    <div id="step-confirm" style="display:none">
+    <div id="step-cfm" style="display:none">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:1rem;">
-        <button onclick="showBookingStep(3)" style="border:none;background:none;cursor:pointer;color:var(--text-muted);font-size:0.85rem;">← Quay lại</button>
-        <div class="section-title" style="font-size:1rem;color:var(--text-muted);margin:0;">4. Xác nhận</div>
+        <button class="back-step" id="back-to-dt">← Quay lại</button>
+        <div style="font-size:0.9rem;color:var(--muted);">4. Xác nhận</div>
       </div>
-      <div class="booking-summary" id="booking-summary"></div>
-      <button class="btn-green" onclick="confirmBooking()">Xác nhận đặt lịch</button>
+      <div class="bk-sum" id="bk-sum"></div>
+      <button class="btn-green" id="btn-confirm-bk">Xác nhận đặt lịch</button>
     </div>
   </div>
 
-  <!-- REWARDS -->
   <div class="page" id="page-rewards">
-    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--green-800);margin-bottom:1.25rem;">Đổi điểm & Cấp bậc</div>
-    <div class="reward-header">
-      <div>
-        <div class="reward-pts" id="reward-pts">0<small>điểm khả dụng</small></div>
-      </div>
-      <div class="redeem-info">1.000 điểm<br>= 1.000đ giảm giá</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1.25rem;">Đổi điểm &amp; Cấp bậc</div>
+    <div class="rwd-hdr">
+      <div><div class="rwd-pts" id="rwd-pts">0<small>điểm khả dụng</small></div></div>
+      <div class="rwd-info">1.000 điểm<br>= 1.000đ giảm giá</div>
     </div>
-    <div class="section-title">Ưu đãi đổi điểm</div>
-    <div class="reward-cards" id="reward-cards"></div>
-    <div class="section-title">Hệ thống cấp bậc</div>
-    <div class="tier-overview" id="tier-overview"></div>
+    <div class="sec-title">Ưu đãi đổi điểm</div>
+    <div class="rwd-cards" id="rwd-cards"></div>
+    <div class="sec-title">Hệ thống cấp bậc</div>
+    <div id="tier-overview"></div>
   </div>
 
-  <!-- HISTORY -->
   <div class="page" id="page-history">
-    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--green-800);margin-bottom:1rem;">Lịch sử tiêu dùng</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1rem;">Lịch sử tiêu dùng</div>
     <div class="filter-tabs">
-      <button class="filter-tab active" onclick="filterHistory('all',this)">Tất cả</button>
-      <button class="filter-tab" onclick="filterHistory('booking',this)">Đặt lịch</button>
-      <button class="filter-tab" onclick="filterHistory('earn',this)">Tích điểm</button>
-      <button class="filter-tab" onclick="filterHistory('redeem',this)">Đổi điểm</button>
+      <button class="ftab active" id="fh-all">Tất cả</button>
+      <button class="ftab" id="fh-booking">Đặt lịch</button>
+      <button class="ftab" id="fh-earn">Tích điểm</button>
+      <button class="ftab" id="fh-redeem">Đổi điểm</button>
     </div>
     <div id="history-list"></div>
   </div>
 
-  <!-- PROFILE -->
   <div class="page" id="page-profile">
-    <div class="profile-hero">
-      <div class="profile-av" id="profile-av">🌸</div>
-      <div class="profile-name" id="profile-name">Nguyễn Thị Lan</div>
-      <div class="profile-phone" id="profile-phone">0901 234 567</div>
+    <div class="prof-hero">
+      <div class="prof-av">🌸</div>
+      <div class="prof-name" id="prof-name">Tên</div>
+      <div class="prof-phone" id="prof-phone">SĐT</div>
       <div class="spend-stats">
         <div class="stat-box"><div class="stat-num" id="ps-pts">0</div><div class="stat-lbl">Điểm</div></div>
         <div class="stat-box"><div class="stat-num" id="ps-visits">0</div><div class="stat-lbl">Lần đến</div></div>
-        <div class="stat-box"><div class="stat-num" id="ps-spend">0đ</div><div class="stat-lbl">Chi tiêu</div></div>
+        <div class="stat-box"><div class="stat-num" id="ps-spend">0</div><div class="stat-lbl">Triệu đồng</div></div>
       </div>
     </div>
     <div class="menu-list">
-      <div class="menu-item" onclick="openEditProfile()"><div class="menu-icon">✏️</div><div class="menu-text">Chỉnh sửa thông tin</div><div class="menu-arrow">›</div></div>
-      <div class="menu-item" onclick="showPage('history')"><div class="menu-icon">📋</div><div class="menu-text">Lịch sử giao dịch</div><div class="menu-arrow">›</div></div>
-      <div class="menu-item" onclick="showPage('rewards')"><div class="menu-icon">🏆</div><div class="menu-text">Cấp bậc & Ưu đãi</div><div class="menu-arrow">›</div></div>
+      <div class="menu-item" id="menu-edit"><div class="menu-ic">✏️</div><div class="menu-txt">Chỉnh sửa thông tin</div><div class="menu-arr">›</div></div>
+      <div class="menu-item" id="menu-hist"><div class="menu-ic">📋</div><div class="menu-txt">Lịch sử giao dịch</div><div class="menu-arr">›</div></div>
+      <div class="menu-item" id="menu-tier"><div class="menu-ic">🏆</div><div class="menu-txt">Cấp bậc &amp; Ưu đãi</div><div class="menu-arr">›</div></div>
     </div>
-    <button class="logout-btn" onclick="doLogout()">Đăng xuất</button>
+    <button class="logout-btn" id="btn-logout">Đăng xuất</button>
   </div>
 
-  <!-- BOTTOM NAV -->
   <div class="bottomnav">
-    <button class="nav-item active" onclick="showPage('home')" id="nav-home"><span class="nav-icon">🏠</span>Trang chủ</button>
-    <button class="nav-item" onclick="showPage('booking')" id="nav-booking"><span class="nav-icon">📅</span>Đặt lịch</button>
-    <button class="nav-item" onclick="showPage('rewards')" id="nav-rewards"><span class="nav-icon">🎁</span>Phần thưởng</button>
-    <button class="nav-item" onclick="showPage('history')" id="nav-history"><span class="nav-icon">📊</span>Lịch sử</button>
-    <button class="nav-item" onclick="showPage('profile')" id="nav-profile"><span class="nav-icon">👤</span>Tôi</button>
+    <button class="nav-item active" id="nav-home"><span class="nav-icon">🏠</span>Trang chủ</button>
+    <button class="nav-item" id="nav-booking"><span class="nav-icon">📅</span>Đặt lịch</button>
+    <button class="nav-item" id="nav-rewards"><span class="nav-icon">🎁</span>Phần thưởng</button>
+    <button class="nav-item" id="nav-history"><span class="nav-icon">📊</span>Lịch sử</button>
+    <button class="nav-item" id="nav-profile"><span class="nav-icon">👤</span>Tôi</button>
   </div>
 </div>
 
 <!-- MANAGER LOGIN -->
 <div class="screen" id="mgr-login">
-  <div class="auth-header" style="background:linear-gradient(160deg,#0e2d1e,#1a4d33);">
-    <button class="auth-back" onclick="go('splash')" style="color:rgba(255,255,255,0.6);margin-bottom:1rem;">← Quay lại</button>
+  <div class="auth-hdr" style="background:linear-gradient(160deg,#0e2d1e,#1a4d33);">
+    <button class="back-btn" id="mgr-back">← Quay lại</button>
     <div class="auth-logo" style="color:#fff;">Quản lý <span style="color:rgba(255,255,255,0.4);">Green Life Spa</span></div>
   </div>
   <div class="auth-body">
-    <div class="form-group"><label>Tên đăng nhập</label><input type="text" id="mgr-user" placeholder="admin" /></div>
-    <div class="form-group"><label>Mật khẩu</label><input type="password" id="mgr-pass" placeholder="••••••••" /></div>
-    <button class="btn-green" onclick="mgrLogin()">Đăng nhập quản lý</button>
-    <p style="font-size:0.78rem;color:var(--text-muted);text-align:center;margin-top:1rem;">Demo: admin / admin123</p>
+    <div class="fg"><label>Tên đăng nhập</label><input type="text" id="mgr-user" placeholder="admin"></div>
+    <div class="fg"><label>Mật khẩu</label><input type="password" id="mgr-pass" placeholder="••••••••"></div>
+    <button class="btn-green" id="btn-mgr-login">Đăng nhập quản lý</button>
+    <p style="font-size:0.78rem;color:var(--muted);text-align:center;margin-top:1rem;">Demo: admin / admin123</p>
   </div>
 </div>
 
 <!-- MANAGER APP -->
 <div class="screen" id="mgr">
-  <div class="mgr-topbar">
+  <div class="mgr-top">
     <div class="mgr-brand">Green Life <span>Quản lý</span></div>
-    <button onclick="mgrLogout()" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);padding:6px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">Thoát</button>
+    <button id="btn-mgr-logout" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.6);padding:6px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">Thoát</button>
   </div>
 
-  <!-- MGR Dashboard -->
   <div class="mgr-page active" id="mgr-dashboard">
-    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green-800);">Tổng quan hôm nay</div>
+    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tổng quan</div>
     <div class="stat-cards" id="mgr-stats"></div>
-    <div class="mgr-section">
-      <div class="mgr-section-title">Đặt lịch hôm nay</div>
+    <div class="mgr-sec">
+      <div class="mgr-sec-title">Đặt lịch gần đây</div>
       <div id="today-bookings"></div>
     </div>
-    <div class="mgr-section">
-      <div class="mgr-section-title">Doanh thu 7 ngày</div>
-      <div id="revenue-chart" style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:1rem;"></div>
+    <div class="mgr-sec">
+      <div class="mgr-sec-title">Doanh thu 7 ngày</div>
+      <div id="rev-chart" style="background:#fff;border-radius:var(--radius);border:1px solid var(--border);padding:1rem;"></div>
     </div>
   </div>
 
-  <!-- MGR Customers -->
   <div class="mgr-page" id="mgr-customers">
-    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green-800);">Khách hàng</div>
-    <div class="search-bar"><span>🔍</span><input type="text" id="cust-search" placeholder="Tìm theo tên, SĐT..." oninput="renderCustomers()" /></div>
+    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Khách hàng</div>
+    <div class="search-bar"><span>🔍</span><input type="text" id="cust-search" placeholder="Tìm theo tên, SĐT..."></div>
     <div id="customers-list"></div>
   </div>
 
-  <!-- MGR Points -->
   <div class="mgr-page" id="mgr-points">
-    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green-800);">Quản lý điểm</div>
-    <div class="points-form">
-      <div class="points-form-title">Cộng / Trừ điểm thủ công</div>
-      <div class="form-group"><label>Chọn khách hàng</label>
-        <select id="pts-customer" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.88rem;background:#fff;"></select>
-      </div>
-      <div class="form-group"><label>Loại thao tác</label>
-        <select id="pts-type" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;font-size:0.88rem;background:#fff;">
+    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div>
+    <div class="pts-form">
+      <div class="pts-form-title">Cộng / Trừ điểm thủ công</div>
+      <div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div>
+      <div class="fg"><label>Loại thao tác</label>
+        <select id="pts-type" class="mgr-inp">
           <option value="add">➕ Cộng điểm</option>
           <option value="sub">➖ Trừ điểm</option>
           <option value="topup">💰 Nạp điểm (từ giao dịch)</option>
         </select>
       </div>
-      <div class="form-group"><label>Số điểm</label><input type="number" id="pts-amount" placeholder="Nhập số điểm..." /></div>
-      <div class="form-group"><label>Ghi chú</label><input type="text" id="pts-note" placeholder="Lý do..." /></div>
-      <button class="btn-green" onclick="adjustPoints()">Thực hiện</button>
+      <div class="fg"><label>Số điểm</label><input type="number" id="pts-amount" class="mgr-inp" placeholder="Nhập số điểm..."></div>
+      <div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div>
+      <button class="btn-green" id="btn-adj-pts">Thực hiện</button>
     </div>
-    <div class="mgr-section-title">Lịch sử điểm gần đây</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử điểm</div>
     <div id="pts-history"></div>
   </div>
 
-  <!-- MGR Services -->
   <div class="mgr-page" id="mgr-services">
     <div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;">
-      <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green-800);">Dịch vụ</span>
-      <button class="btn-sm" onclick="openAddService()">+ Thêm</button>
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span>
+      <button class="btn-sm" id="btn-add-svc">+ Thêm</button>
     </div>
-    <div id="mgr-services-list"></div>
-    <div style="margin-top:1.5rem;font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--green-800);margin-bottom:0.8rem;">Nhân viên</div>
+    <div id="mgr-svc-list"></div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--g800);margin:1rem 0 0.8rem;">Nhân viên</div>
     <div id="mgr-staff-list"></div>
   </div>
 
-  <!-- MGR Bookings -->
   <div class="mgr-page" id="mgr-bookings">
-    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--green-800);">Tất cả đặt lịch</div>
-    <div class="filter-tabs" style="margin-bottom:1rem;">
-      <button class="filter-tab active" onclick="filterBookings('all',this)">Tất cả</button>
-      <button class="filter-tab" onclick="filterBookings('pending',this)">Chờ</button>
-      <button class="filter-tab" onclick="filterBookings('confirmed',this)">Đã xác nhận</button>
-      <button class="filter-tab" onclick="filterBookings('done',this)">Hoàn thành</button>
+    <div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</div>
+    <div class="filter-tabs">
+      <button class="ftab active" id="fb-all">Tất cả</button>
+      <button class="ftab" id="fb-pending">Chờ</button>
+      <button class="ftab" id="fb-confirmed">Xác nhận</button>
+      <button class="ftab" id="fb-done">Hoàn thành</button>
     </div>
     <div id="all-bookings"></div>
   </div>
 
-  <!-- MGR Bottom Nav -->
   <div class="mgr-nav">
-    <button class="mgr-nav-item active" onclick="showMgrPage('mgr-dashboard',this)" id="mnav-0"><span class="nav-icon">📊</span>Tổng quan</button>
-    <button class="mgr-nav-item" onclick="showMgrPage('mgr-customers',this)" id="mnav-1"><span class="nav-icon">👥</span>Khách hàng</button>
-    <button class="mgr-nav-item" onclick="showMgrPage('mgr-points',this)" id="mnav-2"><span class="nav-icon">⭐</span>Điểm</button>
-    <button class="mgr-nav-item" onclick="showMgrPage('mgr-services',this)" id="mnav-3"><span class="nav-icon">💆</span>Dịch vụ</button>
-    <button class="mgr-nav-item" onclick="showMgrPage('mgr-bookings',this)" id="mnav-4"><span class="nav-icon">📅</span>Đặt lịch</button>
+    <button class="mgr-nav-item active" id="mnav-dash"><span class="nav-icon">📊</span>Tổng quan</button>
+    <button class="mgr-nav-item" id="mnav-cust"><span class="nav-icon">👥</span>Khách hàng</button>
+    <button class="mgr-nav-item" id="mnav-pts"><span class="nav-icon">⭐</span>Điểm</button>
+    <button class="mgr-nav-item" id="mnav-svc"><span class="nav-icon">💆</span>Dịch vụ</button>
+    <button class="mgr-nav-item" id="mnav-bk"><span class="nav-icon">📅</span>Đặt lịch</button>
   </div>
 </div>
 
-<!-- MODALS -->
-<div class="modal-overlay" id="modal" onclick="closeModal(event)">
-  <div class="modal-box" style="position:relative;">
-    <button class="modal-close" onclick="closeModal(null,true)">✕</button>
-    <div class="modal-title" id="modal-title">Modal</div>
+<!-- MODAL -->
+<div class="modal-ov" id="modal">
+  <div class="modal-box">
+    <button class="modal-close" id="modal-close">✕</button>
+    <div class="modal-title" id="modal-title"></div>
     <div id="modal-body"></div>
   </div>
 </div>
 
 <script>
-// ============ DATA STORE ============
-let DB = {
+// ===== DATA =====
+var DB = {
   customers: [
-    {id:1, name:'Nguyễn Thị Lan', phone:'0901234567', dob:'1990-05-14', pass:'123456', points:4800, totalSpend:4800000, visits:12},
-    {id:2, name:'Trần Minh Châu', phone:'0912345678', dob:'1988-09-22', pass:'123456', points:15200, totalSpend:15200000, visits:38},
-    {id:3, name:'Lê Thị Hoa', phone:'0923456789', dob:'1995-03-10', pass:'123456', points:890, totalSpend:890000, visits:3},
-    {id:4, name:'Phạm Quốc Bảo', phone:'0934567890', dob:'1985-11-30', pass:'123456', points:52000, totalSpend:52000000, visits:95},
-    {id:5, name:'Hoàng Thu Hằng', phone:'0945678901', dob:'1993-07-18', pass:'123456', points:8300, totalSpend:8300000, visits:21},
+    {id:1,name:'Nguyễn Thị Lan',phone:'0901234567',dob:'1990-05-14',pass:'123456',points:4800,totalSpend:4800000,visits:12},
+    {id:2,name:'Trần Minh Châu',phone:'0912345678',dob:'1988-09-22',pass:'123456',points:15200,totalSpend:15200000,visits:38},
+    {id:3,name:'Lê Thị Hoa',phone:'0923456789',dob:'1995-03-10',pass:'123456',points:890,totalSpend:890000,visits:3},
+    {id:4,name:'Phạm Quốc Bảo',phone:'0934567890',dob:'1985-11-30',pass:'123456',points:52000,totalSpend:52000000,visits:95},
+    {id:5,name:'Hoàng Thu Hằng',phone:'0945678901',dob:'1993-07-18',pass:'123456',points:8300,totalSpend:8300000,visits:21}
   ],
   services: [
-    {id:1, name:'Massage Thư Giãn', cat:'Massage', price:350000, duration:60, icon:'💆'},
-    {id:2, name:'Chăm Sóc Da Mặt', cat:'Da mặt', price:450000, duration:75, icon:'✨'},
-    {id:3, name:'Đắp Mặt Nạ Vàng', cat:'Da mặt', price:600000, duration:90, icon:'👑'},
-    {id:4, name:'Tắm Trắng Toàn Thân', cat:'Body', price:800000, duration:120, icon:'🌸'},
-    {id:5, name:'Massage Đá Nóng', cat:'Massage', price:500000, duration:90, icon:'🪨'},
-    {id:6, name:'Gội Đầu Dưỡng Sinh', cat:'Tóc', price:200000, duration:45, icon:'💧'},
+    {id:1,name:'Massage Thư Giãn',cat:'Massage',price:350000,duration:60,icon:'💆'},
+    {id:2,name:'Chăm Sóc Da Mặt',cat:'Da mặt',price:450000,duration:75,icon:'✨'},
+    {id:3,name:'Đắp Mặt Nạ Vàng',cat:'Da mặt',price:600000,duration:90,icon:'👑'},
+    {id:4,name:'Tắm Trắng Toàn Thân',cat:'Body',price:800000,duration:120,icon:'🌸'},
+    {id:5,name:'Massage Đá Nóng',cat:'Massage',price:500000,duration:90,icon:'🪨'},
+    {id:6,name:'Gội Đầu Dưỡng Sinh',cat:'Tóc',price:200000,duration:45,icon:'💧'}
   ],
   staff: [
-    {id:1, name:'Chị Mai Anh', spec:'Massage chuyên nghiệp', rating:4.9, icon:'👩'},
-    {id:2, name:'Chị Bích Ngọc', spec:'Chuyên gia da mặt', rating:4.8, icon:'👩‍⚕️'},
-    {id:3, name:'Chị Thu Phương', spec:'Massage & Tắm trắng', rating:4.7, icon:'🧑‍⚕️'},
-    {id:4, name:'Bất kỳ nhân viên', spec:'Phù hợp với lịch trống', rating:5.0, icon:'✅'},
+    {id:1,name:'Chị Mai Anh',spec:'Massage chuyên nghiệp',rating:4.9,icon:'👩'},
+    {id:2,name:'Chị Bích Ngọc',spec:'Chuyên gia da mặt',rating:4.8,icon:'👩‍⚕️'},
+    {id:3,name:'Chị Thu Phương',spec:'Massage & Tắm trắng',rating:4.7,icon:'🧑‍⚕️'},
+    {id:4,name:'Bất kỳ nhân viên',spec:'Phù hợp với lịch trống',rating:5.0,icon:'✅'}
   ],
   bookings: [
-    {id:1, custId:1, service:'Massage Thư Giãn', staff:'Chị Mai Anh', date:'2025-10-15', time:'10:00', amount:350000, status:'done', ptsEarned:350},
-    {id:2, custId:2, service:'Đắp Mặt Nạ Vàng', staff:'Chị Bích Ngọc', date:'2025-10-20', time:'14:00', amount:600000, status:'done', ptsEarned:600},
-    {id:3, custId:1, service:'Tắm Trắng Toàn Thân', staff:'Chị Thu Phương', date:'2025-11-02', time:'09:00', amount:800000, status:'confirmed', ptsEarned:800},
+    {id:1,custId:1,service:'Massage Thư Giãn',staff:'Chị Mai Anh',date:'2025-10-15',time:'10:00',amount:350000,status:'done',ptsEarned:350},
+    {id:2,custId:2,service:'Đắp Mặt Nạ Vàng',staff:'Chị Bích Ngọc',date:'2025-10-20',time:'14:00',amount:600000,status:'done',ptsEarned:600},
+    {id:3,custId:1,service:'Tắm Trắng Toàn Thân',staff:'Chị Thu Phương',date:'2025-11-02',time:'09:00',amount:800000,status:'confirmed',ptsEarned:800}
   ],
   transactions: [
-    {id:1, custId:1, type:'earn', pts:350, note:'Massage Thư Giãn - 10/10', date:'2025-10-15'},
-    {id:2, custId:2, type:'earn', pts:600, note:'Đắp Mặt Nạ Vàng - 20/10', date:'2025-10-20'},
-    {id:3, custId:1, type:'redeem', pts:-200, note:'Đổi voucher 200.000đ', date:'2025-10-25'},
-    {id:4, custId:4, type:'earn', pts:800, note:'Tắm Trắng Toàn Thân', date:'2025-11-01'},
+    {id:1,custId:1,type:'earn',pts:350,note:'Massage Thư Giãn',date:'2025-10-15'},
+    {id:2,custId:2,type:'earn',pts:600,note:'Đắp Mặt Nạ Vàng',date:'2025-10-20'},
+    {id:3,custId:1,type:'redeem',pts:-200,note:'Đổi voucher 200.000đ',date:'2025-10-25'},
+    {id:4,custId:4,type:'earn',pts:800,note:'Tắm Trắng Toàn Thân',date:'2025-11-01'}
   ],
-  nextCustId: 6,
-  nextBookingId: 4,
+  nextCustId:6,
+  nextBkId:4
 };
 
-const TIERS = [
-  {name:'Thành viên', min:0, max:999, icon:'🌱', badge:'tier-member', bonus:0},
-  {name:'Bạc', min:1000, max:4999, icon:'🥈', badge:'tier-silver', bonus:5},
-  {name:'Vàng', min:5000, max:14999, icon:'🥇', badge:'tier-gold', bonus:10},
-  {name:'Bạch Kim', min:15000, max:49999, icon:'💎', badge:'tier-platinum', bonus:15},
-  {name:'Kim Cương', min:50000, max:Infinity, icon:'👑', badge:'tier-diamond', bonus:20},
+var TIERS = [
+  {name:'Thành viên',min:0,max:999,icon:'🌱',cls:'t-member',bonus:0},
+  {name:'Bạc',min:1000,max:4999,icon:'🥈',cls:'t-silver',bonus:5},
+  {name:'Vàng',min:5000,max:14999,icon:'🥇',cls:'t-gold',bonus:10},
+  {name:'Bạch Kim',min:15000,max:49999,icon:'💎',cls:'t-platinum',bonus:15},
+  {name:'Kim Cương',min:50000,max:999999999,icon:'👑',cls:'t-diamond',bonus:20}
 ];
 
-let currentUser = null;
-let bookingState = {serviceId:null, staffId:null, date:null, time:null};
+var currentUser = null;
+var bkState = {svcId:null,staffId:null,date:null,time:null};
 
-// ============ NAVIGATION ============
-function go(screenId) {
-  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
-  document.getElementById(screenId).classList.add('active');
+// ===== HELPERS =====
+function getTier(pts) {
+  var t = TIERS[0];
+  for (var i = 0; i < TIERS.length; i++) {
+    if (pts >= TIERS[i].min) t = TIERS[i];
+  }
+  return t;
+}
+
+function getCust(id) {
+  for (var i = 0; i < DB.customers.length; i++) {
+    if (DB.customers[i].id === id) return DB.customers[i];
+  }
+  return null;
+}
+
+function fmt(n) { return n.toLocaleString('vi-VN'); }
+
+function showToast(msg) {
+  var t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show';
+  setTimeout(function() { t.className = 'toast'; }, 2500);
+}
+
+// ===== NAVIGATION =====
+function goScreen(id) {
+  var screens = document.querySelectorAll('.screen');
+  for (var i = 0; i < screens.length; i++) {
+    screens[i].classList.remove('active');
+  }
+  document.getElementById(id).classList.add('active');
   window.scrollTo(0,0);
 }
 
 function showPage(pageId) {
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-'+pageId).classList.add('active');
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.getElementById('nav-'+pageId)?.classList.add('active');
-  if(pageId==='home') refreshHome();
-  if(pageId==='rewards') refreshRewards();
-  if(pageId==='history') renderHistory('all');
-  if(pageId==='profile') refreshProfile();
-  if(pageId==='booking') initBooking();
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) {
+    pages[i].classList.remove('active');
+  }
+  document.getElementById('page-' + pageId).classList.add('active');
+
+  var navIds = ['home','booking','rewards','history','profile'];
+  for (var j = 0; j < navIds.length; j++) {
+    var el = document.getElementById('nav-' + navIds[j]);
+    if (el) el.classList.remove('active');
+  }
+  var activeNav = document.getElementById('nav-' + pageId);
+  if (activeNav) activeNav.classList.add('active');
+
+  if (pageId === 'home') refreshHome();
+  if (pageId === 'rewards') refreshRewards();
+  if (pageId === 'history') renderHistory('all');
+  if (pageId === 'profile') refreshProfile();
+  if (pageId === 'booking') initBooking();
   window.scrollTo(0,0);
 }
 
-function showMgrPage(pageId, btn) {
-  document.querySelectorAll('.mgr-page').forEach(p=>p.classList.remove('active'));
+function showMgrPage(pageId, btnId) {
+  var pages = document.querySelectorAll('.mgr-page');
+  for (var i = 0; i < pages.length; i++) {
+    pages[i].classList.remove('active');
+  }
   document.getElementById(pageId).classList.add('active');
-  document.querySelectorAll('.mgr-nav-item').forEach(n=>n.classList.remove('active'));
-  btn.classList.add('active');
-  if(pageId==='mgr-dashboard') renderDashboard();
-  if(pageId==='mgr-customers') renderCustomers();
-  if(pageId==='mgr-points') renderPtsPage();
-  if(pageId==='mgr-services') renderServicesPage();
-  if(pageId==='mgr-bookings') renderAllBookings('all');
+
+  var navIds = ['mnav-dash','mnav-cust','mnav-pts','mnav-svc','mnav-bk'];
+  for (var j = 0; j < navIds.length; j++) {
+    document.getElementById(navIds[j]).classList.remove('active');
+  }
+  document.getElementById(btnId).classList.add('active');
+
+  if (pageId === 'mgr-dashboard') renderDashboard();
+  if (pageId === 'mgr-customers') renderCustomers();
+  if (pageId === 'mgr-points') renderPtsPage();
+  if (pageId === 'mgr-services') renderServicesPage();
+  if (pageId === 'mgr-bookings') renderAllBookings('all');
   window.scrollTo(0,0);
 }
 
-// ============ TOAST ============
-function toast(msg) {
-  const t = document.getElementById('toast');
-  t.textContent = msg;
-  t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+// ===== MODAL =====
+function openModal(title, html) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = html;
+  document.getElementById('modal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
 }
 
-// ============ AUTH ============
-function switchAuthTab(tab) {
-  document.getElementById('tab-login').classList.toggle('active', tab==='login');
-  document.getElementById('tab-register').classList.toggle('active', tab==='register');
-  document.getElementById('login-form').style.display = tab==='login'?'block':'none';
-  document.getElementById('register-form').style.display = tab==='register'?'block':'none';
-}
-
+// ===== AUTH =====
 function doLogin() {
-  const phone = document.getElementById('login-phone').value.replace(/\s/g,'');
-  const pass = document.getElementById('login-pass').value;
-  const cust = DB.customers.find(c=>c.phone.replace(/\s/g,'')=== phone && c.pass===pass);
-  if(!cust) { toast('❌ Sai số điện thoại hoặc mật khẩu'); return; }
+  var phone = document.getElementById('login-phone').value.replace(/\s/g,'');
+  var pass = document.getElementById('login-pass').value;
+  var cust = null;
+  for (var i = 0; i < DB.customers.length; i++) {
+    if (DB.customers[i].phone === phone && DB.customers[i].pass === pass) {
+      cust = DB.customers[i]; break;
+    }
+  }
+  if (!cust) { showToast('❌ Sai số điện thoại hoặc mật khẩu'); return; }
   loginAs(cust);
 }
 
 function doRegister() {
-  const name = document.getElementById('reg-name').value.trim();
-  const phone = document.getElementById('reg-phone').value.replace(/\s/g,'');
-  const pass = document.getElementById('reg-pass').value;
-  const dob = document.getElementById('reg-dob').value;
-  if(!name||!phone||!pass) { toast('❌ Vui lòng điền đầy đủ thông tin'); return; }
-  if(DB.customers.find(c=>c.phone===phone)) { toast('❌ Số điện thoại đã tồn tại'); return; }
-  const newCust = {id:DB.nextCustId++, name, phone, dob, pass, points:0, totalSpend:0, visits:0};
-  DB.customers.push(newCust);
-  toast('✅ Đăng ký thành công! Chào mừng bạn!');
-  loginAs(newCust);
+  var name = document.getElementById('reg-name').value.trim();
+  var phone = document.getElementById('reg-phone').value.replace(/\s/g,'');
+  var pass = document.getElementById('reg-pass').value;
+  var dob = document.getElementById('reg-dob').value;
+  if (!name || !phone || !pass) { showToast('❌ Vui lòng điền đầy đủ'); return; }
+  for (var i = 0; i < DB.customers.length; i++) {
+    if (DB.customers[i].phone === phone) { showToast('❌ Số điện thoại đã tồn tại'); return; }
+  }
+  var c = {id:DB.nextCustId++,name:name,phone:phone,dob:dob,pass:pass,points:0,totalSpend:0,visits:0};
+  DB.customers.push(c);
+  showToast('✅ Đăng ký thành công!');
+  loginAs(c);
 }
 
 function loginAs(cust) {
   currentUser = cust;
-  document.getElementById('topbar-name').textContent = cust.name.split(' ').pop();
+  var nameParts = cust.name.split(' ');
+  document.getElementById('topbar-name').textContent = nameParts[nameParts.length-1];
   document.getElementById('topbar-av').textContent = cust.name.slice(-2);
-  go('app');
+  goScreen('app');
   showPage('home');
 }
 
 function doLogout() {
   currentUser = null;
-  go('splash');
-  toast('Đã đăng xuất');
+  goScreen('splash');
+  showToast('Đã đăng xuất');
 }
 
-// ============ TIER ============
-function getTier(pts) {
-  return TIERS.slice().reverse().find(t=>pts>=t.min) || TIERS[0];
-}
-function getTierBadgeClass(pts) { return getTier(pts).badge; }
-
-// ============ HOME ============
+// ===== HOME =====
 function refreshHome() {
-  if(!currentUser) return;
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  if(!c) return;
+  if (!currentUser) return;
+  var c = getCust(currentUser.id);
+  if (!c) return;
   currentUser = c;
-  const tier = getTier(c.points);
+  var tier = getTier(c.points);
   document.getElementById('home-name').textContent = c.name;
-  document.getElementById('home-pts').textContent = c.points.toLocaleString('vi-VN');
-  document.getElementById('home-tier-badge').textContent = tier.icon+' '+tier.name;
-  const nextTier = TIERS.find(t=>t.min>c.points);
-  const pct = nextTier ? Math.min(100,((c.points-tier.min)/(nextTier.min-tier.min))*100) : 100;
-  document.getElementById('tier-fill').style.width = pct+'%';
-  document.getElementById('tier-next').textContent = nextTier 
-    ? `Còn ${(nextTier.min-c.points).toLocaleString('vi-VN')} điểm lên ${nextTier.icon} ${nextTier.name}`
+  document.getElementById('home-pts').textContent = fmt(c.points);
+  document.getElementById('home-tier-bdg').textContent = tier.icon + ' ' + tier.name;
+
+  var nextTier = null;
+  for (var i = 0; i < TIERS.length; i++) {
+    if (TIERS[i].min > c.points) { nextTier = TIERS[i]; break; }
+  }
+  var pct = nextTier ? Math.min(100, ((c.points - tier.min) / (nextTier.min - tier.min)) * 100) : 100;
+  document.getElementById('tier-fill').style.width = pct + '%';
+  document.getElementById('tier-next').textContent = nextTier
+    ? 'Còn ' + fmt(nextTier.min - c.points) + ' điểm lên ' + nextTier.icon + ' ' + nextTier.name
     : '🏆 Bạn đã đạt cấp bậc cao nhất!';
-  
-  const txs = DB.transactions.filter(t=>t.custId===c.id).slice().reverse().slice(0,5);
-  const list = document.getElementById('activity-list');
-  if(!txs.length) {
-    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động nào</div></div>';
+
+  var txs = [];
+  for (var j = 0; j < DB.transactions.length; j++) {
+    if (DB.transactions[j].custId === c.id) txs.push(DB.transactions[j]);
+  }
+  txs = txs.reverse().slice(0,5);
+  var list = document.getElementById('activity-list');
+  if (!txs.length) {
+    list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động</div></div>';
     return;
   }
-  list.innerHTML = txs.map(t=>`
-    <div class="activity-item">
-      <div class="activity-left">
-        <div class="activity-icon ${t.type==='earn'||t.type==='topup'?'earn':'use'}">${t.type==='earn'||t.type==='topup'?'⭐':'🎁'}</div>
-        <div class="activity-info">
-          <div class="activity-name">${t.note}</div>
-          <div class="activity-date">${t.date}</div>
-        </div>
-      </div>
-      <div class="activity-pts ${t.pts>0?'earn':'use'}">${t.pts>0?'+':''}${t.pts.toLocaleString('vi-VN')} đ</div>
-    </div>
-  `).join('');
+  var html = '';
+  for (var k = 0; k < txs.length; k++) {
+    var t = txs[k];
+    var earn = t.pts > 0;
+    html += '<div class="act-item">' +
+      '<div class="act-left">' +
+      '<div class="act-ic" style="background:' + (earn ? 'var(--g50)' : '#fff3e0') + '">' + (earn ? '⭐' : '🎁') + '</div>' +
+      '<div><div class="act-name">' + t.note + '</div><div class="act-date">' + t.date + '</div></div>' +
+      '</div>' +
+      '<div class="act-pts ' + (earn ? 'pts-earn' : 'pts-use') + '">' + (earn ? '+' : '') + fmt(t.pts) + ' đ</div>' +
+      '</div>';
+  }
+  list.innerHTML = html;
 }
 
-// ============ BOOKING ============
+// ===== BOOKING =====
 function initBooking() {
-  bookingState = {serviceId:null, staffId:null, date:null, time:null};
-  showBookingStep(1);
-  const grid = document.getElementById('services-grid');
-  grid.innerHTML = DB.services.map(s=>`
-    <div class="service-card" id="svc-${s.id}" onclick="selectService(${s.id})">
-      <div class="service-img">${s.icon}</div>
-      <div class="service-body">
-        <div class="service-name">${s.name}</div>
-        <div class="service-price">${s.price.toLocaleString('vi-VN')}đ · ${s.duration}ph</div>
-      </div>
-    </div>`).join('');
+  bkState = {svcId:null,staffId:null,date:null,time:null};
+  showStep('svc');
+  var html = '';
+  for (var i = 0; i < DB.services.length; i++) {
+    var s = DB.services[i];
+    html += '<div class="svc-card" id="svc-' + s.id + '" data-id="' + s.id + '">' +
+      '<div class="svc-img">' + s.icon + '</div>' +
+      '<div class="svc-body"><div class="svc-name">' + s.name + '</div>' +
+      '<div class="svc-price">' + fmt(s.price) + 'đ · ' + s.duration + 'ph</div></div>' +
+      '</div>';
+  }
+  document.getElementById('svc-grid').innerHTML = html;
+  var cards = document.querySelectorAll('.svc-card');
+  for (var j = 0; j < cards.length; j++) {
+    cards[j].addEventListener('click', function() {
+      bkState.svcId = parseInt(this.getAttribute('data-id'));
+      var all = document.querySelectorAll('.svc-card');
+      for (var k = 0; k < all.length; k++) all[k].classList.remove('sel');
+      this.classList.add('sel');
+      setTimeout(function() { showStep('staff'); renderStaff(); }, 150);
+    });
+  }
 }
 
-function selectService(id) {
-  bookingState.serviceId = id;
-  document.querySelectorAll('.service-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('svc-'+id).classList.add('selected');
-  setTimeout(()=>showBookingStep(2),200);
+function showStep(name) {
+  var steps = ['svc','staff','dt','cfm'];
+  for (var i = 0; i < steps.length; i++) {
+    document.getElementById('step-' + steps[i]).style.display = (steps[i] === name) ? 'block' : 'none';
+  }
 }
 
-function showBookingStep(n) {
-  ['service','staff','datetime','confirm'].forEach((s,i)=>{
-    document.getElementById('step-'+s).style.display = (i+1===n)?'block':'none';
-  });
-  if(n===2) renderStaffList();
-  if(n===3) renderTimeSlots();
-  if(n===4) renderConfirm();
-}
-
-function renderStaffList() {
-  document.getElementById('staff-list').innerHTML = DB.staff.map(s=>`
-    <div class="staff-item" id="stf-${s.id}" onclick="selectStaff(${s.id})">
-      <div class="staff-av">${s.icon}</div>
-      <div class="staff-info">
-        <div class="staff-name">${s.name}</div>
-        <div class="staff-spec">${s.spec}</div>
-        <div class="stars">${'★'.repeat(Math.round(s.rating))} ${s.rating}</div>
-      </div>
-    </div>`).join('');
-}
-
-function selectStaff(id) {
-  bookingState.staffId = id;
-  document.querySelectorAll('.staff-item').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('stf-'+id).classList.add('selected');
-  setTimeout(()=>showBookingStep(3),200);
+function renderStaff() {
+  var html = '';
+  for (var i = 0; i < DB.staff.length; i++) {
+    var s = DB.staff[i];
+    html += '<div class="staff-item" id="stf-' + s.id + '" data-id="' + s.id + '">' +
+      '<div class="staff-av">' + s.icon + '</div>' +
+      '<div><div class="staff-name">' + s.name + '</div>' +
+      '<div class="staff-spec">' + s.spec + '</div>' +
+      '<div class="stars">★★★★★ ' + s.rating + '</div></div>' +
+      '</div>';
+  }
+  document.getElementById('staff-list').innerHTML = html;
+  var items = document.querySelectorAll('.staff-item');
+  for (var j = 0; j < items.length; j++) {
+    items[j].addEventListener('click', function() {
+      bkState.staffId = parseInt(this.getAttribute('data-id'));
+      var all = document.querySelectorAll('.staff-item');
+      for (var k = 0; k < all.length; k++) all[k].classList.remove('sel');
+      this.classList.add('sel');
+      setTimeout(function() { showStep('dt'); renderTimeSlots(); }, 150);
+    });
+  }
 }
 
 function renderTimeSlots() {
-  const today = new Date().toISOString().split('T')[0];
-  document.getElementById('booking-date').value = today;
-  document.getElementById('booking-date').min = today;
-  document.getElementById('booking-date').onchange = e=>{ bookingState.date=e.target.value; };
-  bookingState.date = today;
-  const slots = ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','17:00'];
-  const bookedSlots = ['10:00','14:30'];
-  document.getElementById('time-grid').innerHTML = slots.map(t=>`
-    <div class="time-slot ${bookedSlots.includes(t)?'disabled':''}" id="slot-${t.replace(':','')}" onclick="${bookedSlots.includes(t)?'':'selectTime(\''+t+'\')'}">${t}</div>
-  `).join('');
-}
-
-function selectTime(t) {
-  bookingState.time = t;
-  document.querySelectorAll('.time-slot').forEach(s=>s.classList.remove('selected'));
-  document.getElementById('slot-'+t.replace(':','')).classList.add('selected');
-  setTimeout(()=>showBookingStep(4),200);
+  var today = new Date().toISOString().split('T')[0];
+  var dateEl = document.getElementById('bk-date');
+  dateEl.value = today;
+  dateEl.min = today;
+  dateEl.onchange = function() { bkState.date = this.value; };
+  bkState.date = today;
+  var slots = ['09:00','09:30','10:00','10:30','11:00','11:30','14:00','14:30','15:00','15:30','16:00','17:00'];
+  var booked = ['10:00','14:30'];
+  var html = '';
+  for (var i = 0; i < slots.length; i++) {
+    var sl = slots[i];
+    var isBooked = booked.indexOf(sl) > -1;
+    html += '<div class="time-slot' + (isBooked ? ' off' : '') + '" data-time="' + sl + '">' + sl + '</div>';
+  }
+  document.getElementById('time-grid').innerHTML = html;
+  var slotEls = document.querySelectorAll('.time-slot:not(.off)');
+  for (var j = 0; j < slotEls.length; j++) {
+    slotEls[j].addEventListener('click', function() {
+      bkState.time = this.getAttribute('data-time');
+      var all = document.querySelectorAll('.time-slot');
+      for (var k = 0; k < all.length; k++) all[k].classList.remove('sel');
+      this.classList.add('sel');
+      setTimeout(function() { showStep('cfm'); renderConfirm(); }, 150);
+    });
+  }
 }
 
 function renderConfirm() {
-  const svc = DB.services.find(s=>s.id===bookingState.serviceId);
-  const stf = DB.staff.find(s=>s.id===bookingState.staffId);
-  if(!svc||!stf) return;
-  const pts = Math.floor(svc.price/1000);
-  const tier = currentUser ? getTier(DB.customers.find(c=>c.id===currentUser.id)?.points||0) : TIERS[0];
-  const bonusPts = Math.floor(pts * tier.bonus / 100);
-  document.getElementById('booking-summary').innerHTML = `
-    <div class="summary-row"><span>Dịch vụ</span><span>${svc.name}</span></div>
-    <div class="summary-row"><span>Nhân viên</span><span>${stf.name}</span></div>
-    <div class="summary-row"><span>Ngày</span><span>${bookingState.date||'Hôm nay'}</span></div>
-    <div class="summary-row"><span>Giờ</span><span>${bookingState.time||'--:--'}</span></div>
-    <div class="summary-row"><span>Thời gian</span><span>${svc.duration} phút</span></div>
-    <div class="summary-row total"><span>Tổng tiền</span><span>${svc.price.toLocaleString('vi-VN')}đ</span></div>
-    <div class="summary-row" style="color:var(--green-600)"><span>⭐ Điểm tích lũy</span><span>+${pts+bonusPts} điểm${bonusPts>0?' (bao gồm bonus '+tier.bonus+'%)':''}</span></div>
-  `;
+  var svc = null, stf = null;
+  for (var i = 0; i < DB.services.length; i++) { if (DB.services[i].id === bkState.svcId) svc = DB.services[i]; }
+  for (var j = 0; j < DB.staff.length; j++) { if (DB.staff[j].id === bkState.staffId) stf = DB.staff[j]; }
+  if (!svc || !stf) return;
+  var pts = Math.floor(svc.price / 1000);
+  var c = currentUser ? getCust(currentUser.id) : null;
+  var tier = c ? getTier(c.points) : TIERS[0];
+  var bonus = Math.floor(pts * tier.bonus / 100);
+  document.getElementById('bk-sum').innerHTML =
+    '<div class="sum-row"><span>Dịch vụ</span><span>' + svc.name + '</span></div>' +
+    '<div class="sum-row"><span>Nhân viên</span><span>' + stf.name + '</span></div>' +
+    '<div class="sum-row"><span>Ngày</span><span>' + (bkState.date||'Hôm nay') + '</span></div>' +
+    '<div class="sum-row"><span>Giờ</span><span>' + (bkState.time||'--') + '</span></div>' +
+    '<div class="sum-row sum-total"><span>Tổng tiền</span><span>' + fmt(svc.price) + 'đ</span></div>' +
+    '<div class="sum-row" style="color:var(--g600)"><span>⭐ Điểm tích lũy</span><span>+' + (pts+bonus) + ' điểm' + (bonus>0?' (bonus '+tier.bonus+'%)':'') + '</span></div>';
 }
 
 function confirmBooking() {
-  if(!currentUser) return;
-  const svc = DB.services.find(s=>s.id===bookingState.serviceId);
-  const stf = DB.staff.find(s=>s.id===bookingState.staffId);
-  if(!svc||!stf||!bookingState.time) { toast('❌ Vui lòng chọn đầy đủ thông tin'); return; }
-  const pts = Math.floor(svc.price/1000);
-  const cust = DB.customers.find(c=>c.id===currentUser.id);
-  const tier = getTier(cust.points);
-  const bonusPts = Math.floor(pts * tier.bonus / 100);
-  const totalPts = pts + bonusPts;
-  
-  const booking = {
-    id: DB.nextBookingId++,
-    custId: currentUser.id,
-    service: svc.name,
-    staff: stf.name,
-    date: bookingState.date || new Date().toISOString().split('T')[0],
-    time: bookingState.time,
-    amount: svc.price,
-    status: 'confirmed',
-    ptsEarned: totalPts
-  };
-  DB.bookings.push(booking);
-  cust.points += totalPts;
-  cust.totalSpend += svc.price;
-  cust.visits++;
-  DB.transactions.push({
-    id: Date.now(), custId: currentUser.id, type:'earn',
-    pts: totalPts,
-    note: `${svc.name} - ${bookingState.time}`,
-    date: booking.date
-  });
-  currentUser = cust;
-  toast(`✅ Đặt lịch thành công! +${totalPts} điểm`);
+  if (!currentUser) return;
+  var svc = null, stf = null;
+  for (var i = 0; i < DB.services.length; i++) { if (DB.services[i].id === bkState.svcId) svc = DB.services[i]; }
+  for (var j = 0; j < DB.staff.length; j++) { if (DB.staff[j].id === bkState.staffId) stf = DB.staff[j]; }
+  if (!svc || !stf || !bkState.time) { showToast('❌ Chọn đầy đủ thông tin'); return; }
+  var c = getCust(currentUser.id);
+  var tier = getTier(c.points);
+  var pts = Math.floor(svc.price / 1000);
+  var bonus = Math.floor(pts * tier.bonus / 100);
+  var total = pts + bonus;
+  var bk = {id:DB.nextBkId++,custId:currentUser.id,service:svc.name,staff:stf.name,
+    date:bkState.date||new Date().toISOString().split('T')[0],time:bkState.time,
+    amount:svc.price,status:'confirmed',ptsEarned:total};
+  DB.bookings.push(bk);
+  c.points += total;
+  c.totalSpend += svc.price;
+  c.visits++;
+  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'earn',pts:total,
+    note:svc.name + ' - ' + bkState.time,date:bk.date});
+  currentUser = c;
+  showToast('✅ Đặt lịch thành công! +' + total + ' điểm');
   showPage('home');
 }
 
-// ============ REWARDS ============
+// ===== REWARDS =====
 function refreshRewards() {
-  if(!currentUser) return;
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  document.getElementById('reward-pts').innerHTML = `${c.points.toLocaleString('vi-VN')}<small>điểm khả dụng</small>`;
-  
-  const rewards = [
-    {val:'50.000đ', desc:'Giảm giá trực tiếp', cost:50, minPts:50},
-    {val:'100.000đ', desc:'Voucher dịch vụ', cost:100, minPts:100},
-    {val:'200.000đ', desc:'Voucher dịch vụ', cost:200, minPts:200},
-    {val:'500.000đ', desc:'Voucher cao cấp', cost:500, minPts:500},
+  if (!currentUser) return;
+  var c = getCust(currentUser.id);
+  document.getElementById('rwd-pts').innerHTML = fmt(c.points) + '<small>điểm khả dụng</small>';
+  var rewards = [
+    {val:'50.000đ',desc:'Giảm giá trực tiếp',cost:50},
+    {val:'100.000đ',desc:'Voucher dịch vụ',cost:100},
+    {val:'200.000đ',desc:'Voucher dịch vụ',cost:200},
+    {val:'500.000đ',desc:'Voucher cao cấp',cost:500}
   ];
-  document.getElementById('reward-cards').innerHTML = rewards.map(r=>`
-    <div class="reward-card" onclick="redeemReward(${r.cost},'${r.val}')">
-      <div class="reward-val">${r.val}</div>
-      <div class="reward-desc">${r.desc}</div>
-      <div class="reward-cost">⭐ ${r.cost.toLocaleString('vi-VN')} điểm</div>
-    </div>`).join('');
-  
-  const curTier = getTier(c.points);
-  document.getElementById('tier-overview').innerHTML = TIERS.map(t=>`
-    <div class="tier-row ${t.name===curTier.name?'current':''}">
-      <div class="tier-icon" style="background:${t.name===curTier.name?'var(--green-100)':'#f5f5f5'}">${t.icon}</div>
-      <div class="tier-row-info">
-        <div class="tier-row-name">${t.icon} ${t.name} ${t.name===curTier.name?'<span style="font-size:0.72rem;color:var(--green-600);">← Hiện tại</span>':''}</div>
-        <div class="tier-row-range">${t.max===Infinity?'Từ '+t.min.toLocaleString('vi-VN')+' điểm':t.min.toLocaleString('vi-VN')+' – '+t.max.toLocaleString('vi-VN')+' điểm'}${t.bonus>0?' · Bonus +'+t.bonus+'% điểm':''}</div>
-      </div>
-    </div>`).join('');
+  var html = '';
+  for (var i = 0; i < rewards.length; i++) {
+    var r = rewards[i];
+    html += '<div class="rwd-card" data-cost="' + r.cost + '" data-val="' + r.val + '">' +
+      '<div class="rwd-val">' + r.val + '</div>' +
+      '<div class="rwd-desc">' + r.desc + '</div>' +
+      '<div class="rwd-cost">⭐ ' + fmt(r.cost) + ' điểm</div>' +
+      '</div>';
+  }
+  document.getElementById('rwd-cards').innerHTML = html;
+  var cards = document.querySelectorAll('.rwd-card');
+  for (var j = 0; j < cards.length; j++) {
+    cards[j].addEventListener('click', function() {
+      var cost = parseInt(this.getAttribute('data-cost'));
+      var val = this.getAttribute('data-val');
+      redeemReward(cost, val);
+    });
+  }
+  var tier = getTier(c.points);
+  var thtml = '';
+  for (var k = 0; k < TIERS.length; k++) {
+    var t = TIERS[k];
+    var isCur = t.name === tier.name;
+    thtml += '<div class="tier-row' + (isCur?' cur':'') + '">' +
+      '<div class="tier-ic" style="background:' + (isCur?'var(--g100)':'#f5f5f5') + '">' + t.icon + '</div>' +
+      '<div><div class="tier-row-name">' + t.icon + ' ' + t.name + (isCur?' <span style="font-size:0.72rem;color:var(--g600);">← Hiện tại</span>':'') + '</div>' +
+      '<div class="tier-row-range">' + (t.max===999999999?'Từ '+fmt(t.min)+' điểm':fmt(t.min)+' – '+fmt(t.max)+' điểm') + (t.bonus>0?' · Bonus +'+t.bonus+'%':'') + '</div>' +
+      '</div></div>';
+  }
+  document.getElementById('tier-overview').innerHTML = thtml;
 }
 
 function redeemReward(pts, val) {
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  if(c.points < pts) { toast('❌ Không đủ điểm để đổi'); return; }
-  if(!confirm(`Đổi ${pts} điểm lấy voucher ${val}?`)) return;
+  var c = getCust(currentUser.id);
+  if (c.points < pts) { showToast('❌ Không đủ điểm'); return; }
+  if (!confirm('Đổi ' + pts + ' điểm lấy voucher ' + val + '?')) return;
   c.points -= pts;
-  DB.transactions.push({id:Date.now(), custId:currentUser.id, type:'redeem', pts:-pts, note:`Đổi voucher ${val}`, date:new Date().toISOString().split('T')[0]});
+  DB.transactions.push({id:Date.now(),custId:currentUser.id,type:'redeem',pts:-pts,
+    note:'Đổi voucher ' + val,date:new Date().toISOString().split('T')[0]});
   currentUser = c;
-  toast(`🎁 Đã đổi voucher ${val} thành công!`);
+  showToast('🎁 Đã đổi voucher ' + val);
   refreshRewards();
 }
 
-// ============ HISTORY ============
+// ===== HISTORY =====
 function renderHistory(filter) {
-  const c = DB.customers.find(x=>x.id===currentUser?.id);
-  if(!c) return;
-  let txs = DB.transactions.filter(t=>t.custId===c.id);
-  if(filter==='earn') txs = txs.filter(t=>t.type==='earn');
-  if(filter==='redeem') txs = txs.filter(t=>t.type==='redeem');
-  if(filter==='booking') {
-    const bks = DB.bookings.filter(b=>b.custId===c.id);
-    document.getElementById('history-list').innerHTML = bks.length ? bks.slice().reverse().map(b=>`
-      <div class="history-item">
-        <div class="history-top"><div class="history-service">${b.service}</div><div class="history-amount">${b.amount.toLocaleString('vi-VN')}đ</div></div>
-        <div class="history-meta"><span>📅 ${b.date} ${b.time}</span><span>👩 ${b.staff}</span><span class="status-badge status-${b.status}">${{pending:'Chờ',confirmed:'Đã xác nhận',done:'Hoàn thành',cancelled:'Đã hủy'}[b.status]}</span></div>
-        ${b.status==='done'?`<div class="rating-row"><span class="rating-label">Đánh giá:</span>${[1,2,3,4,5].map(i=>`<button class="star-btn" onclick="rateBooking(${b.id},${i},this)">☆</button>`).join('')}</div>`:``}
-      </div>`).join('') : '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch đặt</div></div>';
+  if (!currentUser) return;
+  var c = getCust(currentUser.id);
+  var list = document.getElementById('history-list');
+
+  if (filter === 'booking') {
+    var bks = [];
+    for (var i = 0; i < DB.bookings.length; i++) {
+      if (DB.bookings[i].custId === c.id) bks.push(DB.bookings[i]);
+    }
+    bks = bks.reverse();
+    if (!bks.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch đặt</div></div>'; return; }
+    var stLbl = {pending:'Chờ',confirmed:'Đã xác nhận',done:'Hoàn thành',cancelled:'Đã hủy'};
+    var html = '';
+    for (var j = 0; j < bks.length; j++) {
+      var b = bks[j];
+      html += '<div class="hist-item">' +
+        '<div class="hist-top"><div class="hist-svc">' + b.service + '</div><div class="hist-amt">' + fmt(b.amount) + 'đ</div></div>' +
+        '<div class="hist-meta"><span>📅 ' + b.date + ' ' + b.time + '</span><span>👩 ' + b.staff + '</span>' +
+        '<span class="st-bdg st-' + b.status + '">' + stLbl[b.status] + '</span></div>' +
+        (b.status==='done'?'<div class="rat-row"><span class="rat-lbl">Đánh giá:</span>' +
+        '<button class="star-btn" data-bk="'+b.id+'" data-s="1">☆</button>' +
+        '<button class="star-btn" data-bk="'+b.id+'" data-s="2">☆</button>' +
+        '<button class="star-btn" data-bk="'+b.id+'" data-s="3">☆</button>' +
+        '<button class="star-btn" data-bk="'+b.id+'" data-s="4">☆</button>' +
+        '<button class="star-btn" data-bk="'+b.id+'" data-s="5">☆</button></div>':'') +
+        '</div>';
+    }
+    list.innerHTML = html;
+    var starBtns = document.querySelectorAll('.star-btn');
+    for (var k = 0; k < starBtns.length; k++) {
+      starBtns[k].addEventListener('click', function() {
+        var stars = parseInt(this.getAttribute('data-s'));
+        var row = this.parentNode;
+        var btns = row.querySelectorAll('.star-btn');
+        for (var m = 0; m < btns.length; m++) btns[m].textContent = m < stars ? '★' : '☆';
+        showToast('⭐ Cảm ơn đánh giá ' + stars + '/5!');
+      });
+    }
     return;
   }
-  document.getElementById('history-list').innerHTML = txs.length ? txs.slice().reverse().map(t=>`
-    <div class="history-item">
-      <div class="history-top">
-        <div class="history-service">${t.type==='earn'?'⭐ Tích điểm':t.type==='redeem'?'🎁 Đổi điểm':'💰 Nạp điểm'}</div>
-        <div class="history-amount" style="color:${t.pts>0?'var(--green-600)':'#e65c00'}">${t.pts>0?'+':''}${t.pts.toLocaleString('vi-VN')} đ</div>
-      </div>
-      <div class="history-meta"><span>${t.note}</span><span>📅 ${t.date}</span></div>
-    </div>`).join('') : '<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>';
-}
 
-function filterHistory(f, btn) {
-  document.querySelectorAll('#page-history .filter-tab').forEach(t=>t.classList.remove('active'));
-  btn.classList.add('active');
-  renderHistory(f);
-}
-
-function rateBooking(bookingId, stars, btn) {
-  const row = btn.closest('.rating-row');
-  const btns = row.querySelectorAll('.star-btn');
-  btns.forEach((b,i)=>{ b.textContent = i<stars?'★':'☆'; });
-  toast(`⭐ Cảm ơn bạn đã đánh giá ${stars}/5 sao!`);
-}
-
-// ============ PROFILE ============
-function refreshProfile() {
-  if(!currentUser) return;
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  document.getElementById('profile-name').textContent = c.name;
-  document.getElementById('profile-phone').textContent = c.phone;
-  document.getElementById('ps-pts').textContent = c.points.toLocaleString('vi-VN');
-  document.getElementById('ps-visits').textContent = c.visits;
-  document.getElementById('ps-spend').textContent = (c.totalSpend/1000000).toFixed(1)+'M';
-}
-
-function openEditProfile() {
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  openModal('Chỉnh sửa thông tin', `
-    <div class="form-group"><label>Họ và tên</label><input type="text" id="ep-name" value="${c.name}" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Ngày sinh</label><input type="date" id="ep-dob" value="${c.dob||''}" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <button class="btn-green" onclick="saveProfile()">Lưu</button>
-  `);
-}
-
-function saveProfile() {
-  const c = DB.customers.find(x=>x.id===currentUser.id);
-  c.name = document.getElementById('ep-name').value;
-  c.dob = document.getElementById('ep-dob').value;
-  currentUser = c;
-  closeModal(null,true);
-  toast('✅ Đã lưu thông tin');
-  refreshProfile();
-}
-
-// ============ MODAL ============
-function openModal(title, bodyHTML) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = bodyHTML;
-  document.getElementById('modal').classList.add('open');
-}
-function closeModal(e,force) {
-  if(force || (e && e.target===document.getElementById('modal')))
-    document.getElementById('modal').classList.remove('open');
-}
-
-// ============ MANAGER LOGIN ============
-function mgrLogin() {
-  const u = document.getElementById('mgr-user').value;
-  const p = document.getElementById('mgr-pass').value;
-  if(u==='admin' && p==='admin123') {
-    go('mgr');
-    renderDashboard();
-  } else { toast('❌ Sai tên đăng nhập hoặc mật khẩu'); }
-}
-function mgrLogout() { go('splash'); }
-
-// ============ DASHBOARD ============
-function renderDashboard() {
-  const today = new Date().toISOString().split('T')[0];
-  const todayBkgs = DB.bookings.filter(b=>b.date===today);
-  const totalRevenue = DB.bookings.filter(b=>b.status==='done').reduce((s,b)=>s+b.amount,0);
-  const totalPts = DB.customers.reduce((s,c)=>s+c.points,0);
-  
-  document.getElementById('mgr-stats').innerHTML = `
-    <div class="stat-card"><div class="stat-card-label">Khách hàng</div><div class="stat-card-value">${DB.customers.length}</div><div class="stat-card-sub">+1 tuần này</div></div>
-    <div class="stat-card"><div class="stat-card-label">Đặt lịch hôm nay</div><div class="stat-card-value">${todayBkgs.length}</div></div>
-    <div class="stat-card"><div class="stat-card-label">Doanh thu tổng</div><div class="stat-card-value">${(totalRevenue/1000000).toFixed(1)}M</div></div>
-    <div class="stat-card"><div class="stat-card-label">Tổng điểm đang lưu</div><div class="stat-card-value">${(totalPts/1000).toFixed(0)}K</div></div>
-  `;
-  
-  const allBkgs = DB.bookings.slice().reverse().slice(0,3);
-  document.getElementById('today-bookings').innerHTML = allBkgs.length ? allBkgs.map(b=>{
-    const cust = DB.customers.find(c=>c.id===b.custId);
-    return `<div class="booking-mgr-item">
-      <div class="booking-mgr-top"><div class="booking-mgr-name">${cust?.name||'KH'} – ${b.service}</div><span class="status-badge status-${b.status}">${{pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'}[b.status]}</span></div>
-      <div class="booking-mgr-meta">⏰ ${b.date} ${b.time} · 👩 ${b.staff} · ${b.amount.toLocaleString('vi-VN')}đ</div>
-    </div>`;}).join('') : '<div class="empty-state" style="padding:1.5rem"><div class="empty-text">Không có đặt lịch</div></div>';
-
-  // Revenue chart (simple bars)
-  const days = [];
-  for(let i=6;i>=0;i--){
-    const d = new Date(); d.setDate(d.getDate()-i);
-    const ds = d.toISOString().split('T')[0];
-    const rev = DB.bookings.filter(b=>b.date===ds&&b.status==='done').reduce((s,b)=>s+b.amount,0);
-    days.push({label:d.getDate()+'/'+(d.getMonth()+1), rev});
+  var txs = [];
+  for (var n = 0; n < DB.transactions.length; n++) {
+    var tx = DB.transactions[n];
+    if (tx.custId !== c.id) continue;
+    if (filter === 'earn' && tx.type !== 'earn') continue;
+    if (filter === 'redeem' && tx.type !== 'redeem') continue;
+    txs.push(tx);
   }
-  const maxRev = Math.max(...days.map(d=>d.rev), 100000);
-  document.getElementById('revenue-chart').innerHTML = `
-    <div style="display:flex;align-items:flex-end;gap:6px;height:80px;">
-      ${days.map(d=>`
-        <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">
-          <div style="flex:1;width:100%;background:var(--green-50);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;">
-            <div style="background:var(--green-400);border-radius:4px;height:${Math.max(4,(d.rev/maxRev)*100)}%;"></div>
-          </div>
-          <span style="font-size:0.62rem;color:var(--text-muted);">${d.label}</span>
-        </div>`).join('')}
-    </div>
-    <div style="font-size:0.75rem;color:var(--text-muted);margin-top:8px;text-align:right;">Đơn vị: VNĐ · Max: ${maxRev.toLocaleString('vi-VN')}đ</div>
-  `;
+  txs = txs.reverse();
+  if (!txs.length) { list.innerHTML = '<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>'; return; }
+  var thtml = '';
+  var typeLbl = {earn:'⭐ Tích điểm',redeem:'🎁 Đổi điểm',topup:'💰 Nạp điểm'};
+  for (var p = 0; p < txs.length; p++) {
+    var tx2 = txs[p];
+    thtml += '<div class="hist-item">' +
+      '<div class="hist-top"><div class="hist-svc">' + (typeLbl[tx2.type]||'Giao dịch') + '</div>' +
+      '<div class="hist-amt" style="color:' + (tx2.pts>0?'var(--g600)':'#e65c00') + '">' + (tx2.pts>0?'+':'') + fmt(tx2.pts) + ' đ</div></div>' +
+      '<div class="hist-meta"><span>' + tx2.note + '</span><span>📅 ' + tx2.date + '</span></div>' +
+      '</div>';
+  }
+  list.innerHTML = thtml;
 }
 
-// ============ CUSTOMERS ============
+// ===== PROFILE =====
+function refreshProfile() {
+  if (!currentUser) return;
+  var c = getCust(currentUser.id);
+  document.getElementById('prof-name').textContent = c.name;
+  document.getElementById('prof-phone').textContent = c.phone;
+  document.getElementById('ps-pts').textContent = fmt(c.points);
+  document.getElementById('ps-visits').textContent = c.visits;
+  document.getElementById('ps-spend').textContent = (c.totalSpend/1000000).toFixed(1) + 'M';
+}
+
+// ===== MANAGER =====
+function mgrLogin() {
+  var u = document.getElementById('mgr-user').value;
+  var p = document.getElementById('mgr-pass').value;
+  if (u === 'admin' && p === 'admin123') {
+    goScreen('mgr');
+    renderDashboard();
+  } else { showToast('❌ Sai thông tin đăng nhập'); }
+}
+
+function renderDashboard() {
+  var done = DB.bookings.filter ? DB.bookings.filter(function(b){return b.status==='done';}) : [];
+  var totalRev = 0;
+  for (var i = 0; i < DB.bookings.length; i++) { if (DB.bookings[i].status==='done') totalRev += DB.bookings[i].amount; }
+  var totalPts = 0;
+  for (var j = 0; j < DB.customers.length; j++) totalPts += DB.customers[j].points;
+
+  document.getElementById('mgr-stats').innerHTML =
+    '<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">' + DB.customers.length + '</div></div>' +
+    '<div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">' + DB.bookings.length + '</div></div>' +
+    '<div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val">' + (totalRev/1000000).toFixed(1) + 'M</div></div>' +
+    '<div class="stat-card"><div class="stat-card-lbl">Tổng điểm</div><div class="stat-card-val">' + (totalPts/1000).toFixed(0) + 'K</div></div>';
+
+  var bkHtml = '';
+  var recent = DB.bookings.slice().reverse().slice(0,3);
+  var stLbl = {pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
+  for (var k = 0; k < recent.length; k++) {
+    var b = recent[k];
+    var cust = getCust(b.custId);
+    bkHtml += '<div class="bk-item">' +
+      '<div class="bk-top"><div class="bk-name">' + (cust?cust.name:'KH') + ' – ' + b.service + '</div>' +
+      '<span class="st-bdg st-' + b.status + '">' + stLbl[b.status] + '</span></div>' +
+      '<div class="bk-meta">⏰ ' + b.date + ' ' + b.time + ' · 👩 ' + b.staff + ' · ' + fmt(b.amount) + 'đ</div>' +
+      '</div>';
+  }
+  document.getElementById('today-bookings').innerHTML = bkHtml || '<div class="empty-state" style="padding:1rem"><div class="empty-text">Chưa có đặt lịch</div></div>';
+
+  // Revenue bars
+  var days = [];
+  for (var d = 6; d >= 0; d--) {
+    var dt = new Date();
+    dt.setDate(dt.getDate() - d);
+    var ds = dt.toISOString().split('T')[0];
+    var rev = 0;
+    for (var m = 0; m < DB.bookings.length; m++) {
+      if (DB.bookings[m].date === ds && DB.bookings[m].status === 'done') rev += DB.bookings[m].amount;
+    }
+    days.push({label: (dt.getDate()) + '/' + (dt.getMonth()+1), rev: rev});
+  }
+  var maxRev = 100000;
+  for (var n = 0; n < days.length; n++) { if (days[n].rev > maxRev) maxRev = days[n].rev; }
+  var barHtml = '<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
+  for (var q = 0; q < days.length; q++) {
+    var h = Math.max(4, Math.round((days[q].rev / maxRev) * 100));
+    barHtml += '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;">' +
+      '<div style="flex:1;width:100%;background:var(--g50);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;">' +
+      '<div style="background:var(--g400);border-radius:4px;height:' + h + '%;"></div></div>' +
+      '<span style="font-size:0.62rem;color:var(--muted);">' + days[q].label + '</span></div>';
+  }
+  barHtml += '</div>';
+  document.getElementById('rev-chart').innerHTML = barHtml;
+}
+
 function renderCustomers() {
-  const q = (document.getElementById('cust-search')?.value||'').toLowerCase();
-  const custs = DB.customers.filter(c=>!q||c.name.toLowerCase().includes(q)||c.phone.includes(q));
-  document.getElementById('customers-list').innerHTML = custs.map(c=>{
-    const tier = getTier(c.points);
-    return `<div class="customer-item" onclick="openCustDetail(${c.id})">
-      <div class="customer-av">${c.name.slice(-2)}</div>
-      <div class="customer-info">
-        <div class="customer-name">${c.name}</div>
-        <div class="customer-meta">📱 ${c.phone} · ⭐ ${c.points.toLocaleString('vi-VN')} điểm</div>
-      </div>
-      <span class="tier-badge ${tier.badge}">${tier.icon} ${tier.name}</span>
-    </div>`;}).join('');
+  var q = (document.getElementById('cust-search').value||'').toLowerCase();
+  var html = '';
+  for (var i = 0; i < DB.customers.length; i++) {
+    var c = DB.customers[i];
+    if (q && c.name.toLowerCase().indexOf(q) < 0 && c.phone.indexOf(q) < 0) continue;
+    var tier = getTier(c.points);
+    html += '<div class="cust-item" data-cid="' + c.id + '">' +
+      '<div class="cust-av">' + c.name.slice(-2) + '</div>' +
+      '<div style="flex:1"><div class="cust-name">' + c.name + '</div>' +
+      '<div class="cust-meta">📱 ' + c.phone + ' · ⭐ ' + fmt(c.points) + ' điểm</div></div>' +
+      '<span class="tier-bdg ' + tier.cls + '">' + tier.icon + ' ' + tier.name + '</span>' +
+      '</div>';
+  }
+  document.getElementById('customers-list').innerHTML = html || '<div class="empty-state"><div class="empty-text">Không tìm thấy</div></div>';
+  var items = document.querySelectorAll('.cust-item');
+  for (var j = 0; j < items.length; j++) {
+    items[j].addEventListener('click', function() { openCustDetail(parseInt(this.getAttribute('data-cid'))); });
+  }
 }
 
 function openCustDetail(id) {
-  const c = DB.customers.find(x=>x.id===id);
-  const tier = getTier(c.points);
-  const txs = DB.transactions.filter(t=>t.custId===id).slice().reverse().slice(0,5);
-  openModal(c.name, `
-    <div style="background:var(--green-50);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--text-muted);">Số điện thoại</span><span>${c.phone}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--text-muted);">Cấp bậc</span><span>${tier.icon} ${tier.name}</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--text-muted);">Điểm hiện tại</span><span style="color:var(--green-600);font-weight:500;">${c.points.toLocaleString('vi-VN')} điểm</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--text-muted);">Tổng chi tiêu</span><span>${c.totalSpend.toLocaleString('vi-VN')}đ</span></div>
-      <div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--text-muted);">Số lần đến</span><span>${c.visits} lần</span></div>
-    </div>
-    <div style="font-size:0.85rem;font-weight:500;margin-bottom:0.5rem;">Giao dịch gần đây</div>
-    ${txs.map(t=>`<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:6px 0;border-bottom:1px solid var(--border);"><span style="color:var(--text-muted);">${t.note}</span><span style="color:${t.pts>0?'var(--green-600)':'#e65c00'};font-weight:500;">${t.pts>0?'+':''}${t.pts.toLocaleString('vi-VN')}</span></div>`).join('')}
-  `);
+  var c = getCust(id);
+  var tier = getTier(c.points);
+  var txs = [];
+  for (var i = 0; i < DB.transactions.length; i++) { if (DB.transactions[i].custId === id) txs.push(DB.transactions[i]); }
+  txs = txs.reverse().slice(0,5);
+  var html = '<div style="background:var(--g50);border-radius:var(--radius);padding:1rem;margin-bottom:1rem;">' +
+    '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--muted);">SĐT</span><span>' + c.phone + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--muted);">Cấp bậc</span><span>' + tier.icon + ' ' + tier.name + '</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--muted);">Điểm</span><span style="color:var(--g600);font-weight:500;">' + fmt(c.points) + ' điểm</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--muted);">Chi tiêu</span><span>' + fmt(c.totalSpend) + 'đ</span></div>' +
+    '<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:4px 0;"><span style="color:var(--muted);">Số lần</span><span>' + c.visits + ' lần</span></div>' +
+    '</div>';
+  for (var j = 0; j < txs.length; j++) {
+    var t = txs[j];
+    html += '<div style="display:flex;justify-content:space-between;font-size:0.8rem;padding:6px 0;border-bottom:1px solid var(--border);">' +
+      '<span style="color:var(--muted);">' + t.note + '</span>' +
+      '<span style="color:' + (t.pts>0?'var(--g600)':'#e65c00') + ';font-weight:500;">' + (t.pts>0?'+':'') + fmt(t.pts) + '</span></div>';
+  }
+  openModal(c.name, html);
 }
 
-// ============ POINTS MANAGEMENT ============
 function renderPtsPage() {
-  const sel = document.getElementById('pts-customer');
-  if(sel) sel.innerHTML = DB.customers.map(c=>`<option value="${c.id}">${c.name} (${c.points.toLocaleString('vi-VN')} đ)</option>`).join('');
-  const hist = DB.transactions.slice().reverse().slice(0,10);
-  document.getElementById('pts-history').innerHTML = hist.map(t=>{
-    const c = DB.customers.find(x=>x.id===t.custId);
-    return `<div class="history-item">
-      <div class="history-top"><div class="history-service">${c?.name||'KH'}</div><div class="history-amount" style="color:${t.pts>0?'var(--green-600)':'#e65c00'}">${t.pts>0?'+':''}${t.pts.toLocaleString('vi-VN')} đ</div></div>
-      <div class="history-meta"><span>${t.note}</span><span>${t.date}</span></div>
-    </div>`;}).join('');
+  var sel = document.getElementById('pts-cust');
+  var html = '';
+  for (var i = 0; i < DB.customers.length; i++) {
+    var c = DB.customers[i];
+    html += '<option value="' + c.id + '">' + c.name + ' (' + fmt(c.points) + ' đ)</option>';
+  }
+  sel.innerHTML = html;
+
+  var hist = DB.transactions.slice().reverse().slice(0,10);
+  var phtml = '';
+  for (var j = 0; j < hist.length; j++) {
+    var t = hist[j];
+    var cust = getCust(t.custId);
+    phtml += '<div class="hist-item">' +
+      '<div class="hist-top"><div class="hist-svc">' + (cust?cust.name:'KH') + '</div>' +
+      '<div class="hist-amt" style="color:' + (t.pts>0?'var(--g600)':'#e65c00') + '">' + (t.pts>0?'+':'') + fmt(t.pts) + ' đ</div></div>' +
+      '<div class="hist-meta"><span>' + t.note + '</span><span>' + t.date + '</span></div></div>';
+  }
+  document.getElementById('pts-history').innerHTML = phtml;
 }
 
 function adjustPoints() {
-  const custId = parseInt(document.getElementById('pts-customer').value);
-  const type = document.getElementById('pts-type').value;
-  const amount = parseInt(document.getElementById('pts-amount').value);
-  const note = document.getElementById('pts-note').value || 'Điều chỉnh thủ công';
-  if(!amount||amount<=0) { toast('❌ Vui lòng nhập số điểm hợp lệ'); return; }
-  const c = DB.customers.find(x=>x.id===custId);
-  const delta = (type==='sub') ? -amount : amount;
-  if(type==='sub' && c.points<amount) { toast('❌ Khách hàng không đủ điểm'); return; }
+  var custId = parseInt(document.getElementById('pts-cust').value);
+  var type = document.getElementById('pts-type').value;
+  var amount = parseInt(document.getElementById('pts-amount').value);
+  var note = document.getElementById('pts-note').value || 'Điều chỉnh thủ công';
+  if (!amount || amount <= 0) { showToast('❌ Nhập số điểm hợp lệ'); return; }
+  var c = getCust(custId);
+  var delta = (type === 'sub') ? -amount : amount;
+  if (type === 'sub' && c.points < amount) { showToast('❌ Không đủ điểm'); return; }
   c.points += delta;
-  if(type==='topup') {
-    c.totalSpend += amount*1000;
-  }
-  DB.transactions.push({id:Date.now(), custId, type:type==='sub'?'redeem':'earn', pts:delta, note, date:new Date().toISOString().split('T')[0]});
-  document.getElementById('pts-amount').value='';
-  document.getElementById('pts-note').value='';
-  toast(`✅ Đã ${delta>0?'cộng':'trừ'} ${Math.abs(amount).toLocaleString('vi-VN')} điểm cho ${c.name}`);
+  if (type === 'topup') c.totalSpend += amount * 1000;
+  DB.transactions.push({id:Date.now(),custId:custId,type:type==='sub'?'redeem':'earn',
+    pts:delta,note:note,date:new Date().toISOString().split('T')[0]});
+  document.getElementById('pts-amount').value = '';
+  document.getElementById('pts-note').value = '';
+  showToast('✅ Đã ' + (delta>0?'cộng':'trừ') + ' ' + Math.abs(amount) + ' điểm cho ' + c.name);
   renderPtsPage();
 }
 
-// ============ SERVICES ============
 function renderServicesPage() {
-  document.getElementById('mgr-services-list').innerHTML = DB.services.map(s=>`
-    <div class="service-mgr-item">
-      <div class="service-mgr-info">
-        <div class="s-name">${s.icon} ${s.name}</div>
-        <div class="s-cat">${s.cat} · ${s.duration} phút</div>
-      </div>
-      <div style="text-align:right">
-        <div class="service-mgr-price">${s.price.toLocaleString('vi-VN')}đ</div>
-        <button class="btn-sm outline" onclick="editService(${s.id})" style="margin-top:4px;font-size:0.72rem;">Sửa</button>
-      </div>
-    </div>`).join('');
-  
-  document.getElementById('mgr-staff-list').innerHTML = DB.staff.filter(s=>s.id<4).map(s=>`
-    <div class="customer-item">
-      <div class="customer-av" style="font-size:1.2rem;">${s.icon}</div>
-      <div class="customer-info">
-        <div class="customer-name">${s.name}</div>
-        <div class="customer-meta">${s.spec} · ★ ${s.rating}</div>
-      </div>
-    </div>`).join('');
+  var html = '';
+  for (var i = 0; i < DB.services.length; i++) {
+    var s = DB.services[i];
+    html += '<div class="svc-mgr-item">' +
+      '<div><div class="s-name">' + s.icon + ' ' + s.name + '</div><div class="s-cat">' + s.cat + ' · ' + s.duration + 'ph</div></div>' +
+      '<div style="text-align:right"><div class="s-price">' + fmt(s.price) + 'đ</div>' +
+      '<button class="btn-sm-out" data-sid="' + s.id + '" style="margin-top:4px;">Sửa</button></div>' +
+      '</div>';
+  }
+  document.getElementById('mgr-svc-list').innerHTML = html;
+  var editBtns = document.querySelectorAll('[data-sid]');
+  for (var j = 0; j < editBtns.length; j++) {
+    editBtns[j].addEventListener('click', function() { editService(parseInt(this.getAttribute('data-sid'))); });
+  }
+  var shtml = '';
+  for (var k = 0; k < DB.staff.length - 1; k++) {
+    var st = DB.staff[k];
+    shtml += '<div class="cust-item">' +
+      '<div class="cust-av" style="font-size:1.2rem;">' + st.icon + '</div>' +
+      '<div><div class="cust-name">' + st.name + '</div><div class="cust-meta">' + st.spec + ' · ★ ' + st.rating + '</div></div>' +
+      '</div>';
+  }
+  document.getElementById('mgr-staff-list').innerHTML = shtml;
 }
 
 function openAddService() {
-  openModal('Thêm dịch vụ mới', `
-    <div class="form-group"><label>Tên dịch vụ</label><input type="text" id="ns-name" placeholder="Tên dịch vụ" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Danh mục</label><input type="text" id="ns-cat" placeholder="Massage, Da mặt..." style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Giá (VNĐ)</label><input type="number" id="ns-price" placeholder="350000" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Thời gian (phút)</label><input type="number" id="ns-dur" placeholder="60" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <button class="btn-green" onclick="saveNewService()">Lưu dịch vụ</button>
-  `);
-}
-
-function saveNewService() {
-  const name = document.getElementById('ns-name').value;
-  const cat = document.getElementById('ns-cat').value;
-  const price = parseInt(document.getElementById('ns-price').value);
-  const dur = parseInt(document.getElementById('ns-dur').value);
-  if(!name||!price||!dur) { toast('❌ Vui lòng điền đầy đủ'); return; }
-  DB.services.push({id:DB.services.length+1, name, cat, price, duration:dur, icon:'💆'});
-  closeModal(null,true);
-  toast('✅ Đã thêm dịch vụ mới');
-  renderServicesPage();
+  openModal('Thêm dịch vụ mới',
+    '<div class="fg"><label>Tên dịch vụ</label><input type="text" id="ns-name" class="mgr-inp" placeholder="Tên dịch vụ"></div>' +
+    '<div class="fg"><label>Danh mục</label><input type="text" id="ns-cat" class="mgr-inp" placeholder="Massage, Da mặt..."></div>' +
+    '<div class="fg"><label>Giá (VNĐ)</label><input type="number" id="ns-price" class="mgr-inp" placeholder="350000"></div>' +
+    '<div class="fg"><label>Thời gian (phút)</label><input type="number" id="ns-dur" class="mgr-inp" placeholder="60"></div>' +
+    '<button class="btn-green" id="btn-save-svc" style="margin-top:0.5rem;">Lưu dịch vụ</button>'
+  );
+  document.getElementById('btn-save-svc').addEventListener('click', function() {
+    var name = document.getElementById('ns-name').value;
+    var cat = document.getElementById('ns-cat').value;
+    var price = parseInt(document.getElementById('ns-price').value);
+    var dur = parseInt(document.getElementById('ns-dur').value);
+    if (!name || !price || !dur) { showToast('❌ Điền đầy đủ thông tin'); return; }
+    DB.services.push({id:DB.services.length+1,name:name,cat:cat,price:price,duration:dur,icon:'💆'});
+    closeModal();
+    showToast('✅ Đã thêm dịch vụ');
+    renderServicesPage();
+  });
 }
 
 function editService(id) {
-  const s = DB.services.find(x=>x.id===id);
-  openModal('Chỉnh sửa dịch vụ', `
-    <div class="form-group"><label>Tên dịch vụ</label><input type="text" id="es-name" value="${s.name}" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Giá (VNĐ)</label><input type="number" id="es-price" value="${s.price}" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <div class="form-group"><label>Thời gian (phút)</label><input type="number" id="es-dur" value="${s.duration}" style="width:100%;padding:12px 16px;border:1px solid var(--border);border-radius:var(--radius);font-family:'DM Sans',sans-serif;" /></div>
-    <button class="btn-green" onclick="saveEditService(${id})">Lưu</button>
-  `);
+  var s = null;
+  for (var i = 0; i < DB.services.length; i++) { if (DB.services[i].id === id) s = DB.services[i]; }
+  if (!s) return;
+  openModal('Chỉnh sửa: ' + s.name,
+    '<div class="fg"><label>Tên</label><input type="text" id="es-name" class="mgr-inp" value="' + s.name + '"></div>' +
+    '<div class="fg"><label>Giá (VNĐ)</label><input type="number" id="es-price" class="mgr-inp" value="' + s.price + '"></div>' +
+    '<div class="fg"><label>Thời gian (phút)</label><input type="number" id="es-dur" class="mgr-inp" value="' + s.duration + '"></div>' +
+    '<button class="btn-green" id="btn-save-es" data-id="' + id + '" style="margin-top:0.5rem;">Lưu</button>'
+  );
+  document.getElementById('btn-save-es').addEventListener('click', function() {
+    var sid = parseInt(this.getAttribute('data-id'));
+    for (var j = 0; j < DB.services.length; j++) {
+      if (DB.services[j].id === sid) {
+        DB.services[j].name = document.getElementById('es-name').value;
+        DB.services[j].price = parseInt(document.getElementById('es-price').value);
+        DB.services[j].duration = parseInt(document.getElementById('es-dur').value);
+      }
+    }
+    closeModal();
+    showToast('✅ Đã cập nhật dịch vụ');
+    renderServicesPage();
+  });
 }
 
-function saveEditService(id) {
-  const s = DB.services.find(x=>x.id===id);
-  s.name = document.getElementById('es-name').value;
-  s.price = parseInt(document.getElementById('es-price').value);
-  s.duration = parseInt(document.getElementById('es-dur').value);
-  closeModal(null,true);
-  toast('✅ Đã cập nhật dịch vụ');
-  renderServicesPage();
-}
-
-// ============ ALL BOOKINGS ============
 function renderAllBookings(filter) {
-  let bkgs = DB.bookings.slice().reverse();
-  if(filter!=='all') bkgs = bkgs.filter(b=>b.status===filter);
-  document.getElementById('all-bookings').innerHTML = bkgs.map(b=>{
-    const c = DB.customers.find(x=>x.id===b.custId);
-    return `<div class="booking-mgr-item">
-      <div class="booking-mgr-top">
-        <div class="booking-mgr-name">${c?.name||'KH'} – ${b.service}</div>
-        <select onchange="updateBookingStatus(${b.id},this.value)" style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;font-family:'DM Sans',sans-serif;background:#fff;">
-          ${['pending','confirmed','done','cancelled'].map(s=>`<option value="${s}" ${b.status===s?'selected':''}>${{pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'}[s]}</option>`).join('')}
-        </select>
-      </div>
-      <div class="booking-mgr-meta">⏰ ${b.date} ${b.time} · 👩 ${b.staff} · 💰 ${b.amount.toLocaleString('vi-VN')}đ</div>
-    </div>`;}).join('') || '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Không có dữ liệu</div></div>';
+  var bks = DB.bookings.slice().reverse();
+  var stLbl = {pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};
+  var html = '';
+  for (var i = 0; i < bks.length; i++) {
+    var b = bks[i];
+    if (filter !== 'all' && b.status !== filter) continue;
+    var cust = getCust(b.custId);
+    html += '<div class="bk-item">' +
+      '<div class="bk-top"><div class="bk-name">' + (cust?cust.name:'KH') + ' – ' + b.service + '</div>' +
+      '<select data-bid="' + b.id + '" style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;font-family:\'DM Sans\',sans-serif;background:#fff;">' +
+      ['pending','confirmed','done','cancelled'].map(function(st) { return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="bk-meta">⏰ ' + b.date + ' ' + b.time + ' · 👩 ' + b.staff + ' · ' + fmt(b.amount) + 'đ</div>' +
+      '</div>';
+  }
+  document.getElementById('all-bookings').innerHTML = html || '<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Không có dữ liệu</div></div>';
+  var sels = document.querySelectorAll('[data-bid]');
+  for (var j = 0; j < sels.length; j++) {
+    sels[j].addEventListener('change', function() {
+      var bid = parseInt(this.getAttribute('data-bid'));
+      for (var k = 0; k < DB.bookings.length; k++) {
+        if (DB.bookings[k].id === bid) { DB.bookings[k].status = this.value; break; }
+      }
+      showToast('✅ Cập nhật trạng thái');
+    });
+  }
 }
 
-function filterBookings(f, btn) {
-  document.querySelectorAll('#mgr-bookings .filter-tab').forEach(t=>t.classList.remove('active'));
+// ===== BIND ALL EVENTS ON LOAD =====
+window.addEventListener('load', function() {
+  // Splash
+  document.getElementById('btn-to-auth').addEventListener('click', function() { goScreen('auth'); });
+  document.getElementById('btn-to-mgr').addEventListener('click', function() { goScreen('mgr-login'); });
+
+  // Auth
+  document.getElementById('auth-back').addEventListener('click', function() { goScreen('splash'); });
+  document.getElementById('tab-login').addEventListener('click', function() {
+    document.getElementById('tab-login').classList.add('active');
+    document.getElementById('tab-reg').classList.remove('active');
+    document.getElementById('login-form').style.display = 'block';
+    document.getElementById('reg-form').style.display = 'none';
+  });
+  document.getElementById('tab-reg').addEventListener('click', function() {
+    document.getElementById('tab-reg').classList.add('active');
+    document.getElementById('tab-login').classList.remove('active');
+    document.getElementById('reg-form').style.display = 'block';
+    document.getElementById('login-form').style.display = 'none';
+  });
+  document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('btn-reg').addEventListener('click', doRegister);
+
+  // App nav
+  document.getElementById('topbar-user').addEventListener('click', function() { showPage('profile'); });
+  document.getElementById('nav-home').addEventListener('click', function() { showPage('home'); });
+  document.getElementById('nav-booking').addEventListener('click', function() { showPage('booking'); });
+  document.getElementById('nav-rewards').addEventListener('click', function() { showPage('rewards'); });
+  document.getElementById('nav-history').addEventListener('click', function() { showPage('history'); });
+  document.getElementById('nav-profile').addEventListener('click', function() { showPage('profile'); });
+
+  // Quick actions
+  document.getElementById('qa-booking').addEventListener('click', function() { showPage('booking'); });
+  document.getElementById('qa-rewards').addEventListener('click', function() { showPage('rewards'); });
+  document.getElementById('qa-history').addEventListener('click', function() { showPage('history'); });
+  document.getElementById('qa-profile').addEventListener('click', function() { showPage('profile'); });
+
+  // Booking steps
+  document.getElementById('back-to-svc').addEventListener('click', function() { showStep('svc'); });
+  document.getElementById('back-to-staff').addEventListener('click', function() { showStep('staff'); });
+  document.getElementById('back-to-dt').addEventListener('click', function() { showStep('dt'); });
+  document.getElementById('btn-confirm-bk').addEventListener('click', confirmBooking);
+
+  // History filters
+  document.getElementById('fh-all').addEventListener('click', function() {
+    setActiveFilter(this, 'fh'); renderHistory('all');
+  });
+  document.getElementById('fh-booking').addEventListener('click', function() {
+    setActiveFilter(this, 'fh'); renderHistory('booking');
+  });
+  document.getElementById('fh-earn').addEventListener('click', function() {
+    setActiveFilter(this, 'fh'); renderHistory('earn');
+  });
+  document.getElementById('fh-redeem').addEventListener('click', function() {
+    setActiveFilter(this, 'fh'); renderHistory('redeem');
+  });
+
+  // Profile
+  document.getElementById('menu-edit').addEventListener('click', function() {
+    var c = getCust(currentUser.id);
+    openModal('Chỉnh sửa thông tin',
+      '<div class="fg"><label>Họ và tên</label><input type="text" id="ep-name" class="mgr-inp" value="' + c.name + '"></div>' +
+      '<div class="fg"><label>Ngày sinh</label><input type="date" id="ep-dob" class="mgr-inp" value="' + (c.dob||'') + '"></div>' +
+      '<button class="btn-green" id="btn-save-prof" style="margin-top:0.5rem;">Lưu</button>'
+    );
+    document.getElementById('btn-save-prof').addEventListener('click', function() {
+      var c2 = getCust(currentUser.id);
+      c2.name = document.getElementById('ep-name').value;
+      c2.dob = document.getElementById('ep-dob').value;
+      currentUser = c2;
+      closeModal();
+      showToast('✅ Đã lưu');
+      refreshProfile();
+    });
+  });
+  document.getElementById('menu-hist').addEventListener('click', function() { showPage('history'); });
+  document.getElementById('menu-tier').addEventListener('click', function() { showPage('rewards'); });
+  document.getElementById('btn-logout').addEventListener('click', doLogout);
+
+  // Manager login
+  document.getElementById('mgr-back').addEventListener('click', function() { goScreen('splash'); });
+  document.getElementById('btn-mgr-login').addEventListener('click', mgrLogin);
+  document.getElementById('btn-mgr-logout').addEventListener('click', function() { goScreen('splash'); });
+
+  // Manager nav
+  document.getElementById('mnav-dash').addEventListener('click', function() { showMgrPage('mgr-dashboard','mnav-dash'); });
+  document.getElementById('mnav-cust').addEventListener('click', function() { showMgrPage('mgr-customers','mnav-cust'); });
+  document.getElementById('mnav-pts').addEventListener('click', function() { showMgrPage('mgr-points','mnav-pts'); });
+  document.getElementById('mnav-svc').addEventListener('click', function() { showMgrPage('mgr-services','mnav-svc'); });
+  document.getElementById('mnav-bk').addEventListener('click', function() { showMgrPage('mgr-bookings','mnav-bk'); });
+
+  // Manager actions
+  document.getElementById('cust-search').addEventListener('input', renderCustomers);
+  document.getElementById('btn-adj-pts').addEventListener('click', adjustPoints);
+  document.getElementById('btn-add-svc').addEventListener('click', openAddService);
+
+  // Booking filter
+  document.getElementById('fb-all').addEventListener('click', function() { setActiveFilter(this,'fb'); renderAllBookings('all'); });
+  document.getElementById('fb-pending').addEventListener('click', function() { setActiveFilter(this,'fb'); renderAllBookings('pending'); });
+  document.getElementById('fb-confirmed').addEventListener('click', function() { setActiveFilter(this,'fb'); renderAllBookings('confirmed'); });
+  document.getElementById('fb-done').addEventListener('click', function() { setActiveFilter(this,'fb'); renderAllBookings('done'); });
+
+  // Modal close
+  document.getElementById('modal-close').addEventListener('click', closeModal);
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+});
+
+function setActiveFilter(btn, prefix) {
+  var tabs = btn.parentNode.querySelectorAll('.ftab');
+  for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
   btn.classList.add('active');
-  renderAllBookings(f);
 }
-
-function updateBookingStatus(id, status) {
-  const b = DB.bookings.find(x=>x.id===id);
-  if(b) { b.status=status; toast('✅ Đã cập nhật trạng thái'); }
-}
-
-// Init
-document.getElementById('booking-date') && (document.getElementById('booking-date').min = new Date().toISOString().split('T')[0]);
 </script>
 </body>
 </html>
