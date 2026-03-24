@@ -780,7 +780,7 @@ function closeModal() {
 
 // ===== AUTH =====
 function doLogin() {
-  var phone = document.getElementById('login-phone').value.replace(/\s/g,'').trim();
+  var phone = document.getElementById('login-phone').value.replace(/\s/g,'').trim().toLowerCase();
   var pass = document.getElementById('login-pass').value;
   // Check admin login (username: admin, any device)
   if (phone === 'admin' && pass === (DB.adminPassword || 'admin123')) {
@@ -791,7 +791,7 @@ function doLogin() {
   // Check staff login
   for (var si = 0; si < (DB.staff||[]).length; si++) {
     var stf = DB.staff[si];
-    if (stf.loginId && phone === stf.loginId && stf.loginPass && pass === stf.loginPass) {
+    if (stf.loginId && phone === stf.loginId.toLowerCase() && stf.loginPass && pass === stf.loginPass) {
       goScreen('staff-view');
       renderStaffView(stf);
       return;
@@ -2787,6 +2787,10 @@ function openReviewModal(bk) {
       return '<button class="tip-opt" data-v="'+v+'" style="padding:5px 12px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.78rem;cursor:pointer;">' + (v==='0'?'Không':'+'+ (parseInt(v)/1000)+'K') + '</button>';
     }).join('') +
     '</div>' +
+    '<div style="margin-top:8px;display:flex;align-items:center;gap:8px;">' +
+    '<input type="number" id="tip-custom" placeholder="Nhập số tiền khác..." min="0" step="1000" style="flex:1;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.82rem;font-family:\'DM Sans\',sans-serif;outline:none;">' +
+    '<span style="font-size:0.78rem;color:var(--muted);white-space:nowrap;">VND</span>' +
+    '</div>' +
     '<div style="font-size:0.75rem;color:var(--muted);margin-top:6px;">Số dư tài khoản: <b id="rv-balance">' + fmt(cust ? (cust.balance||0) : 0) + ' VND</b></div>' +
     '</div>' : '') +
     '<button id="btn-submit-rv" style="width:100%;background:var(--accent);color:#fff;border:none;padding:13px;border-radius:100px;font-size:0.95rem;cursor:pointer;font-weight:500;">Gửi đánh giá</button>';
@@ -2816,6 +2820,28 @@ function openReviewModal(bk) {
           all[tj].style.background = all[tj].getAttribute('data-v') === this.getAttribute('data-v') ? 'var(--accent)' : 'var(--card-bg)';
           all[tj].style.color = all[tj].getAttribute('data-v') === this.getAttribute('data-v') ? '#fff' : 'var(--text)';
           all[tj].style.borderColor = all[tj].getAttribute('data-v') === this.getAttribute('data-v') ? 'var(--accent)' : 'var(--border)';
+        }
+        // Clear custom input when preset selected
+        var customInput = document.getElementById('tip-custom');
+        if (customInput) customInput.value = '';
+      });
+    }
+    // Custom tip input
+    var tipCustomEl = document.getElementById('tip-custom');
+    if (tipCustomEl) {
+      tipCustomEl.addEventListener('input', function() {
+        var val = parseInt(this.value) || 0;
+        if (val > 0) {
+          selectedTip = val;
+          // Deselect all preset buttons
+          var all = document.querySelectorAll('.tip-opt');
+          for (var tj = 0; tj < all.length; tj++) {
+            all[tj].style.background = 'var(--card-bg)';
+            all[tj].style.color = 'var(--text)';
+            all[tj].style.borderColor = 'var(--border)';
+          }
+        } else {
+          selectedTip = 0;
         }
       });
     }
