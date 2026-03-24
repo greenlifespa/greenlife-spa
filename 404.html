@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Green Life Spa</title>
+<script>
+// GitHub Pages 404 redirect — redirects /greenlife-spa/any-path to /#/any-path
+var path = window.location.pathname;
+var repo = '/greenlife-spa';
+if (path.startsWith(repo)) {
+  var newPath = path.slice(repo.length) || '/';
+  window.location.replace(repo + '/' + (newPath === '/' ? '' : '?p=' + encodeURIComponent(newPath)));
+} else {
+  window.location.replace(repo + '/');
+}
+</script>
+</head>
+<body style="background:#f0fdf4;font-family:sans-serif;text-align:center;padding:60px 20px;">
+<div style="font-size:3rem;margin-bottom:16px;">🌿</div>
+<h2 style="color:#14532d;">Green Life Spa</h2>
+<p style="color:#6b7280;margin-bottom:20px;">Đang chuyển hướng...</p>
+<a href="/greenlife-spa/" style="background:#16a34a;color:#fff;padding:12px 24px;border-radius:100px;text-decoration:none;font-weight:600;">Vào App</a>
+</body>
+</html>

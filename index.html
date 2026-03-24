@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Green Life Spa</title>
-  <!-- PWA Meta Tags --> <link rel="manifest" href="/greenlife-spa/manifest.json"> <meta name="theme-color" content="#16a34a"> <meta name="mobile-web-app-capable" content="yes"> <meta name="apple-mobile-web-app-capable" content="yes"> <meta name="apple-mobile-web-app-status-bar-style" content="default"> <meta name="apple-mobile-web-app-title" content="Green Life"> <link rel="apple-touch-icon" href="/greenlife-spa/icon-192.png"> <script> if ('serviceWorker' in navigator) { window.addEventListener('load', function() { navigator.serviceWorker.register('/greenlife-spa/sw.js') .then(function(r) { console.log('SW OK', r); }) .catch(function(e) { console.log('SW lỗi', e); }); }); } </script>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -278,7 +277,7 @@ html.dark .prof-hero{background:linear-gradient(160deg,#0a1f14 0%,#112e1e 100%);
   <div class="splash-sub" style="display:flex;align-items:center;justify-content:center;gap:8px;"><svg style="opacity:0.6;" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13C4 7.5 11 2 11 2s7 5.5 7 11a7 7 0 0 1-7 7z"/><path d="M11 20v-9"/></svg>Spa &amp; Wellness<svg style="opacity:0.6;transform:scaleX(-1);" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 20A7 7 0 0 1 4 13C4 7.5 11 2 11 2s7 5.5 7 11a7 7 0 0 1-7 7z"/><path d="M11 20v-9"/></svg></div>
   <div class="splash-btns">
     <button class="btn-white" id="btn-to-auth"style="display:flex;align-items:center;justify-content:center;gap:8px;"><svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> Đăng nhập / Đăng ký</button>
-    <button class="btn-link" id="btn-to-mgr"><span style="display:inline-flex;align-items:center;gap:6px;vertical-align:middle;"><svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg> Dành cho Quản lý</span></button>
+<!-- Manager button removed - login via admin account -->
   </div>
 </div>
 
@@ -297,6 +296,7 @@ html.dark .prof-hero{background:linear-gradient(160deg,#0a1f14 0%,#112e1e 100%);
       <div class="fg"><label>Số điện thoại</label><input type="tel" id="login-phone" placeholder="0901 234 567"></div>
       <div class="fg"><label>Mật khẩu</label><input type="password" id="login-pass" placeholder="••••••••"></div>
       <button class="btn-green" id="btn-login">Đăng nhập</button>
+    <button type="button" id="btn-forgot-pwd" style="background:none;border:none;color:var(--accent);font-size:0.82rem;cursor:pointer;margin-top:8px;width:100%;text-align:center;">Quên mật khẩu?</button>
     </div>
     <div id="reg-form" style="display:none">
       <div class="fg"><label>Họ và tên</label><input type="text" id="reg-name" placeholder="Nguyễn Thị Lan"></div>
@@ -442,6 +442,20 @@ html.dark .prof-hero{background:linear-gradient(160deg,#0a1f14 0%,#112e1e 100%);
 </div>
 
 <!-- MANAGER LOGIN -->
+<!-- STAFF VIEW -->
+<div class="screen" id="staff-view">
+  <div style="background:linear-gradient(135deg,#14532d,#16a34a);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
+    <div style="color:#fff;font-weight:700;font-size:1rem;">Green Life Spa — Nhân viên</div>
+    <div style="display:flex;gap:8px;">
+      <span id="staff-view-name" style="color:rgba(255,255,255,0.8);font-size:0.85rem;"></span>
+      <button onclick="goScreen('splash')" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:5px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;">Thoát</button>
+    </div>
+  </div>
+  <div style="padding:16px;" id="staff-bookings-list">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch đặt hôm nay</div>
+  </div>
+</div>
+
 <div class="screen" id="mgr-login">
   <div class="auth-hdr" style="background:linear-gradient(160deg,#0e2d1e,#1a4d33);">
     <button class="back-btn" id="mgr-back"><svg style="transform:rotate(180deg);" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg> Quay lại</button>
@@ -616,7 +630,8 @@ var DB = {
     {id:4,custId:4,type:'earn',pts:800,note:'Tắm Trắng Toàn Thân',date:'2025-11-01'}
   ],
   nextCustId:6,
-  nextBkId:4
+  nextBkId:4,
+  adminPassword:'admin123'
 };
 
 var TIERS = [
@@ -746,6 +761,7 @@ function showMgrPage(pageId, btnId) {
 
   if (pageId === 'mgr-dashboard') renderDashboard();
   if (pageId === 'mgr-customers') renderCustomers();
+  if (pageId === 'mgr-bookings') renderAllBookings('all');
   if (pageId === 'mgr-points') renderPtsPage();
   if (pageId === 'mgr-services') renderServicesPage();
   if (pageId === 'mgr-bookings') renderAllBookings('all');
@@ -764,15 +780,31 @@ function closeModal() {
 
 // ===== AUTH =====
 function doLogin() {
-  var phone = document.getElementById('login-phone').value.replace(/\s/g,'');
+  var phone = document.getElementById('login-phone').value.replace(/\s/g,'').trim();
   var pass = document.getElementById('login-pass').value;
+  // Check admin login (username: admin, any device)
+  if (phone === 'admin' && pass === (DB.adminPassword || 'admin123')) {
+    goScreen('mgr');
+    renderDashboard();
+    return;
+  }
+  // Check staff login
+  for (var si = 0; si < (DB.staff||[]).length; si++) {
+    var stf = DB.staff[si];
+    if (stf.loginId && phone === stf.loginId && stf.loginPass && pass === stf.loginPass) {
+      goScreen('staff-view');
+      renderStaffView(stf);
+      return;
+    }
+  }
+  // Customer login
   var cust = null;
   for (var i = 0; i < DB.customers.length; i++) {
     if (DB.customers[i].phone === phone && DB.customers[i].pass === pass) {
       cust = DB.customers[i]; break;
     }
   }
-  if (!cust) { showToast('✗ Sai số điện thoại hoặc mật khẩu'); return; }
+  if (!cust) { showToast('✗ Sai thông tin đăng nhập'); return; }
   loginAs(cust);
 }
 
@@ -787,6 +819,7 @@ function doRegister() {
   }
   var c = {id:DB.nextCustId++,name:name,phone:phone,dob:dob,pass:pass,points:0,totalSpend:0,visits:0};
   DB.customers.push(c);
+  dbChanged();
   showToast('✓ Đăng ký thành công!');
   loginAs(c);
 }
@@ -1574,6 +1607,7 @@ function confirmBooking() {
   var msg = '✓ Đặt lịch xong! +' + fmt(rewardEarned) + ' RP';
   if (voucherDiscount > 0) msg += ' | Giảm ' + fmt(voucherDiscount) + 'đ';
   if (bkState.addonVoucherName) msg += ' | Add-on: ' + bkState.addonVoucherName;
+  dbChanged();
   showToast(msg);
   showPage('home');
 }
@@ -1711,6 +1745,7 @@ function redeemReward(vid, rp, name, minBill) {
           note:'Đổi voucher: ' + name,date:new Date().toISOString().split('T')[0]});
         currentUser = c2;
         closeModal();
+        dbChanged();
         showToast('✓ Đổi thành công! Voucher lưu trong Kho voucher');
         refreshRewards();
       });
@@ -1902,7 +1937,7 @@ function refreshProfile() {
 function mgrLogin() {
   var u = document.getElementById('mgr-user').value;
   var p = document.getElementById('mgr-pass').value;
-  if (u === 'admin' && p === 'admin123') {
+  if (u === 'admin' && p === (DB.adminPassword || 'admin123')) {
     goScreen('mgr');
     renderDashboard();
   } else { showToast('✗ Sai thông tin đăng nhập'); }
@@ -2060,16 +2095,76 @@ function openCustDetail(id) {
     '<div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;color:var(--text);">Giao dịch gần đây</div>' +
     txRows;
 
-  html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);">' +
-    '<button id="btn-del-cust-' + c.id + '" data-cid="' + c.id + '" style="width:100%;padding:10px;border-radius:100px;border:1.5px solid #fca5a5;background:none;color:#dc2626;font-size:0.85rem;cursor:pointer;">🗑 Xoá tài khoản khách hàng</button>' +
+  html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;">' +
+    '<button id="btn-reset-pwd-' + c.id + '" data-cid="' + c.id + '" style="flex:1;padding:10px;border-radius:100px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-size:0.85rem;cursor:pointer;">🔑 Đặt lại MK</button>' +
+    '<button id="btn-del-cust-' + c.id + '" data-cid="' + c.id + '" style="flex:1;padding:10px;border-radius:100px;border:1.5px solid #fca5a5;background:none;color:#dc2626;font-size:0.85rem;cursor:pointer;">🗑 Xoá TK</button>' +
     '</div>';
   openModal(c.name, html);
   setTimeout(function() {
     var delBtn = document.getElementById('btn-del-cust-' + id);
     if (delBtn) delBtn.addEventListener('click', function() { confirmDeleteCustomer(id); });
+    var resetBtn = document.getElementById('btn-reset-pwd-' + id);
+    if (resetBtn) resetBtn.addEventListener('click', function() {
+      var custId2 = parseInt(this.getAttribute('data-cid'));
+      openModal('Đặt lại mật khẩu',
+        '<div style="font-size:0.85rem;margin-bottom:12px;">Nhập mật khẩu mới cho khách hàng:</div>' +
+        '<input type="password" id="new-cust-pwd" class="mgr-inp" placeholder="Mật khẩu mới" style="margin-bottom:8px;">' +
+        '<input type="password" id="new-cust-pwd2" class="mgr-inp" placeholder="Nhập lại mật khẩu" style="margin-bottom:12px;">' +
+        '<div style="display:flex;gap:8px;">' +
+        '<button id="reset-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>' +
+        '<button id="reset-ok" data-cid="' + custId2 + '" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button>' +
+        '</div>');
+      setTimeout(function() {
+        var cancelBtn = document.getElementById('reset-cancel');
+        var okBtn = document.getElementById('reset-ok');
+        if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+        if (okBtn) okBtn.addEventListener('click', function() {
+          var pwd1 = document.getElementById('new-cust-pwd').value;
+          var pwd2 = document.getElementById('new-cust-pwd2').value;
+          if (!pwd1 || pwd1.length < 4) { showToast('✗ Mật khẩu ít nhất 4 ký tự'); return; }
+          if (pwd1 !== pwd2) { showToast('✗ Mật khẩu không khớp'); return; }
+          var cid = parseInt(this.getAttribute('data-cid'));
+          for (var ri = 0; ri < DB.customers.length; ri++) {
+            if (DB.customers[ri].id === cid) { DB.customers[ri].pass = pwd1; break; }
+          }
+          dbChanged();
+          closeModal();
+          showToast('✓ Đã đặt lại mật khẩu thành công');
+        });
+      }, 50);
+    });
   }, 50);
 }
 
+
+function openChangeAdminPwd() {
+  openModal('Đổi mật khẩu Admin',
+    '<div style="font-size:0.85rem;margin-bottom:12px;">Nhập mật khẩu hiện tại và mật khẩu mới:</div>' +
+    '<input type="password" id="cur-admin-pwd" class="mgr-inp" placeholder="Mật khẩu hiện tại" style="margin-bottom:8px;">' +
+    '<input type="password" id="new-admin-pwd" class="mgr-inp" placeholder="Mật khẩu mới (tối thiểu 6 ký tự)" style="margin-bottom:8px;">' +
+    '<input type="password" id="new-admin-pwd2" class="mgr-inp" placeholder="Nhập lại mật khẩu mới" style="margin-bottom:12px;">' +
+    '<div style="display:flex;gap:8px;">' +
+    '<button id="adm-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>' +
+    '<button id="adm-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đổi mật khẩu</button>' +
+    '</div>');
+  setTimeout(function() {
+    var cancelBtn = document.getElementById('adm-cancel');
+    var okBtn = document.getElementById('adm-ok');
+    if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+    if (okBtn) okBtn.addEventListener('click', function() {
+      var cur = document.getElementById('cur-admin-pwd').value;
+      var pwd1 = document.getElementById('new-admin-pwd').value;
+      var pwd2 = document.getElementById('new-admin-pwd2').value;
+      if (cur !== (DB.adminPassword || 'admin123')) { showToast('✗ Mật khẩu hiện tại không đúng'); return; }
+      if (!pwd1 || pwd1.length < 6) { showToast('✗ Mật khẩu mới ít nhất 6 ký tự'); return; }
+      if (pwd1 !== pwd2) { showToast('✗ Mật khẩu mới không khớp'); return; }
+      DB.adminPassword = pwd1;
+      dbChanged();
+      closeModal();
+      showToast('✓ Đã đổi mật khẩu admin thành công');
+    });
+  }, 50);
+}
 
 function confirmDeleteCustomer(custId) {
   var c = getCust(custId);
@@ -2097,6 +2192,7 @@ function confirmDeleteCustomer(custId) {
       DB.bookings = DB.bookings.filter(function(bk) { return bk.custId !== cid; });
       DB.transactions = DB.transactions.filter(function(tx) { return tx.custId !== cid; });
       closeModal();
+      dbChanged();
       showToast('✓ Đã xoá tài khoản');
       renderCustomers();
     });
@@ -2200,6 +2296,7 @@ function adjustPoints() {
   document.getElementById('pts-note').value = '';
   var previewEl = document.getElementById('pts-preview');
   if (previewEl) previewEl.style.display = 'none';
+  dbChanged();
   renderPtsPage();
   // If current logged-in customer is affected, update home display
   if (currentUser && currentUser.id === custId) {
@@ -2265,9 +2362,42 @@ function renderServicesPage() {
   document.getElementById('mgr-staff-list').innerHTML = shtml;
 }
 
+function renderStaffView(stf) {
+  document.getElementById('staff-view-name').textContent = stf.name;
+  var today = new Date().toISOString().split('T')[0];
+  var bks = DB.bookings.filter(function(b) { return b.date === today || b.status === 'confirmed' || b.status === 'pending'; });
+  bks = bks.slice().reverse();
+  var stLbl = {pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
+  var html = '';
+  if (!bks.length) {
+    html = '<div style="text-align:center;padding:40px;color:var(--muted);">Không có lịch đặt</div>';
+  }
+  for (var i = 0; i < bks.length; i++) {
+    var b = bks[i];
+    var c = getCust(b.custId);
+    html += '<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;">' +
+      '<div><div style="font-weight:600;font-size:0.92rem;">' + (c?c.name:'Khách') + '</div>' +
+      '<div style="font-size:0.78rem;color:var(--muted);">📞 ' + (c?c.phone:'') + '</div></div>' +
+      '<span class="st-bdg st-' + b.status + '">' + stLbl[b.status] + '</span>' +
+      '</div>' +
+      '<div style="font-size:0.85rem;margin-bottom:4px;">🛎 ' + b.service + '</div>' +
+      '<div style="font-size:0.82rem;color:var(--muted);">⏰ ' + b.date + ' ' + b.time + ' · 👤 ' + b.staff + '</div>' +
+      '<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;">' +
+      '<span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span>' +
+      '<span style="font-weight:700;font-size:1rem;color:var(--accent);">' + fmt(b.actualPaid||b.amount) + ' VND</span>' +
+      '</div>' +
+      '</div>';
+  }
+  document.getElementById('staff-bookings-list').innerHTML =
+    '<div style="font-family:serif;font-size:1.3rem;color:var(--text);margin-bottom:12px;">Lịch hôm nay & đang chờ</div>' + html;
+}
+
 function openAddStaff() {
   openModal('Thêm nhân viên mới',
     '<div class="fg"><label>Tên nhân viên</label><input type="text" id="ns-staff-name" class="mgr-inp" placeholder="Ví dụ: Linh"></div>' +
+    '<div class="fg"><label>ID đăng nhập (để nhân viên đăng nhập)</label><input type="text" id="ns-staff-login" class="mgr-inp" placeholder="Ví dụ: nv_linh"></div>' +
+    '<div class="fg"><label>Mật khẩu nhân viên</label><input type="password" id="ns-staff-pass" class="mgr-inp" placeholder="Mật khẩu"></div>' +
     '<button class="btn-green" id="btn-save-staff" style="margin-top:0.5rem;">Lưu nhân viên</button>'
   );
   setTimeout(function() {
@@ -2275,10 +2405,13 @@ function openAddStaff() {
     if (!saveBtn) return;
     saveBtn.addEventListener('click', function() {
       var name = (document.getElementById('ns-staff-name').value || '').trim();
+      var loginId = (document.getElementById('ns-staff-login').value || '').trim();
+      var loginPass = (document.getElementById('ns-staff-pass').value || '').trim();
       if (!name) { showToast('✗ Nhập tên nhân viên'); return; }
-      DB.staff.push({id: DB.staff.length + 1, name: name, rating: 5.0, icon: '👤', reviews: [], tips: 0});
+      DB.staff.push({id: DB.staff.length + 1, name: name, rating: 5.0, icon: '👤', reviews: [], tips: 0, loginId: loginId, loginPass: loginPass});
+      dbChanged();
       closeModal();
-      showToast('✓ Đã thêm nhân viên: ' + name);
+      showToast('✓ Đã thêm nhân viên: ' + name + (loginId ? ' (ID: ' + loginId + ')' : ''));
       renderServicesPage();
     });
   }, 50);
@@ -2359,16 +2492,56 @@ function renderAllBookings(filter) {
       for (var k = 0; k < DB.bookings.length; k++) {
         if (DB.bookings[k].id === bid) { DB.bookings[k].status = this.value; break; }
       }
+      dbChanged();
       showToast('✓ Cập nhật trạng thái');
     });
   }
 }
 
 // ===== BIND ALL EVENTS ON LOAD =====
+// ===== DATA PERSISTENCE (localStorage) =====
+function saveDB() {
+  try {
+    var snapshot = {
+      customers: DB.customers,
+      bookings: DB.bookings,
+      transactions: DB.transactions,
+      services: DB.services,
+      staff: DB.staff,
+      nextCustId: DB.nextCustId,
+      nextBkId: DB.nextBkId,
+      adminPassword: DB.adminPassword || 'admin123'
+    };
+    localStorage.setItem('gl_db', JSON.stringify(snapshot));
+  } catch(e) { console.log('Save error', e); }
+}
+
+function loadDB() {
+  try {
+    var saved = localStorage.getItem('gl_db');
+    if (!saved) return;
+    var data = JSON.parse(saved);
+    if (data.customers) DB.customers = data.customers;
+    if (data.bookings) DB.bookings = data.bookings;
+    if (data.transactions) DB.transactions = data.transactions;
+    if (data.services) DB.services = data.services;
+    if (data.staff) DB.staff = data.staff;
+    if (data.nextCustId) DB.nextCustId = data.nextCustId;
+    if (data.nextBkId) DB.nextBkId = data.nextBkId;
+    if (data.adminPassword) DB.adminPassword = data.adminPassword;
+  } catch(e) { console.log('Load error', e); }
+}
+
+// Auto-save on any DB mutation — call after every change
+function dbChanged() { saveDB(); }
+
 window.addEventListener('load', function() {
+  // Load saved data from localStorage
+  loadDB();
+
   // Splash
   document.getElementById('btn-to-auth').addEventListener('click', function() { goScreen('auth'); });
-  document.getElementById('btn-to-mgr').addEventListener('click', function() { goScreen('mgr-login'); });
+  // btn-to-mgr removed from splash
 
   // Auth
   document.getElementById('auth-back').addEventListener('click', function() { goScreen('splash'); });
@@ -2385,6 +2558,41 @@ window.addEventListener('load', function() {
     document.getElementById('login-form').style.display = 'none';
   });
   document.getElementById('btn-login').addEventListener('click', doLogin);
+  document.getElementById('btn-forgot-pwd').addEventListener('click', function() {
+    openModal('Quên mật khẩu',
+      '<div style="font-size:0.85rem;color:var(--muted);margin-bottom:12px;">Nhập số điện thoại đã đăng ký để đặt lại mật khẩu:</div>' +
+      '<input type="tel" id="forgot-phone" class="mgr-inp" placeholder="Số điện thoại" style="margin-bottom:8px;">' +
+      '<input type="password" id="forgot-newpwd" class="mgr-inp" placeholder="Mật khẩu mới" style="margin-bottom:8px;">' +
+      '<input type="password" id="forgot-newpwd2" class="mgr-inp" placeholder="Nhập lại mật khẩu mới" style="margin-bottom:12px;">' +
+      '<div style="display:flex;gap:8px;">' +
+      '<button id="fp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>' +
+      '<button id="fp-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button>' +
+      '</div>');
+    setTimeout(function() {
+      var cancelBtn = document.getElementById('fp-cancel');
+      var okBtn = document.getElementById('fp-ok');
+      if (cancelBtn) cancelBtn.addEventListener('click', closeModal);
+      if (okBtn) okBtn.addEventListener('click', function() {
+        var phone = (document.getElementById('forgot-phone').value||'').replace(/\s/g,'');
+        var pwd1 = document.getElementById('forgot-newpwd').value;
+        var pwd2 = document.getElementById('forgot-newpwd2').value;
+        if (!phone) { showToast('✗ Nhập số điện thoại'); return; }
+        if (!pwd1 || pwd1.length < 4) { showToast('✗ Mật khẩu ít nhất 4 ký tự'); return; }
+        if (pwd1 !== pwd2) { showToast('✗ Mật khẩu không khớp'); return; }
+        var found = false;
+        for (var fi = 0; fi < DB.customers.length; fi++) {
+          if (DB.customers[fi].phone === phone) {
+            DB.customers[fi].pass = pwd1;
+            found = true; break;
+          }
+        }
+        if (!found) { showToast('✗ Không tìm thấy số điện thoại này'); return; }
+        dbChanged();
+        closeModal();
+        showToast('✓ Đã đặt lại mật khẩu! Vui lòng đăng nhập lại');
+      });
+    }, 50);
+  });
   document.getElementById('btn-reg').addEventListener('click', doRegister);
 
   // App nav
@@ -2456,6 +2664,7 @@ window.addEventListener('load', function() {
         if (c) {
           c.avatar = dataUrl;
           currentUser.avatar = dataUrl;
+          dbChanged();
           var avImg = document.getElementById('prof-av-img');
           var avEmoji = document.getElementById('prof-av-emoji');
           if (avImg) { avImg.src = dataUrl; avImg.style.display = 'block'; }
@@ -2472,7 +2681,7 @@ window.addEventListener('load', function() {
   document.getElementById('btn-logout').addEventListener('click', doLogout);
 
   // Manager login
-  document.getElementById('mgr-back').addEventListener('click', function() { goScreen('splash'); });
+  // mgr-back removed
   document.getElementById('btn-mgr-login').addEventListener('click', mgrLogin);
   document.getElementById('btn-mgr-logout').addEventListener('click', function() { goScreen('splash'); });
 
@@ -2632,6 +2841,7 @@ function openReviewModal(bk) {
       }
 
       // Tips
+      dbChanged();
       if (selectedTip > 0 && tipStaffId) {
         var c2 = getCust(bk.custId);
         var bal = c2 ? (c2.balance || 0) : 0;
