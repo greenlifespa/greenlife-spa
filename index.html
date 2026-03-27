@@ -195,7 +195,18 @@ html.dark .contact-page{color:#6ee09a;}
 <div class="review-popup-ov" id="review-popup-ov" style="display:none;"><div class="review-popup-box"><button id="review-popup-close" style="position:absolute;right:1rem;top:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);">✕</button><div id="review-popup-body"></div></div></div>
 <div class="loading-ov" id="loading-ov" style="display:none;"><div class="loading-box">⏳ Đang tải...</div></div>
 
-<!-- SPLASH -->
+<!-- Video Popup -->
+<div id="video-popup-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:500;flex-direction:column;align-items:center;justify-content:center;padding:1rem;">
+  <div style="width:100%;max-width:480px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+      <div id="video-popup-title" style="color:#fff;font-size:0.9rem;font-weight:500;flex:1;margin-right:8px;"></div>
+      <button onclick="closeVideoPopup()" style="background:rgba(255,255,255,0.2);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:1rem;flex-shrink:0;">✕</button>
+    </div>
+    <div style="position:relative;padding-bottom:56.25%;height:0;border-radius:12px;overflow:hidden;">
+      <iframe id="video-iframe" style="position:absolute;top:0;left:0;width:100%;height:100%;border:none;" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe>
+    </div>
+  </div>
+</div>
 <div class="screen active" id="splash">
   <div style="margin-bottom:1rem;">
     <img src="/logo.png" alt="Green Life Spa" style="width:140px;height:140px;object-fit:contain;border-radius:50%;">
@@ -309,6 +320,17 @@ html.dark .contact-page{color:#6ee09a;}
     <div class="rwd-cards" id="rwd-cards"></div>
   </div>
 
+  <div class="page" id="page-news">
+    <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1rem;">Tin tức &amp; Sức khoẻ</div>
+    <div class="filter-tabs" id="news-cats">
+      <button class="ftab active" data-cat="">Tất cả</button>
+      <button class="ftab" data-cat="suckhoe">💚 Sức khoẻ</button>
+      <button class="ftab" data-cat="lamdep">✨ Làm đẹp</button>
+      <button class="ftab" data-cat="giaitri">🎬 Giải trí</button>
+    </div>
+    <div id="news-list"></div>
+  </div>
+
   <div class="page" id="page-history">
     <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1rem;">Lịch sử giao dịch</div>
     <div class="filter-tabs">
@@ -345,9 +367,9 @@ html.dark .contact-page{color:#6ee09a;}
 
   <div class="bottomnav">
     <button class="nav-item active" id="nav-home"><span class="nav-icon">🏠</span>Trang chủ</button>
+    <button class="nav-item" id="nav-news"><span class="nav-icon">📰</span>Tin tức</button>
     <button class="nav-item" id="nav-booking"><span class="nav-icon">📅</span>Đặt lịch</button>
     <button class="nav-item" id="nav-rewards"><span class="nav-icon">🎁</span>Phần thưởng</button>
-    <button class="nav-item" id="nav-history"><span class="nav-icon">📊</span>Lịch sử</button>
     <button class="nav-item" id="nav-profile"><span class="nav-icon">👤</span>Tôi</button>
   </div>
 </div>
@@ -400,6 +422,14 @@ html.dark .contact-page{color:#6ee09a;}
   <div class="mgr-page" id="mgr-customers"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Khách hàng</div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="cust-search" placeholder="Tìm theo tên, SĐT..."></div><div id="customers-list"></div></div>
   <div class="mgr-page" id="mgr-points"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div><div class="pts-form"><div style="font-size:0.88rem;font-weight:500;margin-bottom:1rem;">Nạp tiền / Điều chỉnh điểm</div><div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div><div class="fg"><label>Loại thao tác</label><select id="pts-type" class="mgr-inp"><option value="topup">💰 Nạp tiền (VND)</option><option value="add">➕ Cộng điểm</option><option value="sub">➖ Trừ điểm</option></select></div><div class="fg"><label>Số tiền / Điểm</label><input type="number" id="pts-amount" class="mgr-inp"></div><div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div><button class="btn-green" id="btn-adj-pts">Thực hiện</button></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử gần đây</div><div id="pts-history"></div></div>
   <div class="mgr-page" id="mgr-services"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span><div style="display:flex;gap:8px;"><button class="btn-sm" id="btn-add-svc">+ Dịch vụ</button><button class="btn-sm" id="btn-add-staff" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);">+ Nhân viên</button></div></div><div id="mgr-svc-list"></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:var(--g800);margin:1rem 0 0.8rem;">Nhân viên</div><div id="mgr-staff-list"></div></div>
+  <div class="mgr-page" id="mgr-posts">
+    <div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;">
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tin tức</span>
+      <button class="btn-sm" id="btn-add-post">+ Thêm bài</button>
+    </div>
+    <div id="mgr-posts-list"></div>
+  </div>
+
   <div class="mgr-page" id="mgr-bookings"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</div><div class="filter-tabs"><button class="ftab active" id="fb-all">Tất cả</button><button class="ftab" id="fb-pending">Chờ</button><button class="ftab" id="fb-confirmed">Xác nhận</button><button class="ftab" id="fb-done">Hoàn thành</button></div><div id="all-bookings"></div></div>
   <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div>
   <div class="mgr-nav">
@@ -407,6 +437,7 @@ html.dark .contact-page{color:#6ee09a;}
     <button class="mgr-nav-item" id="mnav-cust"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">👥</span>Khách</button>
     <button class="mgr-nav-item" id="mnav-pts"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">⭐</span>Điểm</button>
     <button class="mgr-nav-item" id="mnav-svc"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">✨</span>Dịch vụ</button>
+    <button class="mgr-nav-item" id="mnav-posts"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📰</span>Tin tức</button>
     <button class="mgr-nav-item" id="mnav-bk"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📅</span>Đặt lịch</button>
     <button class="mgr-nav-item" id="mnav-acc"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">🔑</span>TK</button>
   </div>
@@ -470,9 +501,10 @@ function today(){return new Date().toISOString().split('T')[0];}
 function showPage(pageId){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
   document.getElementById('page-'+pageId).classList.add('active');
-  ['home','booking','rewards','history','profile'].forEach(function(n){var el=document.getElementById('nav-'+n);if(el)el.classList.remove('active');});
+  ['home','news','booking','rewards','history','profile'].forEach(function(n){var el=document.getElementById('nav-'+n);if(el)el.classList.remove('active');});
   var an=document.getElementById('nav-'+pageId);if(an)an.classList.add('active');
   if(pageId==='home')refreshHome();
+  if(pageId==='news')renderNews('');
   if(pageId==='rewards')refreshRewards();
   if(pageId==='history')renderHistory('all');
   if(pageId==='profile')refreshProfile();
@@ -487,6 +519,7 @@ function showMgrPage(pid,bid){
   if(pid==='mgr-bookings')renderAllBookings('all');
   if(pid==='mgr-points')renderPtsPage();
   if(pid==='mgr-services')renderServicesPage();
+  if(pid==='mgr-posts')renderMgrPosts();
   if(pid==='mgr-accounts')renderAccountsPage();
   window.scrollTo(0,0);
 }
@@ -830,6 +863,159 @@ async function mgrCancelBooking(bkId,onDone){
 }
 
 // ============================================================
+// TIN TỨC
+// ============================================================
+function getYoutubeId(url){
+  var m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
+  return m?m[1]:null;
+}
+function openVideoPopup(videoId, videoType, title){
+  var src='';
+  if(videoType==='youtube'){
+    src='https://www.youtube.com/embed/'+videoId+'?autoplay=1';
+  }
+  document.getElementById('video-iframe').src=src;
+  document.getElementById('video-popup-title').textContent=title||'';
+  var ov=document.getElementById('video-popup-ov');
+  ov.style.display='flex';
+}
+function closeVideoPopup(){
+  document.getElementById('video-iframe').src='';
+  document.getElementById('video-popup-ov').style.display='none';
+}
+
+async function renderNews(cat){
+  showLoading(true);
+  var q='/posts'+(cat?'?category='+cat:'');
+  var posts=await api(q)||[];
+  showLoading(false);
+  var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí'};
+  var html='';
+  if(!posts.length){
+    html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
+  }
+  posts.forEach(function(p){
+    var hasVideo=p.video_id&&p.video_type;
+    var thumb=p.thumbnail||(p.video_id?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+    html+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
+      +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:180px;object-fit:cover;" onerror="this.style.display=\'none\'">'
+        +(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.4rem;margin-left:4px;">▶</span></div></div>':'')
+        +'</div>':'')
+      +'<div style="padding:12px;">'
+      +(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+( catLabel[p.category]||p.category)+'</span>':'')
+      +'<div style="font-size:0.92rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+p.title+'</div>'
+      +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+p.description+'</div>':'')
+      +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+( hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div>'
+      +'</div></div>';
+  });
+  document.getElementById('news-list').innerHTML=html;
+}
+
+async function renderMgrPosts(){
+  showLoading(true);
+  var posts=await api('/posts')||[];
+  showLoading(false);
+  var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí'};
+  var html='';
+  if(!posts.length)html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
+  posts.forEach(function(p){
+    var thumb=p.thumbnail||(p.video_id?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">'
+      +(thumb?'<img src="'+thumb+'" style="width:72px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
+      +'<div style="flex:1;min-width:0;">'
+      +'<div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div>'
+      +'<div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;flex-shrink:0;">'
+      +'<button data-edit-post="'+p.id+'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text);">✏️</button>'
+      +'<button data-del-post="'+p.id+'" style="background:none;border:1px solid #fca5a5;border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:#dc2626;">🗑</button>'
+      +'</div></div>';
+  });
+  var el=document.getElementById('mgr-posts-list');if(el)el.innerHTML=html;
+  document.querySelectorAll('[data-edit-post]').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      var pid=parseInt(this.getAttribute('data-edit-post'));
+      var p=posts.find(function(x){return x.id===pid;});
+      if(p)openEditPost(p);
+    });
+  });
+  document.querySelectorAll('[data-del-post]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var pid=parseInt(this.getAttribute('data-del-post'));
+      if(!confirm('Xóa bài viết này?'))return;
+      showLoading(true);await api('/posts/'+pid,'DELETE');showLoading(false);
+      showToast('✓ Đã xóa');renderMgrPosts();
+    });
+  });
+}
+
+function openAddPost(){
+  openModal('➕ Thêm bài viết',
+    '<div class="fg"><label>Tiêu đề</label><input type="text" id="post-title" class="mgr-inp" placeholder="Tiêu đề bài viết"></div>'
+    +'<div class="fg"><label>Mô tả ngắn</label><textarea id="post-desc" class="mgr-inp" rows="2" placeholder="Mô tả ngắn..."></textarea></div>'
+    +'<div class="fg"><label>Link URL (YouTube hoặc bài viết)</label><input type="text" id="post-url" class="mgr-inp" placeholder="https://youtube.com/watch?v=..."></div>'
+    +'<div class="fg"><label>Ảnh thumbnail (URL ảnh, để trống nếu dùng YouTube)</label><input type="text" id="post-thumb" class="mgr-inp" placeholder="https://..."></div>'
+    +'<div class="fg"><label>Danh mục</label>'
+    +'<select id="post-cat" class="mgr-inp"><option value="suckhoe">💚 Sức khoẻ</option><option value="lamdep">✨ Làm đẹp</option><option value="giaitri">🎬 Giải trí</option></select></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="post-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
+    +'<button id="post-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đăng</button>'
+    +'</div>');
+  setTimeout(function(){
+    var cancel=document.getElementById('post-cancel');var ok=document.getElementById('post-ok');
+    if(cancel)cancel.addEventListener('click',closeModal);
+    if(ok)ok.addEventListener('click',async function(){
+      var title=(document.getElementById('post-title').value||'').trim();
+      var desc=document.getElementById('post-desc').value||'';
+      var url=document.getElementById('post-url').value||'';
+      var thumb=document.getElementById('post-thumb').value||'';
+      var cat=document.getElementById('post-cat').value;
+      if(!title){showToast('✗ Nhập tiêu đề');return;}
+      var videoId=null,videoType=null;
+      var ytId=getYoutubeId(url);
+      if(ytId){videoId=ytId;videoType='youtube';}
+      showLoading(true);
+      await api('/posts','POST',{title:title,description:desc,url:url,thumbnail:thumb,video_id:videoId,video_type:videoType,category:cat,active:true});
+      showLoading(false);closeModal();showToast('✓ Đã đăng bài');renderMgrPosts();
+    });
+  },50);
+}
+
+function openEditPost(p){
+  openModal('✏️ Sửa bài viết',
+    '<div class="fg"><label>Tiêu đề</label><input type="text" id="ep-title" class="mgr-inp" value="'+p.title+'"></div>'
+    +'<div class="fg"><label>Mô tả</label><textarea id="ep-desc" class="mgr-inp" rows="2">'+( p.description||'')+'</textarea></div>'
+    +'<div class="fg"><label>Link URL</label><input type="text" id="ep-url" class="mgr-inp" value="'+(p.url||'')+'"></div>'
+    +'<div class="fg"><label>Thumbnail</label><input type="text" id="ep-thumb" class="mgr-inp" value="'+(p.thumbnail||'')+'"></div>'
+    +'<div class="fg"><label>Danh mục</label>'
+    +'<select id="ep-cat" class="mgr-inp"><option value="suckhoe"'+(p.category==='suckhoe'?' selected':'')+'>💚 Sức khoẻ</option><option value="lamdep"'+(p.category==='lamdep'?' selected':'')+'>✨ Làm đẹp</option><option value="giaitri"'+(p.category==='giaitri'?' selected':'')+'>🎬 Giải trí</option></select></div>'
+    +'<div style="display:flex;gap:8px;">'
+    +'<button id="ep-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
+    +'<button id="ep-ok" data-pid="'+p.id+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Lưu</button>'
+    +'</div>');
+  setTimeout(function(){
+    var cancel=document.getElementById('ep-cancel');var ok=document.getElementById('ep-ok');
+    if(cancel)cancel.addEventListener('click',closeModal);
+    if(ok)ok.addEventListener('click',async function(){
+      var pid=parseInt(this.getAttribute('data-pid'));
+      var url=document.getElementById('ep-url').value||'';
+      var videoId=null,videoType=null;
+      var ytId=getYoutubeId(url);
+      if(ytId){videoId=ytId;videoType='youtube';}
+      showLoading(true);
+      await api('/posts/'+pid,'PUT',{
+        title:document.getElementById('ep-title').value,
+        description:document.getElementById('ep-desc').value,
+        url:url,thumbnail:document.getElementById('ep-thumb').value,
+        video_id:videoId,video_type:videoType,
+        category:document.getElementById('ep-cat').value
+      });
+      showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderMgrPosts();
+    });
+  },50);
+}
+
+// ============================================================
 // PROFILE
 // ============================================================
 async function refreshProfile(){
@@ -1146,9 +1332,9 @@ window.addEventListener('load',function(){
   document.getElementById('login-pass').addEventListener('keydown',function(e){if(e.key==='Enter')doLogin();});
   document.getElementById('topbar-user').addEventListener('click',function(){showPage('profile');});
   document.getElementById('nav-home').addEventListener('click',function(){showPage('home');});
+  document.getElementById('nav-news').addEventListener('click',function(){showPage('news');});
   document.getElementById('nav-booking').addEventListener('click',function(){showPage('booking');});
   document.getElementById('nav-rewards').addEventListener('click',function(){showPage('rewards');});
-  document.getElementById('nav-history').addEventListener('click',function(){showPage('history');});
   document.getElementById('nav-profile').addEventListener('click',function(){showPage('profile');});
   document.getElementById('qa-booking').addEventListener('click',function(){showPage('booking');});
   document.getElementById('qa-rewards').addEventListener('click',function(){showPage('rewards');});
@@ -1186,6 +1372,7 @@ window.addEventListener('load',function(){
   document.getElementById('mnav-cust').addEventListener('click',function(){showMgrPage('mgr-customers','mnav-cust');});
   document.getElementById('mnav-pts').addEventListener('click',function(){showMgrPage('mgr-points','mnav-pts');});
   document.getElementById('mnav-svc').addEventListener('click',function(){showMgrPage('mgr-services','mnav-svc');});
+  document.getElementById('mnav-posts').addEventListener('click',function(){showMgrPage('mgr-posts','mnav-posts');});
   document.getElementById('mnav-bk').addEventListener('click',function(){showMgrPage('mgr-bookings','mnav-bk');});
   document.getElementById('mnav-acc').addEventListener('click',function(){showMgrPage('mgr-accounts','mnav-acc');});
   document.getElementById('cust-search').addEventListener('input',renderCustomers);
@@ -1200,6 +1387,17 @@ window.addEventListener('load',function(){
   document.getElementById('fb-done').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('done');});
   document.getElementById('modal-close').addEventListener('click',closeModal);
   document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+  document.getElementById('btn-add-post').addEventListener('click',openAddPost);
+
+  // News category filter
+  document.querySelectorAll('#news-cats .ftab').forEach(function(btn){
+    btn.addEventListener('click',function(){
+      document.querySelectorAll('#news-cats .ftab').forEach(function(b){b.classList.remove('active');});
+      this.classList.add('active');
+      renderNews(this.getAttribute('data-cat'));
+    });
+  });
+
   document.getElementById('review-popup-close').addEventListener('click',closeReviewPopup);
   document.getElementById('review-popup-ov').addEventListener('click',function(e){if(e.target===this)closeReviewPopup();});
 });
