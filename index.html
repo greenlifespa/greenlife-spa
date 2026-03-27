@@ -239,7 +239,10 @@ html.dark .contact-page{color:#6ee09a;}
 <!-- MAIN APP -->
 <div class="screen" id="app">
   <div class="topbar">
-    <div class="topbar-brand">🌿 Green Life</div>
+    <div class="topbar-brand" style="display:flex;align-items:center;gap:8px;">
+      <img src="/logo.png" alt="logo" style="width:32px;height:32px;object-fit:contain;border-radius:50%;">
+      Green Life
+    </div>
     <div style="display:flex;align-items:center;gap:10px;">
       <button onclick="toggleTheme()" style="background:none;border:none;cursor:pointer;color:var(--muted);" id="theme-toggle">🌙</button>
       <div class="topbar-user" id="topbar-user">
@@ -352,7 +355,10 @@ html.dark .contact-page{color:#6ee09a;}
 <!-- STAFF VIEW -->
 <div class="screen" id="staff-view">
   <div style="background:linear-gradient(135deg,#14532d,#16a34a);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;">
-    <div style="color:#fff;font-weight:700;font-size:1rem;">🌿 Green Life Spa — Nhân viên</div>
+    <div style="display:flex;align-items:center;gap:10px;color:#fff;font-weight:700;font-size:1rem;">
+      <img src="/logo.png" alt="logo" style="width:32px;height:32px;object-fit:contain;border-radius:50%;background:#fff;">
+      Green Life Spa — Nhân viên
+    </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <span id="staff-view-name" style="color:rgba(255,255,255,0.8);font-size:0.85rem;"></span>
       <button onclick="goScreen('splash')" style="background:rgba(255,255,255,0.15);border:none;color:#fff;padding:5px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;">Thoát</button>
@@ -377,7 +383,13 @@ html.dark .contact-page{color:#6ee09a;}
 <!-- MANAGER APP -->
 <div class="screen" id="mgr">
   <div class="mgr-top">
-    <div><div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:#fff;">🌿 Green Life Spa</div><div style="font-size:0.62rem;color:rgba(255,255,255,0.45);text-transform:uppercase;">Quản lý</div></div>
+    <div style="display:flex;align-items:center;gap:10px;">
+      <img src="/logo.png" alt="logo" style="width:36px;height:36px;object-fit:contain;border-radius:50%;background:#fff;padding:2px;">
+      <div>
+        <div style="font-family:'Cormorant Garamond',serif;font-size:1.3rem;color:#fff;">Green Life Spa</div>
+        <div style="font-size:0.62rem;color:rgba(255,255,255,0.45);text-transform:uppercase;">Quản lý</div>
+      </div>
+    </div>
     <div style="display:flex;align-items:center;gap:8px;">
       <button onclick="toggleTheme()" style="background:none;border:none;color:rgba(255,255,255,0.7);cursor:pointer;" id="mgr-theme-toggle">🌙</button>
       <button id="btn-mgr-change-pwd" style="background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.7);padding:6px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🔑 Đổi MK</button>
