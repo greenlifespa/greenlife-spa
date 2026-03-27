@@ -482,18 +482,14 @@ async function api(path,method,body){
 // TIERS & ADDONS
 // ============================================================
 var TIERS=[
-  {name:'Đồng',min:0,max:4999,icon:'🥉',cls:'t-member',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000}]},
-  {name:'Bạc',min:5000,max:11999,icon:'🥈',cls:'t-silver',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000},{id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:500000}]},
-  {name:'Vàng',min:12000,max:24999,icon:'🥇',cls:'t-gold',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000},{id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:500000},{id:'v150',name:'Voucher 150.000đ',rp:150000,value:150000,minBill:600000},{id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:800000}]},
-  {name:'Bạch Kim',min:25000,max:44999,icon:'💎',cls:'t-platinum',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000},{id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:500000},{id:'v150',name:'Voucher 150.000đ',rp:150000,value:150000,minBill:600000},{id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:800000},{id:'v250',name:'Voucher 250.000đ',rp:250000,value:250000,minBill:900000}]},
-  {name:'Kim Cương',min:45000,max:69999,icon:'👑',cls:'t-diamond',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000},{id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:500000},{id:'v150',name:'Voucher 150.000đ',rp:150000,value:150000,minBill:600000},{id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:800000},{id:'v250',name:'Voucher 250.000đ',rp:250000,value:250000,minBill:900000},{id:'v300',name:'Voucher 300.000đ',rp:300000,value:300000,minBill:1000000}]},
-  {name:'VIP',min:70000,max:999999999,icon:'⭐',cls:'t-vip',earnRate:2,vouchers:[{id:'v50',name:'Voucher 50.000đ',rp:50000,value:50000,minBill:300000},{id:'v100',name:'Voucher 100.000đ',rp:100000,value:100000,minBill:500000},{id:'v150',name:'Voucher 150.000đ',rp:150000,value:150000,minBill:600000},{id:'v200',name:'Voucher 200.000đ',rp:200000,value:200000,minBill:800000},{id:'v250',name:'Voucher 250.000đ',rp:250000,value:250000,minBill:900000},{id:'v300',name:'Voucher 300.000đ',rp:300000,value:300000,minBill:1000000},{id:'v400',name:'Voucher 400.000đ',rp:400000,value:400000,minBill:1200000}]}
+  {name:'Đồng',min:0,max:4999,icon:'🥉',cls:'t-member',earnRate:2,vouchers:[]},
+  {name:'Bạc',min:5000,max:11999,icon:'🥈',cls:'t-silver',earnRate:2,vouchers:[]},
+  {name:'Vàng',min:12000,max:24999,icon:'🥇',cls:'t-gold',earnRate:2,vouchers:[]},
+  {name:'Bạch Kim',min:25000,max:44999,icon:'💎',cls:'t-platinum',earnRate:2,vouchers:[]},
+  {name:'Kim Cương',min:45000,max:69999,icon:'👑',cls:'t-diamond',earnRate:2,vouchers:[]},
+  {name:'VIP',min:70000,max:999999999,icon:'⭐',cls:'t-vip',earnRate:2,vouchers:[]}
 ];
-var ADDON_VOUCHERS=[
-  {id:'addon_khan',name:'Add-on: Khăn nóng',rp:20000,value:0,minBill:0,isAddon:true,desc:'Thêm dịch vụ khăn nóng'},
-  {id:'addon_chuom',name:'Add-on: Chườm thảo dược',rp:20000,value:0,minBill:0,isAddon:true,desc:'Chườm thảo dược thư giãn'},
-  {id:'addon_10p',name:'Add-on: Thêm 10 phút',rp:20000,value:0,minBill:0,isAddon:true,desc:'Kéo dài thêm 10 phút'},
-];
+var ADDON_VOUCHERS=[];
 
 // ============================================================
 // STATE
