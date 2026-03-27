@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Green Life Spa</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<link rel="manifest" href="/manifest.json">
 <style>
 :root {
   --g50:#f0fdf4;--g100:#dcfce7;--g200:#bbf7d0;--g400:#4ade80;
@@ -198,7 +197,9 @@ html.dark .contact-page{color:#6ee09a;}
 
 <!-- SPLASH -->
 <div class="screen active" id="splash">
-  <div style="margin-bottom:1.5rem;font-size:3rem;color:#4ade80;">🌿</div>
+  <div style="margin-bottom:1rem;">
+    <img src="/logo.png" alt="Green Life Spa" style="width:140px;height:140px;object-fit:contain;border-radius:50%;">
+  </div>
   <div class="splash-title">Green Life Spa</div>
   <div class="splash-sub">Spa &amp; Wellness</div>
   <div class="splash-btns">
@@ -210,7 +211,10 @@ html.dark .contact-page{color:#6ee09a;}
 <div class="screen" id="auth">
   <div class="auth-hdr">
     <button class="back-btn" id="auth-back">← Quay lại</button>
-    <div class="auth-logo">Green Life Spa<span style="font-size:0.75rem;display:block;opacity:0.65;">Spa &amp; Wellness</span></div>
+    <div style="text-align:center;">
+      <img src="/logo.png" alt="Green Life Spa" style="width:90px;height:90px;object-fit:contain;border-radius:50%;margin-bottom:8px;">
+      <div class="auth-logo">Green Life Spa<span style="font-size:0.75rem;display:block;opacity:0.65;">Spa &amp; Wellness</span></div>
+    </div>
   </div>
   <div class="auth-body">
     <div class="auth-tabs">
@@ -670,9 +674,10 @@ async function confirmBooking(){
   var staffNames=bkState.staffIds.map(function(sid){var f=allStaff.find(function(s){return s.id===sid;});return f?f.name:'?';});
   var bkRes=await api('/bookings','POST',{cust_id:c.id,service:svcNames.join(' + '),staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,amount:totalPrice,actual_paid:paid,voucher_discount:disc,addon_voucher:addonName,status:'confirmed',reward_earned:earnRP,reviewed:false});
   if(bkRes&&!bkRes.error){
-    await api('/customers/'+c.id,'PUT',{reward_points:(c.reward_points||0)+earnRP,total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:Math.max(0,(c.balance||0)-paid),voucher_wallet:wallet});
-    await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:earnRP,note:svcNames.join(' + ')+' – '+bkState.time,date:bkDate});
-    showLoading(false);showToast('✓ Đặt lịch xong! +'+fmt(earnRP)+' RP');showPage('home');
+    // Chỉ trừ tiền và cập nhật số liệu, CHƯA cộng RP — RP sẽ cộng khi hoàn thành
+    await api('/customers/'+c.id,'PUT',{total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:Math.max(0,(c.balance||0)-paid),voucher_wallet:wallet});
+    await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
+    showLoading(false);showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');showPage('home');
   }else{showLoading(false);showToast('✗ Lỗi đặt lịch, thử lại');}
 }
 
