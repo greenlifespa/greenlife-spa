@@ -297,6 +297,13 @@ html.dark .contact-page{color:#6ee09a;}
     </div>
     <div class="sec-title">Hoạt động gần đây</div>
     <div id="activity-list"><div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động</div></div></div>
+
+    <!-- Tin tức nổi bật -->
+    <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
+    <div id="home-news-list"><div class="empty-state" style="padding:1.5rem 1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
+    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
+      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
+    </div>
   </div>
 
   <div class="page" id="page-booking">
@@ -615,6 +622,33 @@ async function refreshHome(){
     html+='<div class="act-item"><div style="display:flex;align-items:center;gap:10px;"><div class="act-ic" style="background:'+iconBg+'">'+icon+'</div><div><div class="act-name">'+t.note+'</div><div class="act-date">'+t.date+'</div></div></div><div style="text-align:right;">'+amtHtml+rpHtml+'</div></div>';
   });
   list.innerHTML=html;
+
+  // Load tin tức nổi bật (3 bài mới nhất)
+  var newsList=document.getElementById('home-news-list');
+  var newsMore=document.getElementById('home-news-more');
+  if(newsList){
+    api('/posts').then(function(posts){
+      if(!posts||!posts.length){return;}
+      var top=posts.slice(0,3);
+      var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí'};
+      var nhtml='';
+      top.forEach(function(p){
+        var hasVideo=p.video_id&&p.video_type;
+        var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+        nhtml+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;cursor:pointer;display:flex;gap:10px;align-items:center;">'
+          +(thumb?'<img src="'+thumb+'" style="width:80px;height:64px;object-fit:cover;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
+          +'<div style="padding:8px 10px 8px '+(thumb?'0':'10px')+';flex:1;min-width:0;">'
+          +(p.category?'<span style="font-size:0.65rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
+          +'<div style="font-size:0.85rem;font-weight:600;margin:4px 0 2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+p.title+'</div>'
+          +(p.description?'<div style="font-size:0.75rem;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+p.description+'</div>':'')
+          +'</div>'
+          +(hasVideo?'<div style="padding-right:10px;color:var(--muted);font-size:1.1rem;">▶</div>':'')
+          +'</div>';
+      });
+      newsList.innerHTML=nhtml;
+      if(newsMore&&posts.length>3)newsMore.style.display='block';
+    });
+  }
 }
 
 async function checkPendingReview(){
