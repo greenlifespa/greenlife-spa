@@ -1137,8 +1137,8 @@ function showReviewPopup(bk){
     +'<button class="popup-rv-star" data-s="1" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="2" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="3" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="4" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="5" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
     +'</div></div>'
     +'<div style="margin-bottom:12px;"><textarea id="popup-rv-comment" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;resize:none;height:64px;" placeholder="Chia sẻ trải nghiệm..."></textarea></div>'
-    +'<div style="margin-bottom:14px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">💝 Tips cho nhân viên</div>'
-    +'<div style="font-size:0.72rem;color:#c07000;background:#fef3c7;border-radius:8px;padding:6px 10px;margin-bottom:8px;">⚠️ Nếu muốn để tips, vui lòng tick chọn nhân viên bên dưới</div>'
+    +'<div style="margin-bottom:14px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;"></div>'
+    +'<div style="font-size:0.72rem;color:#c07000;background:#fef3c7;border-radius:8px;padding:6px 10px;margin-bottom:8px;">⚠️ Vui lòng tick chọn nhân viên bên dưới</div>'
     +staffCheckboxes
     +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"><button class="popup-tip-opt" data-v="0" style="padding:5px 10px;border-radius:100px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:0.75rem;cursor:pointer;">Không</button><button class="popup-tip-opt" data-v="10000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+10K</button><button class="popup-tip-opt" data-v="20000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+20K</button><button class="popup-tip-opt" data-v="50000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+50K</button><button class="popup-tip-opt" data-v="100000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+100K</button></div>'
     +'<input type="number" id="popup-tip-custom" placeholder="Số khác..." min="0" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.82rem;"></div>'
@@ -1152,10 +1152,10 @@ function showReviewPopup(bk){
     var comment=document.getElementById('popup-rv-comment').value;
     var checkedStaff=[];document.querySelectorAll('input[name="popup-tip-staff"]:checked').forEach(function(cb){checkedStaff.push(parseInt(cb.value));});
     var totalTip=selTip*checkedStaff.length;
-    if(totalTip>0&&(currentUser.balance||0)<totalTip){showToast('✗ Số dư không đủ cho tips');return;}
+    if(totalTip>0&&(currentUser.balance||0)<totalTip){showToast('✗ Số dư không đủ');return;}
     // Kiểm tra nếu có tips nhưng chưa tick nhân viên
     if(selTip>0&&checkedStaff.length===0){
-      showToast('✗ Vui lòng chọn nhân viên nhận tips');
+      showToast('✗ Vui lòng chọn nhân viên');
       return;
     }
     showLoading(true);
@@ -1296,7 +1296,7 @@ async function renderAllBookings(filter){
       +'<select data-bid="'+b.id+'" style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;background:var(--card-bg);color:var(--text);">'
       +['pending','confirmed','done','cancelled'].map(function(st){return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>';}).join('')+'</select></div>'
       +'<div class="bk-meta">⏰ '+b.date+' '+b.time+' · 👤 '+(b.staff_names||'')+(b.addon_voucher?' · ✨ '+b.addon_voucher:'')+' · <b>'+fmt(b.actual_paid||b.amount)+' VND</b></div>'
-      +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+b.review.comment+'</span>':'')+(b.tips?'<span style="color:var(--accent);margin-left:6px;">Tips: '+fmt(b.tips)+' VND</span>':'')+'</div>':'')
+      +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+b.review.comment+'</span>':'')+'</div>':'')
       +'</div>';
   });
   document.getElementById('all-bookings').innerHTML=html||'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Không có dữ liệu</div></div>';
