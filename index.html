@@ -303,20 +303,6 @@ html.dark .contact-page{color:#6ee09a;}
     <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
       <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
     </div>
-
-    <!-- Tin tức nổi bật -->
-    <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
-    <div id="home-news-list"><div class="empty-state" style="padding:1.5rem 1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
-    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
-      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
-    </div>
-
-    <!-- Tin tức nổi bật -->
-    <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
-    <div id="home-news-list"><div class="empty-state" style="padding:1.5rem 1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
-    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
-      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
-    </div>
   </div>
 
   <div class="page" id="page-booking">
@@ -446,7 +432,6 @@ html.dark .contact-page{color:#6ee09a;}
         <button id="btn-export-customers" style="background:var(--bg3);color:var(--text);border:1px solid var(--border);padding:7px 12px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;">📥 Xuất khách hàng</button>
       </div>
     </div>
-    <!-- Bộ lọc ngày -->
     <div style="display:flex;gap:8px;margin-bottom:1rem;align-items:center;flex-wrap:wrap;">
       <div style="font-size:0.8rem;color:var(--muted);">Từ ngày:</div>
       <input type="date" id="export-from" class="mgr-inp" style="width:auto;padding:6px 10px;">
@@ -467,7 +452,6 @@ html.dark .contact-page{color:#6ee09a;}
     </div>
     <div id="mgr-posts-list"></div>
   </div>
-
   <div class="mgr-page" id="mgr-bookings"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</div><div class="filter-tabs"><button class="ftab active" id="fb-all">Tất cả</button><button class="ftab" id="fb-pending">Chờ</button><button class="ftab" id="fb-confirmed">Xác nhận</button><button class="ftab" id="fb-done">Hoàn thành</button></div><div id="all-bookings"></div></div>
   <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div>
   <div class="mgr-nav">
@@ -628,8 +612,8 @@ async function refreshHome(){
   var list=document.getElementById('activity-list');
   if(!txs||!txs.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động</div></div>';return;}
   var html='';txs.slice(0,5).forEach(function(t){
-    var icon=t.type==='earn'?'⭐':t.type==='redeem'?'🎁':t.type==='tip'?'💝':'💰';
-    var iconBg=t.type==='earn'?'var(--g50)':t.type==='redeem'?'#fef3c7':t.type==='tip'?'#fce7f3':'#f0fdf4';
+    var icon=t.type==='earn'?'⭐':t.type==='redeem'?'🎁':'💰';
+    var iconBg=t.type==='earn'?'var(--g50)':t.type==='redeem'?'#fef3c7':'#f0fdf4';
     var amtHtml='';
     if(t.amount&&t.amount!==0){var ac=t.amount>0?'#16a34a':'#dc2626';amtHtml='<div style="font-size:0.82rem;font-weight:600;color:'+ac+';">'+(t.amount>0?'+':'-')+fmt(Math.abs(t.amount))+' VND</div>';}
     var rpHtml='';if(t.reward&&t.reward!==0){rpHtml='<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';}
@@ -637,7 +621,6 @@ async function refreshHome(){
   });
   list.innerHTML=html;
 
-  // Load tin tức nổi bật (3 bài mới nhất)
   var newsList=document.getElementById('home-news-list');
   var newsMore=document.getElementById('home-news-more');
   if(newsList){
@@ -780,7 +763,6 @@ async function confirmBooking(){
   var staffNames=bkState.staffIds.map(function(sid){var f=allStaff.find(function(s){return s.id===sid;});return f?f.name:'?';});
   var bkRes=await api('/bookings','POST',{cust_id:c.id,service:svcNames.join(' + '),staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,amount:totalPrice,actual_paid:paid,voucher_discount:disc,addon_voucher:addonName,status:'confirmed',reward_earned:earnRP,reviewed:false});
   if(bkRes&&!bkRes.error){
-    // Chỉ trừ tiền và cập nhật số liệu, CHƯA cộng RP — RP sẽ cộng khi hoàn thành
     await api('/customers/'+c.id,'PUT',{total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:Math.max(0,(c.balance||0)-paid),voucher_wallet:wallet});
     await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
     showLoading(false);showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');showPage('home');
@@ -844,7 +826,7 @@ async function renderHistory(filter){
       html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+b.service+'</div><div style="text-align:right;"><div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(b.actual_paid||b.amount)+' VND</div>'+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+b.addon_voucher+'</div>':'')+'</div></div>'
         +'<div class="hist-meta"><span>📅 '+b.date+' '+b.time+'</span><span>👤 '+(b.staff_names||'')+'</span><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span></div>'
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
-        +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá & Tips</button></div>':'')
+        +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
         +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
         +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" data-hrs="'+hoursUntilBooking(b)+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Hủy lịch</button></div>':'')
         +'</div>';
@@ -860,9 +842,9 @@ async function renderHistory(filter){
   filtered.forEach(function(t){
     var amtLine='';
     if(t.type==='topup')amtLine='<div style="font-size:0.95rem;font-weight:700;color:#16a34a;">+'+fmt(t.amount)+' VND</div>';
-    else if((t.type==='earn'||t.type==='tip')&&t.amount&&t.amount!==0)amtLine='<div style="font-size:0.95rem;font-weight:700;color:#dc2626;">-'+fmt(Math.abs(t.amount))+' VND</div>';
+    else if(t.type==='earn'&&t.amount&&t.amount!==0)amtLine='<div style="font-size:0.95rem;font-weight:700;color:#dc2626;">-'+fmt(Math.abs(t.amount))+' VND</div>';
     var rpLine='';if(t.reward&&t.reward!==0)rpLine='<div style="font-size:0.78rem;font-weight:600;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';
-    var label=t.type==='earn'?'🛎 '+t.note:t.type==='topup'?'💰 Nạp tiền':t.type==='tip'?'💝 Tips':'🎁 Đổi điểm';
+    var label=t.type==='earn'?'🛎 '+t.note:t.type==='topup'?'💰 Nạp tiền':'🎁 Đổi điểm';
     tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+t.note+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+t.date+'</span></div></div>';
   });
   list.innerHTML=tHtml;
@@ -871,8 +853,6 @@ async function renderHistory(filter){
 // ============================================================
 // CANCEL LOGIC
 // ============================================================
-function hoursUntilBooking(bk){try{var p=(bk.date||'').split('-'),t=(bk.time||'').split(':');var ms=new Date(+p[0],+p[1]-1,+p[2],+t[0],+t[1]).getTime();return(ms-Date.now())/3600000;}catch(e){return 999;}}
-
 function customerCancelBooking(bk,onDone){
   var hrs=hoursUntilBooking(bk);
   if(hrs<1){
@@ -927,32 +907,20 @@ async function mgrCancelBooking(bkId,onDone){
 // TIN TỨC
 // ============================================================
 function getVideoInfo(url){
-  // YouTube
   var yt=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
   if(yt)return{id:yt[1],type:'youtube'};
-  // TikTok
   var tt=url.match(/tiktok\.com\/@[\w.]+\/video\/(\d+)/);
   if(tt)return{id:tt[1],type:'tiktok'};
-  // Facebook video
   var fb=url.match(/facebook\.com\/.*\/videos\/(\d+)/);
   if(!fb)fb=url.match(/fb\.watch\/([^\/\s]+)/);
   if(fb)return{id:fb[1],type:'facebook'};
   return{id:null,type:null};
 }
-// Keep old name for compatibility
-function getYoutubeId(url){
-  var m=url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&\s]+)/);
-  return m?m[1]:null;
-}
-function openVideoPopup(videoId, videoType, title){
+function openVideoPopup(videoId,videoType,title){
   var src='';
-  if(videoType==='youtube'){
-    src='https://www.youtube.com/embed/'+videoId+'?autoplay=1';
-  } else if(videoType==='tiktok'){
-    src='https://www.tiktok.com/embed/'+videoId;
-  } else if(videoType==='facebook'){
-    src='https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/video/'+videoId+'&autoplay=1&width=480';
-  }
+  if(videoType==='youtube'){src='https://www.youtube.com/embed/'+videoId+'?autoplay=1';}
+  else if(videoType==='tiktok'){src='https://www.tiktok.com/embed/'+videoId;}
+  else if(videoType==='facebook'){src='https://www.facebook.com/plugins/video.php?href=https://www.facebook.com/video/'+videoId+'&autoplay=1&width=480';}
   document.getElementById('video-iframe').src=src;
   document.getElementById('video-popup-title').textContent=title||'';
   document.getElementById('video-popup-ov').style.display='flex';
@@ -969,21 +937,19 @@ async function renderNews(cat){
   showLoading(false);
   var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí'};
   var html='';
-  if(!posts.length){
-    html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
-  }
+  if(!posts.length){html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';}
   posts.forEach(function(p){
     var hasVideo=p.video_id&&p.video_type;
-    var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':p.video_type==='tiktok'?'':'');
+    var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
     html+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
       +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:180px;object-fit:cover;" onerror="this.style.display=\'none\'">'
         +(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.4rem;margin-left:4px;">▶</span></div></div>':'')
         +'</div>':'')
       +'<div style="padding:12px;">'
-      +(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+( catLabel[p.category]||p.category)+'</span>':'')
+      +(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
       +'<div style="font-size:0.92rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+p.title+'</div>'
       +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+p.description+'</div>':'')
-      +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+( hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div>'
+      +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div>'
       +'</div></div>';
   });
   document.getElementById('news-list').innerHTML=html;
@@ -1000,31 +966,15 @@ async function renderMgrPosts(){
     var thumb=p.thumbnail||(p.video_id?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
     html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">'
       +(thumb?'<img src="'+thumb+'" style="width:72px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
-      +'<div style="flex:1;min-width:0;">'
-      +'<div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div>'
-      +'<div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div>'
-      +'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div><div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div></div>'
       +'<div style="display:flex;gap:6px;flex-shrink:0;">'
       +'<button data-edit-post="'+p.id+'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text);">✏️</button>'
       +'<button data-del-post="'+p.id+'" style="background:none;border:1px solid #fca5a5;border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:#dc2626;">🗑</button>'
       +'</div></div>';
   });
   var el=document.getElementById('mgr-posts-list');if(el)el.innerHTML=html;
-  document.querySelectorAll('[data-edit-post]').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      var pid=parseInt(this.getAttribute('data-edit-post'));
-      var p=posts.find(function(x){return x.id===pid;});
-      if(p)openEditPost(p);
-    });
-  });
-  document.querySelectorAll('[data-del-post]').forEach(function(btn){
-    btn.addEventListener('click',async function(){
-      var pid=parseInt(this.getAttribute('data-del-post'));
-      if(!confirm('Xóa bài viết này?'))return;
-      showLoading(true);await api('/posts/'+pid,'DELETE');showLoading(false);
-      showToast('✓ Đã xóa');renderMgrPosts();
-    });
-  });
+  document.querySelectorAll('[data-edit-post]').forEach(function(btn){btn.addEventListener('click',function(){var pid=parseInt(this.getAttribute('data-edit-post'));var p=posts.find(function(x){return x.id===pid;});if(p)openEditPost(p);});});
+  document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xóa bài viết này?'))return;showLoading(true);await api('/posts/'+pid,'DELETE');showLoading(false);showToast('✓ Đã xóa');renderMgrPosts();});});
 }
 
 function openAddPost(){
@@ -1033,12 +983,8 @@ function openAddPost(){
     +'<div class="fg"><label>Mô tả ngắn</label><textarea id="post-desc" class="mgr-inp" rows="2" placeholder="Mô tả ngắn..."></textarea></div>'
     +'<div class="fg"><label>Link URL (YouTube / TikTok / Facebook / bài viết)</label><input type="text" id="post-url" class="mgr-inp" placeholder="https://youtube.com/watch?v=... hoặc tiktok.com/..."></div>'
     +'<div class="fg"><label>Ảnh thumbnail (URL ảnh, để trống nếu dùng YouTube)</label><input type="text" id="post-thumb" class="mgr-inp" placeholder="https://..."></div>'
-    +'<div class="fg"><label>Danh mục</label>'
-    +'<select id="post-cat" class="mgr-inp"><option value="suckhoe">💚 Sức khoẻ</option><option value="lamdep">✨ Làm đẹp</option><option value="giaitri">🎬 Giải trí</option></select></div>'
-    +'<div style="display:flex;gap:8px;">'
-    +'<button id="post-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
-    +'<button id="post-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đăng</button>'
-    +'</div>');
+    +'<div class="fg"><label>Danh mục</label><select id="post-cat" class="mgr-inp"><option value="suckhoe">💚 Sức khoẻ</option><option value="lamdep">✨ Làm đẹp</option><option value="giaitri">🎬 Giải trí</option></select></div>'
+    +'<div style="display:flex;gap:8px;"><button id="post-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="post-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đăng</button></div>');
   setTimeout(function(){
     var cancel=document.getElementById('post-cancel');var ok=document.getElementById('post-ok');
     if(cancel)cancel.addEventListener('click',closeModal);
@@ -1051,10 +997,7 @@ function openAddPost(){
       if(!title){showToast('✗ Nhập tiêu đề');return;}
       var vi=getVideoInfo(url);
       var videoId=vi.id,videoType=vi.type;
-      // Tự lấy thumbnail YouTube nếu chưa có
-      if(!thumb&&videoType==='youtube'&&videoId){
-        thumb='https://img.youtube.com/vi/'+videoId+'/hqdefault.jpg';
-      }
+      if(!thumb&&videoType==='youtube'&&videoId){thumb='https://img.youtube.com/vi/'+videoId+'/hqdefault.jpg';}
       showLoading(true);
       await api('/posts','POST',{title:title,description:desc,url:url,thumbnail:thumb,video_id:videoId,video_type:videoType,category:cat,active:true});
       showLoading(false);closeModal();showToast('✓ Đã đăng bài');renderMgrPosts();
@@ -1065,15 +1008,11 @@ function openAddPost(){
 function openEditPost(p){
   openModal('✏️ Sửa bài viết',
     '<div class="fg"><label>Tiêu đề</label><input type="text" id="ep-title" class="mgr-inp" value="'+p.title+'"></div>'
-    +'<div class="fg"><label>Mô tả</label><textarea id="ep-desc" class="mgr-inp" rows="2">'+( p.description||'')+'</textarea></div>'
+    +'<div class="fg"><label>Mô tả</label><textarea id="ep-desc" class="mgr-inp" rows="2">'+(p.description||'')+'</textarea></div>'
     +'<div class="fg"><label>Link URL</label><input type="text" id="ep-url" class="mgr-inp" value="'+(p.url||'')+'"></div>'
     +'<div class="fg"><label>Thumbnail</label><input type="text" id="ep-thumb" class="mgr-inp" value="'+(p.thumbnail||'')+'"></div>'
-    +'<div class="fg"><label>Danh mục</label>'
-    +'<select id="ep-cat" class="mgr-inp"><option value="suckhoe"'+(p.category==='suckhoe'?' selected':'')+'>💚 Sức khoẻ</option><option value="lamdep"'+(p.category==='lamdep'?' selected':'')+'>✨ Làm đẹp</option><option value="giaitri"'+(p.category==='giaitri'?' selected':'')+'>🎬 Giải trí</option></select></div>'
-    +'<div style="display:flex;gap:8px;">'
-    +'<button id="ep-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
-    +'<button id="ep-ok" data-pid="'+p.id+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Lưu</button>'
-    +'</div>');
+    +'<div class="fg"><label>Danh mục</label><select id="ep-cat" class="mgr-inp"><option value="suckhoe"'+(p.category==='suckhoe'?' selected':'')+'>💚 Sức khoẻ</option><option value="lamdep"'+(p.category==='lamdep'?' selected':'')+'>✨ Làm đẹp</option><option value="giaitri"'+(p.category==='giaitri'?' selected':'')+'>🎬 Giải trí</option></select></div>'
+    +'<div style="display:flex;gap:8px;"><button id="ep-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="ep-ok" data-pid="'+p.id+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Lưu</button></div>');
   setTimeout(function(){
     var cancel=document.getElementById('ep-cancel');var ok=document.getElementById('ep-ok');
     if(cancel)cancel.addEventListener('click',closeModal);
@@ -1081,22 +1020,10 @@ function openEditPost(p){
       var pid=parseInt(this.getAttribute('data-pid'));
       var url=document.getElementById('ep-url').value||'';
       var vi2=getVideoInfo(url);
-      var videoId=vi2.id,videoType=vi2.type;
-      if(!videoId&&videoType==='youtube'){
-        // fallback thumbnail
-      }
       var thumb2=document.getElementById('ep-thumb').value||'';
-      if(!thumb2&&videoType==='youtube'&&videoId){
-        thumb2='https://img.youtube.com/vi/'+videoId+'/hqdefault.jpg';
-      }
+      if(!thumb2&&vi2.type==='youtube'&&vi2.id){thumb2='https://img.youtube.com/vi/'+vi2.id+'/hqdefault.jpg';}
       showLoading(true);
-      await api('/posts/'+pid,'PUT',{
-        title:document.getElementById('ep-title').value,
-        description:document.getElementById('ep-desc').value,
-        url:url,thumbnail:thumb2,
-        video_id:videoId,video_type:videoType,
-        category:document.getElementById('ep-cat').value
-      });
+      await api('/posts/'+pid,'PUT',{title:document.getElementById('ep-title').value,description:document.getElementById('ep-desc').value,url:url,thumbnail:thumb2,video_id:vi2.id,video_type:vi2.type,category:document.getElementById('ep-cat').value});
       showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderMgrPosts();
     });
   },50);
@@ -1124,53 +1051,69 @@ function openVoucherWallet(){
 }
 
 // ============================================================
-// REVIEW POPUP
+// REVIEW POPUP — CHỌN SAO + NHẬN XÉT + CHỌN NHÂN VIÊN
 // ============================================================
 var pendingReviewBkId=null;
 function showReviewPopup(bk){
-  pendingReviewBkId=bk.id;var staffIds=bk.staff_ids||[];
+  pendingReviewBkId=bk.id;
+  var staffIds=bk.staff_ids||[];
   var staffCheckboxes='';
-  staffIds.forEach(function(sid){var s=allStaff.find(function(x){return x.id===sid;});if(s)staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;"><input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> <span>'+(s.icon||'👤')+' '+s.name+'</span></label>';});
-  if(!staffCheckboxes)staffCheckboxes='<div style="font-size:0.75rem;color:var(--muted);">Không có thông tin nhân viên</div>';
-  var html='<div style="text-align:center;margin-bottom:12px;"><div style="font-size:2rem;">⭐</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;color:var(--g800);margin-top:4px;">Đánh giá dịch vụ</div><div style="font-size:0.78rem;color:var(--muted);">'+bk.service+'</div></div>'
-    +'<div style="margin-bottom:12px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">Chạm sao để đánh giá</div><div id="popup-star-row" style="display:flex;gap:8px;justify-content:center;">'
-    +'<button class="popup-rv-star" data-s="1" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="2" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="3" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="4" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="5" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
+  staffIds.forEach(function(sid){
+    var s=allStaff.find(function(x){return x.id===sid;});
+    if(s)staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;background:var(--card-bg);">'
+      +'<input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> '
+      +'<span style="font-size:0.88rem;">'+(s.icon||'👤')+' '+s.name+'</span></label>';
+  });
+
+  var html=''
+    +'<div style="text-align:center;margin-bottom:12px;">'
+    +'<div style="font-size:2rem;">⭐</div>'
+    +'<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;color:var(--g800);margin-top:4px;">Đánh giá dịch vụ</div>'
+    +'<div style="font-size:0.78rem;color:var(--muted);">'+bk.service+'</div>'
+    +'</div>'
+    // Chọn sao
+    +'<div style="margin-bottom:12px;">'
+    +'<div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">Chạm sao để đánh giá</div>'
+    +'<div id="popup-star-row" style="display:flex;gap:8px;justify-content:center;">'
+    +'<button class="popup-rv-star" data-s="1" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
+    +'<button class="popup-rv-star" data-s="2" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
+    +'<button class="popup-rv-star" data-s="3" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
+    +'<button class="popup-rv-star" data-s="4" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
+    +'<button class="popup-rv-star" data-s="5" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button>'
     +'</div></div>'
-    +'<div style="margin-bottom:12px;"><textarea id="popup-rv-comment" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;resize:none;height:64px;" placeholder="Chia sẻ trải nghiệm..."></textarea></div>'
-    +'<div style="margin-bottom:14px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;"></div>'
-    +'<div style="font-size:0.72rem;color:#c07000;background:#fef3c7;border-radius:8px;padding:6px 10px;margin-bottom:8px;">⚠️ Vui lòng tick chọn nhân viên bên dưới</div>'
-    +staffCheckboxes
-    +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;"><button class="popup-tip-opt" data-v="0" style="padding:5px 10px;border-radius:100px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:0.75rem;cursor:pointer;">Không</button><button class="popup-tip-opt" data-v="10000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+10K</button><button class="popup-tip-opt" data-v="20000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+20K</button><button class="popup-tip-opt" data-v="50000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+50K</button><button class="popup-tip-opt" data-v="100000" style="padding:5px 10px;border-radius:100px;border:1px solid var(--border);background:var(--card-bg);font-size:0.75rem;cursor:pointer;color:var(--text);">+100K</button></div>'
-    +'<input type="number" id="popup-tip-custom" placeholder="Số khác..." min="0" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.82rem;"></div>'
+    // Nhận xét
+    +'<div style="margin-bottom:12px;">'
+    +'<textarea id="popup-rv-comment" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;resize:none;height:72px;font-family:\'DM Sans\',sans-serif;" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea>'
+    +'</div>'
+    // Chọn nhân viên
+    +(staffCheckboxes?'<div style="margin-bottom:16px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">👤 Nhân viên phục vụ bạn</div>'+staffCheckboxes+'</div>':'')
+    // Nút gửi
     +'<button id="popup-submit-rv" style="width:100%;background:var(--accent);color:#fff;border:none;padding:13px;border-radius:100px;font-size:0.95rem;cursor:pointer;font-weight:500;">Gửi đánh giá ⭐</button>';
-  document.getElementById('review-popup-body').innerHTML=html;document.getElementById('review-popup-ov').style.display='flex';
-  var selStars=0,selTip=0;
-  document.querySelectorAll('.popup-rv-star').forEach(function(star){star.addEventListener('click',function(){selStars=parseInt(this.getAttribute('data-s'));document.querySelectorAll('.popup-rv-star').forEach(function(s,i){s.textContent=i<selStars?'★':'☆';});});});
-  document.querySelectorAll('.popup-tip-opt').forEach(function(btn){btn.addEventListener('click',function(){selTip=parseInt(this.getAttribute('data-v'));document.querySelectorAll('.popup-tip-opt').forEach(function(b){b.style.background='var(--card-bg)';b.style.color='var(--text)';b.style.borderColor='var(--border)';});this.style.background='var(--accent)';this.style.color='#fff';this.style.borderColor='var(--accent)';var ci=document.getElementById('popup-tip-custom');if(ci)ci.value='';});});
-  var tipC=document.getElementById('popup-tip-custom');if(tipC)tipC.addEventListener('input',function(){selTip=parseInt(this.value)||0;document.querySelectorAll('.popup-tip-opt').forEach(function(b){b.style.background='var(--card-bg)';b.style.color='var(--text)';b.style.borderColor='var(--border)';});});
+
+  document.getElementById('review-popup-body').innerHTML=html;
+  document.getElementById('review-popup-ov').style.display='flex';
+
+  var selStars=0;
+  document.querySelectorAll('.popup-rv-star').forEach(function(star){
+    star.addEventListener('click',function(){
+      selStars=parseInt(this.getAttribute('data-s'));
+      document.querySelectorAll('.popup-rv-star').forEach(function(s,i){s.textContent=i<selStars?'★':'☆';});
+    });
+  });
+
   document.getElementById('popup-submit-rv').addEventListener('click',async function(){
     var comment=document.getElementById('popup-rv-comment').value;
-    var checkedStaff=[];document.querySelectorAll('input[name="popup-tip-staff"]:checked').forEach(function(cb){checkedStaff.push(parseInt(cb.value));});
-    var totalTip=selTip*checkedStaff.length;
-    if(totalTip>0&&(currentUser.balance||0)<totalTip){showToast('✗ Số dư không đủ');return;}
-    // Kiểm tra nếu có tips nhưng chưa tick nhân viên
-    if(selTip>0&&checkedStaff.length===0){
-      showToast('✗ Vui lòng chọn nhân viên');
-      return;
-    }
+    var checkedStaff=[];
+    document.querySelectorAll('input[name="popup-tip-staff"]:checked').forEach(function(cb){checkedStaff.push(parseInt(cb.value));});
     showLoading(true);
-    await api('/bookings/'+pendingReviewBkId,'PUT',{reviewed:true,review:{stars:selStars||0,comment:comment,date:today()},tips:totalTip,tip_staff_ids:checkedStaff});
-    if(totalTip>0){
-      await api('/customers/'+currentUser.id,'PUT',{balance:Math.max(0,(currentUser.balance||0)-totalTip)});
-      await api('/transactions','POST',{cust_id:currentUser.id,type:'tip',amount:-totalTip,reward:0,note:'Tips cho '+checkedStaff.length+' nhân viên',date:today()});
-      await reloadUser();
-    }
-    showLoading(false);document.getElementById('review-popup-ov').style.display='none';dbChanged_();
-    var msg=selStars>0?'✓ Cảm ơn '+selStars+'★!':'✓ Đã ghi nhận';if(totalTip>0)msg+=' · Tips -'+fmt(totalTip)+'đ';showToast(msg);refreshHome();
+    await api('/bookings/'+pendingReviewBkId,'PUT',{reviewed:true,review:{stars:selStars||0,comment:comment,date:today()},tip_staff_ids:checkedStaff});
+    showLoading(false);
+    document.getElementById('review-popup-ov').style.display='none';
+    showToast(selStars>0?'✓ Cảm ơn '+selStars+'★!':'✓ Đã ghi nhận đánh giá');
+    refreshHome();
   });
 }
 function closeReviewPopup(){document.getElementById('review-popup-ov').style.display='none';}
-function dbChanged_(){}// no-op (data is in Supabase)
 
 // ============================================================
 // MANAGER — DASHBOARD
@@ -1191,7 +1134,6 @@ async function renderDashboard(){
   document.getElementById('today-bookings').innerHTML=bkHtml;
   document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
   document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
-  // Revenue chart
   var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
   var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
   var barHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
@@ -1219,7 +1161,7 @@ function openCustDetail(id){
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Điểm xếp hạng</span><span>'+fmt(c.rank_points||0)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Reward Points</span><span>'+fmt(c.reward_points||0)+' RP</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số dư TK</span><span style="font-weight:600;color:var(--accent);">'+fmt(c.balance||0)+'đ</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số lần đến</span><span>'+( c.visits||0)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số lần đến</span><span>'+(c.visits||0)+'</span></div>'
     +'</div>'
     +'<button id="btn-reset-pwd-'+id+'" data-cid="'+id+'" style="width:100%;padding:10px;border-radius:100px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-size:0.85rem;cursor:pointer;">🔑 Đặt lại mật khẩu</button>';
   openModal(c.name,html);
@@ -1283,7 +1225,7 @@ async function renderServicesPage(){
   document.getElementById('mgr-svc-list').innerHTML=shtml;
   document.querySelectorAll('.edit-svc-btn').forEach(function(btn){btn.addEventListener('click',function(){editService(parseInt(this.getAttribute('data-sid')));});});
   var staffData=await api('/staff')||[];
-  var staffHtml='';staffData.forEach(function(s){var hasLogin=s.login_id&&s.login_id.trim();staffHtml+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:12px;"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">'+(s.icon||'👤')+'</div><div style="flex:1;"><div style="font-weight:600;font-size:0.95rem;">'+s.name+'</div><div style="font-size:0.72rem;color:'+(hasLogin?'var(--accent)':'#ef4444')+';margin-top:2px;">'+(hasLogin?'✓ '+s.login_id:'⚠ Chưa có tài khoản')+'</div></div><div style="text-align:right;"><div style="font-size:0.75rem;color:var(--muted);">Tips</div><div style="font-size:1rem;font-weight:600;color:var(--accent);">+'+fmt(s.tips||0)+'đ</div></div></div></div>';});
+  var staffHtml='';staffData.forEach(function(s){var hasLogin=s.login_id&&s.login_id.trim();staffHtml+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:10px;"><div style="display:flex;align-items:center;gap:12px;"><div style="width:44px;height:44px;border-radius:50%;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:1.3rem;">'+(s.icon||'👤')+'</div><div style="flex:1;"><div style="font-weight:600;font-size:0.95rem;">'+s.name+'</div><div style="font-size:0.72rem;color:'+(hasLogin?'var(--accent)':'#ef4444')+';margin-top:2px;">'+(hasLogin?'✓ '+s.login_id:'⚠ Chưa có tài khoản')+'</div></div></div></div>';});
   document.getElementById('mgr-staff-list').innerHTML=staffHtml;
 }
 
@@ -1381,7 +1323,6 @@ async function renderStaffView(stf){
   document.getElementById('staff-view-name').textContent=stf.name;
   showLoading(true);
   var bks=await api('/bookings')||[];
-  var posts=await api('/posts')||[];
   showLoading(false);
   var myBks=bks.filter(function(b){return (b.staff_ids||[]).indexOf(stf.id)>-1||(b.staff_names||'').toLowerCase().indexOf((stf.name||'').toLowerCase())>-1;});
   var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
@@ -1403,7 +1344,7 @@ async function renderStaffView(stf){
         +'<button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button>'
         +'<button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button>'
         +'</div>':'')
-      +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+b.review.comment+'</div>':'')+(b.tips&&(b.tip_staff_ids||[]).indexOf(stf.id)>-1?'<div style="color:var(--accent);margin-top:2px;font-weight:600;">💝 Tips: +'+fmt(b.tips/(b.tip_staff_ids.length||1))+' VND</div>':'')+'</div>':'')
+      +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+b.review.comment+'</div>':'')+'</div>':'')
       +'</div>';
   });
   document.getElementById('staff-bookings-list').innerHTML=html;
@@ -1418,18 +1359,8 @@ window.addEventListener('load',function(){
   var saved=localStorage.getItem('gl_theme');
   if(saved==='dark'||((!saved)&&window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.classList.add('dark');document.querySelectorAll('#theme-toggle,#mgr-theme-toggle').forEach(function(b){if(b)b.textContent='☀️';});}
 
-  document.getElementById('btn-export-bookings').addEventListener('click',function(){
-    var from=document.getElementById('export-from').value;
-    var to=document.getElementById('export-to').value;
-    var url=API_URL+'/export/bookings';
-    if(from)url+='?from='+from;
-    if(to)url+=(from?'&':'?')+'to='+to;
-    window.open(url,'_blank');
-  });
-  document.getElementById('btn-export-customers').addEventListener('click',function(){
-    window.open(API_URL+'/export/customers','_blank');
-  });
-
+  document.getElementById('btn-export-bookings').addEventListener('click',function(){var from=document.getElementById('export-from').value;var to=document.getElementById('export-to').value;var url=API_URL+'/export/bookings';if(from)url+='?from='+from;if(to)url+=(from?'&':'?')+'to='+to;window.open(url,'_blank');});
+  document.getElementById('btn-export-customers').addEventListener('click',function(){window.open(API_URL+'/export/customers','_blank');});
   document.getElementById('btn-to-auth').addEventListener('click',function(){goScreen('auth');});
   document.getElementById('auth-back').addEventListener('click',function(){goScreen('splash');});
   document.getElementById('tab-login').addEventListener('click',function(){this.classList.add('active');document.getElementById('tab-reg').classList.remove('active');document.getElementById('login-form').style.display='block';document.getElementById('reg-form').style.display='none';});
@@ -1466,21 +1397,15 @@ window.addEventListener('load',function(){
       '<div class="fg"><label>Mật khẩu hiện tại</label><input type="password" id="cp-cur" class="mgr-inp"></div>'
       +'<div class="fg"><label>Mật khẩu mới</label><input type="password" id="cp-new1" class="mgr-inp"></div>'
       +'<div class="fg"><label>Nhập lại mật khẩu mới</label><input type="password" id="cp-new2" class="mgr-inp"></div>'
-      +'<div style="display:flex;gap:8px;">'
-      +'<button id="cp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
-      +'<button id="cp-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button>'
-      +'</div>');
+      +'<div style="display:flex;gap:8px;"><button id="cp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="cp-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button></div>');
     setTimeout(function(){
       var cancel=document.getElementById('cp-cancel');var ok=document.getElementById('cp-ok');
       if(cancel)cancel.addEventListener('click',closeModal);
       if(ok)ok.addEventListener('click',async function(){
-        var cur=document.getElementById('cp-cur').value;
-        var p1=document.getElementById('cp-new1').value;
-        var p2=document.getElementById('cp-new2').value;
+        var cur=document.getElementById('cp-cur').value;var p1=document.getElementById('cp-new1').value;var p2=document.getElementById('cp-new2').value;
         if(!cur){showToast('✗ Nhập mật khẩu hiện tại');return;}
         if(!p1||p1.length<4){showToast('✗ Mật khẩu mới ít nhất 4 ký tự');return;}
         if(p1!==p2){showToast('✗ Mật khẩu mới không khớp');return;}
-        // Kiểm tra mật khẩu hiện tại bằng cách đăng nhập lại
         showLoading(true);
         var check=await api('/login','POST',{phone:currentUser.phone,pass:cur});
         if(!check||check.error||check.role!=='customer'){showLoading(false);showToast('✗ Mật khẩu hiện tại không đúng');return;}
@@ -1493,12 +1418,7 @@ window.addEventListener('load',function(){
   document.getElementById('menu-wallet').addEventListener('click',openVoucherWallet);
   document.getElementById('btn-logout').addEventListener('click',doLogout);
   document.getElementById('mgr-back').addEventListener('click',function(){goScreen('splash');});
-  document.getElementById('btn-mgr-login').addEventListener('click',async function(){
-    var u=document.getElementById('mgr-user').value;var p=document.getElementById('mgr-pass').value;
-    showLoading(true);var res=await api('/login','POST',{phone:u,pass:p});showLoading(false);
-    if(res&&res.role==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();}
-    else showToast('✗ Sai thông tin đăng nhập');
-  });
+  document.getElementById('btn-mgr-login').addEventListener('click',async function(){var u=document.getElementById('mgr-user').value;var p=document.getElementById('mgr-pass').value;showLoading(true);var res=await api('/login','POST',{phone:u,pass:p});showLoading(false);if(res&&res.role==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();}else showToast('✗ Sai thông tin đăng nhập');});
   document.getElementById('mgr-pass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('btn-mgr-login').click();});
   document.getElementById('btn-mgr-logout').addEventListener('click',function(){currentRole=null;goScreen('splash');});
   document.getElementById('btn-mgr-change-pwd').addEventListener('click',openChangeAdminPwd);
@@ -1522,16 +1442,7 @@ window.addEventListener('load',function(){
   document.getElementById('modal-close').addEventListener('click',closeModal);
   document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
   document.getElementById('btn-add-post').addEventListener('click',openAddPost);
-
-  // News category filter
-  document.querySelectorAll('#news-cats .ftab').forEach(function(btn){
-    btn.addEventListener('click',function(){
-      document.querySelectorAll('#news-cats .ftab').forEach(function(b){b.classList.remove('active');});
-      this.classList.add('active');
-      renderNews(this.getAttribute('data-cat'));
-    });
-  });
-
+  document.querySelectorAll('#news-cats .ftab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#news-cats .ftab').forEach(function(b){b.classList.remove('active');});this.classList.add('active');renderNews(this.getAttribute('data-cat'));});});
   document.getElementById('review-popup-close').addEventListener('click',closeReviewPopup);
   document.getElementById('review-popup-ov').addEventListener('click',function(e){if(e.target===this)closeReviewPopup();});
 });
