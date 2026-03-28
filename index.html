@@ -285,7 +285,7 @@ html.dark .contact-page{color:#6ee09a;}
     </div>
     <div class="contact-card">
       <div class="contact-card-title">📍 Thông tin liên hệ</div>
-      <div class="contact-row"><span style="font-size:1rem;">📞</span><span class="contact-phone"><a href="tel:0902708788">0902.708.788</a></span></div>
+      <div class="contact-row"><span style="font-size:1rem;">📞</span><span class="contact-phone"><a href="tel:0917948706">0917.948.706</a> – <a href="tel:0985009674">0985.009.674</a></span></div>
       <div class="contact-row"><span style="font-size:1rem;">🏠</span><span class="contact-addr">246 Độc Lập, Phú Thọ Hoà, HCM<br><span class="contact-addr-sub">(246 Độc Lập, Tân Thành, Tân Phú, HCM)</span></span></div>
       <div class="contact-row" style="margin-bottom:0;"><span style="font-size:1rem;">💬</span><span>Fanpage: <a href="https://www.facebook.com/greenlifespatanphu" target="_blank" style="color:#1a7a40;font-weight:500;text-decoration:none;">Green Life Spa</a></span></div>
     </div>
@@ -297,6 +297,19 @@ html.dark .contact-page{color:#6ee09a;}
     </div>
     <div class="sec-title">Hoạt động gần đây</div>
     <div id="activity-list"><div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Chưa có hoạt động</div></div></div>
+
+    <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
+    <div id="home-news-list"><div class="empty-state" style="padding:1.5rem 1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
+    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
+      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
+    </div>
+
+    <!-- Tin tức nổi bật -->
+    <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
+    <div id="home-news-list"><div class="empty-state" style="padding:1.5rem 1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
+    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;">
+      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
+    </div>
 
     <!-- Tin tức nổi bật -->
     <div class="sec-title" style="margin-top:1.5rem;">📰 Tin tức &amp; Giải trí</div>
@@ -364,6 +377,7 @@ html.dark .contact-page{color:#6ee09a;}
     </div>
     <div class="menu-list">
       <div class="menu-item" id="menu-edit"><div class="menu-ic">✏️</div><div class="menu-txt">Chỉnh sửa thông tin</div><div class="menu-arr">›</div></div>
+      <div class="menu-item" id="menu-change-pwd"><div class="menu-ic">🔑</div><div class="menu-txt">Đổi mật khẩu</div><div class="menu-arr">›</div></div>
       <div class="menu-item" id="menu-hist"><div class="menu-ic">📊</div><div class="menu-txt">Lịch sử giao dịch</div><div class="menu-arr">›</div></div>
       <div class="menu-item" id="menu-tier"><div class="menu-ic">🏆</div><div class="menu-txt">Cấp bậc &amp; Ưu đãi</div><div class="menu-arr">›</div></div>
       <div class="menu-item" id="menu-wallet"><div class="menu-ic">🎟</div><div class="menu-txt">Kho Voucher</div><div class="menu-arr">›</div></div>
@@ -1367,6 +1381,7 @@ async function renderStaffView(stf){
   document.getElementById('staff-view-name').textContent=stf.name;
   showLoading(true);
   var bks=await api('/bookings')||[];
+  var posts=await api('/posts')||[];
   showLoading(false);
   var myBks=bks.filter(function(b){return (b.staff_ids||[]).indexOf(stf.id)>-1||(b.staff_names||'').toLowerCase().indexOf((stf.name||'').toLowerCase())>-1;});
   var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
@@ -1446,7 +1461,34 @@ window.addEventListener('load',function(){
     openModal('Chỉnh sửa thông tin','<div class="fg"><label>Họ và tên</label><input type="text" id="ep-name" class="mgr-inp" value="'+c.name+'"></div><div class="fg"><label>Ngày sinh</label><input type="date" id="ep-dob" class="mgr-inp" value="'+(c.dob||'')+'"></div><button class="btn-green" id="btn-save-prof">Lưu</button>');
     setTimeout(function(){var btn=document.getElementById('btn-save-prof');if(btn)btn.addEventListener('click',async function(){showLoading(true);await api('/customers/'+currentUser.id,'PUT',{name:document.getElementById('ep-name').value,dob:document.getElementById('ep-dob').value});await reloadUser();showLoading(false);closeModal();showToast('✓ Đã lưu');refreshProfile();});},50);
   });
-  document.getElementById('menu-hist').addEventListener('click',function(){showPage('history');});
+  document.getElementById('menu-change-pwd').addEventListener('click',function(){
+    openModal('🔑 Đổi mật khẩu',
+      '<div class="fg"><label>Mật khẩu hiện tại</label><input type="password" id="cp-cur" class="mgr-inp"></div>'
+      +'<div class="fg"><label>Mật khẩu mới</label><input type="password" id="cp-new1" class="mgr-inp"></div>'
+      +'<div class="fg"><label>Nhập lại mật khẩu mới</label><input type="password" id="cp-new2" class="mgr-inp"></div>'
+      +'<div style="display:flex;gap:8px;">'
+      +'<button id="cp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button>'
+      +'<button id="cp-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button>'
+      +'</div>');
+    setTimeout(function(){
+      var cancel=document.getElementById('cp-cancel');var ok=document.getElementById('cp-ok');
+      if(cancel)cancel.addEventListener('click',closeModal);
+      if(ok)ok.addEventListener('click',async function(){
+        var cur=document.getElementById('cp-cur').value;
+        var p1=document.getElementById('cp-new1').value;
+        var p2=document.getElementById('cp-new2').value;
+        if(!cur){showToast('✗ Nhập mật khẩu hiện tại');return;}
+        if(!p1||p1.length<4){showToast('✗ Mật khẩu mới ít nhất 4 ký tự');return;}
+        if(p1!==p2){showToast('✗ Mật khẩu mới không khớp');return;}
+        // Kiểm tra mật khẩu hiện tại bằng cách đăng nhập lại
+        showLoading(true);
+        var check=await api('/login','POST',{phone:currentUser.phone,pass:cur});
+        if(!check||check.error||check.role!=='customer'){showLoading(false);showToast('✗ Mật khẩu hiện tại không đúng');return;}
+        await api('/customers/'+currentUser.id,'PUT',{pass:p1});
+        showLoading(false);closeModal();showToast('✓ Đã đổi mật khẩu thành công');
+      });
+    },50);
+  });
   document.getElementById('menu-tier').addEventListener('click',function(){showPage('rewards');});
   document.getElementById('menu-wallet').addEventListener('click',openVoucherWallet);
   document.getElementById('btn-logout').addEventListener('click',doLogout);
