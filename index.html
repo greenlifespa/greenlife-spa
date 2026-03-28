@@ -1346,6 +1346,7 @@ async function renderStaffView(stf){
       bindBookingBtns();
     } else {
       container.innerHTML=tabsHtml+buildNewsHtml();
+      bindNewsBtns();
     }
   };
 
@@ -1379,7 +1380,7 @@ async function renderStaffView(stf){
     posts.forEach(function(p){
       var hasVideo=p.video_id&&p.video_type;
       var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-      h+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
+      h+='<div class="staff-news-item" data-video-id="'+(p.video_id||'')+'" data-video-type="'+(p.video_type||'')+'" data-has-video="'+(hasVideo?'1':'0')+'" data-url="'+(p.url||'')+'" data-title="'+p.title.replace(/"/g,'&quot;')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
         +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display=\'none\'">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.3rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
         +'<div style="padding:12px;">'
         +(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
@@ -1391,6 +1392,20 @@ async function renderStaffView(stf){
     return h;
   }
 
+  function bindNewsBtns(){
+    document.querySelectorAll('.staff-news-item').forEach(function(el){
+      el.addEventListener('click',function(){
+        var hasVideo=this.getAttribute('data-has-video')==='1';
+        if(hasVideo){
+          openVideoPopup(this.getAttribute('data-video-id'),this.getAttribute('data-video-type'),this.getAttribute('data-title'));
+        } else {
+          var url=this.getAttribute('data-url');
+          if(url)window.open(url,'_blank');
+        }
+      });
+    });
+  }
+
   function bindBookingBtns(){
     document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
     document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
@@ -1400,6 +1415,8 @@ async function renderStaffView(stf){
   if(!myBks.length)html=renderStaffTabs()+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch được phân công</div></div>';
   document.getElementById('staff-bookings-list').innerHTML=html;
   bindBookingBtns();
+  // bind news nếu tab mặc định là news (không cần ở đây vì mặc định là bookings)
+
 }
 
 // ============================================================
