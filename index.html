@@ -845,7 +845,7 @@ async function renderHistory(filter){
         +'<div class="hist-meta"><span>📅 '+b.date+' '+b.time+'</span><span>👤 '+(b.staff_names||'')+'</span><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span></div>'
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
         +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá & Tips</button></div>':'')
-        +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá'+(b.tips?'<span style="color:var(--accent);"> · Tips: -'+fmt(b.tips)+' VND</span>':'')+'</div>':'')
+        +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
         +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" data-hrs="'+hoursUntilBooking(b)+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Hủy lịch</button></div>':'')
         +'</div>';
     });
