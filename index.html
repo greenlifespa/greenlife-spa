@@ -1323,33 +1323,83 @@ async function renderStaffView(stf){
   document.getElementById('staff-view-name').textContent=stf.name;
   showLoading(true);
   var bks=await api('/bookings')||[];
+  var posts=await api('/posts')||[];
   showLoading(false);
   var myBks=bks.filter(function(b){return (b.staff_ids||[]).indexOf(stf.id)>-1||(b.staff_names||'').toLowerCase().indexOf((stf.name||'').toLowerCase())>-1;});
   var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
-  var html='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch của '+stf.name+'</div>';
-  if(!myBks.length)html+='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch được phân công</div></div>';
-  myBks.slice(0,20).forEach(function(b){
-    var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">'
-      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+(cust?cust.phone:'')+'</div></div>'
-      +'<span class="st-bdg st-'+b.status+'">'+(stLbl[b.status]||b.status)+'</span></div>'
-      +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+b.service+'</div>'
-      +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+b.addon_voucher+'</div>':'')
-      +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+b.date+' '+b.time+'</div>'
-      +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);">'
-      +'<span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span>'
-      +'<span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(b.actual_paid||b.amount)+' VND</span></div>'
-      +(b.status==='confirmed'||b.status==='pending'
-        ?'<div style="display:flex;gap:8px;margin-top:10px;">'
-        +'<button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button>'
-        +'<button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button>'
-        +'</div>':'')
-      +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+b.review.comment+'</div>':'')+'</div>':'')
+  // Tab state
+  var activeTab='bookings';
+  function renderStaffTabs(){
+    return '<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid var(--border);">'
+      +'<button id="stab-bookings" onclick="switchStaffTab(\'bookings\')" style="flex:1;padding:10px;border:none;background:none;font-family:\'DM Sans\',sans-serif;font-size:0.88rem;cursor:pointer;font-weight:'+(activeTab==='bookings'?'600':'400')+';color:'+(activeTab==='bookings'?'var(--accent)':'var(--muted)')+';border-bottom:'+(activeTab==='bookings'?'2px solid var(--accent)':'2px solid transparent')+';margin-bottom:-2px;">📅 Lịch làm việc</button>'
+      +'<button id="stab-news" onclick="switchStaffTab(\'news\')" style="flex:1;padding:10px;border:none;background:none;font-family:\'DM Sans\',sans-serif;font-size:0.88rem;cursor:pointer;font-weight:'+(activeTab==='news'?'600':'400')+';color:'+(activeTab==='news'?'var(--accent)':'var(--muted)')+';border-bottom:'+(activeTab==='news'?'2px solid var(--accent)':'2px solid transparent')+';margin-bottom:-2px;">📰 Tin tức</button>'
       +'</div>';
-  });
+  }
+
+  window.switchStaffTab=function(tab){
+    activeTab=tab;
+    var container=document.getElementById('staff-bookings-list');
+    if(!container)return;
+    var tabsHtml=renderStaffTabs();
+    if(tab==='bookings'){
+      container.innerHTML=tabsHtml+buildBookingsHtml();
+      bindBookingBtns();
+    } else {
+      container.innerHTML=tabsHtml+buildNewsHtml();
+    }
+  };
+
+  function buildBookingsHtml(){
+    var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch của '+stf.name+'</div>';
+    if(!myBks.length)return h+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch được phân công</div></div>';
+    myBks.slice(0,20).forEach(function(b){
+      var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
+      h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+(cust?cust.phone:'')+'</div></div>'
+        +'<span class="st-bdg st-'+b.status+'">'+(stLbl[b.status]||b.status)+'</span></div>'
+        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+b.service+'</div>'
+        +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+b.addon_voucher+'</div>':'')
+        +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+b.date+' '+b.time+'</div>'
+        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span><span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(b.actual_paid||b.amount)+' VND</span></div>'
+        +(b.status==='confirmed'||b.status==='pending'
+          ?'<div style="display:flex;gap:8px;margin-top:10px;">'
+          +'<button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button>'
+          +'<button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button>'
+          +'</div>':'')
+        +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+b.review.comment+'</div>':'')+'</div>':'')
+        +'</div>';
+    });
+    return h;
+  }
+
+  function buildNewsHtml(){
+    var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí'};
+    var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Tin tức &amp; Sức khoẻ</div>';
+    if(!posts.length)return h+'<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
+    posts.forEach(function(p){
+      var hasVideo=p.video_id&&p.video_type;
+      var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+      h+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
+        +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display=\'none\'">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.3rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
+        +'<div style="padding:12px;">'
+        +(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
+        +'<div style="font-size:0.9rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+p.title+'</div>'
+        +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+p.description+'</div>':'')
+        +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div>'
+        +'</div></div>';
+    });
+    return h;
+  }
+
+  function bindBookingBtns(){
+    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
+    document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
+  }
+
+  var html=renderStaffTabs()+buildBookingsHtml();
+  if(!myBks.length)html=renderStaffTabs()+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch được phân công</div></div>';
   document.getElementById('staff-bookings-list').innerHTML=html;
-  document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
-  document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
+  bindBookingBtns();
 }
 
 // ============================================================
