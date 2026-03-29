@@ -465,6 +465,33 @@ function getGenderBadge(gender){
 }
 
 // ============================================================
+// STAFF LOCAL CACHE — gender & off_days persist across navigation/re-login
+// ============================================================
+function saveStaffCache(){
+  try{
+    var cache={};
+    allStaff.forEach(function(s){
+      cache[s.id]={};
+      if(s.gender)cache[s.id].gender=s.gender;
+      if(s.off_days&&s.off_days.length)cache[s.id].off_days=s.off_days;
+    });
+    localStorage.setItem('gl_staff_cache',JSON.stringify(cache));
+  }catch(e){}
+}
+function mergeStaffCache(staffArr){
+  try{
+    var cache=JSON.parse(localStorage.getItem('gl_staff_cache')||'{}');
+    staffArr.forEach(function(s){
+      var c=cache[s.id];
+      if(!c)return;
+      if(!s.gender&&c.gender)s.gender=c.gender;
+      // Always merge off_days from cache — API often doesn't return updated off_days
+      if(c.off_days&&c.off_days.length)s.off_days=c.off_days;
+    });
+  }catch(e){}
+}
+
+// ============================================================
 // API & CORE
 // ============================================================
 function showLoading(v){document.getElementById('loading-ov').style.display=v?'flex':'none';}
@@ -561,23 +588,14 @@ async function loadServices(){allServices=await api('/services')||[];}
 async function loadStaff(){
   var s=await api('/staff');
   var fresh=(s||[]).filter(function(x){return x.login_id&&x.login_id.trim();});
-  // Merge: if old allStaff had a gender set, keep it
-  fresh.forEach(function(ns){
-    var old=allStaff.find(function(o){return o.id===ns.id;});
-    if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-  });
+  mergeStaffCache(fresh);
   allStaff=fresh;
 }
 async function loadAllData(){
   var r=await Promise.all([api('/services'),api('/staff'),api('/customers')]);
-  var oldStaff=allStaff.slice();
   allServices=r[0]||[];
   var fresh=r[1]||[];
-  // Merge gender from memory into freshly loaded staff
-  fresh.forEach(function(ns){
-    var old=oldStaff.find(function(o){return o.id===ns.id;});
-    if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-  });
+  mergeStaffCache(fresh);
   allStaff=fresh;
   allCustomers=r[2]||[];
 }
@@ -728,10 +746,7 @@ async function renderStaffStep(){
   // Fetch fresh staff to get latest off_days, but only update if successful
   var freshStaff=await api('/staff')||[];
   if(freshStaff.length>0){
-    freshStaff.forEach(function(ns){
-      var old=allStaff.find(function(o){return o.id===ns.id;});
-      if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-    });
+    mergeStaffCache(freshStaff);
     allStaff=freshStaff;
   }
 
@@ -838,10 +853,7 @@ async function renderTimeSlots(){
     // Try to fetch fresh staff, fall back to memory if failed
     var freshStaff=await api('/staff')||[];
     if(freshStaff.length>0){
-      freshStaff.forEach(function(ns){
-        var old=allStaff.find(function(o){return o.id===ns.id;});
-        if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-      });
+      mergeStaffCache(freshStaff);
       allStaff=freshStaff;
     }
     // Use allStaff (fresh or memory) for off_days check
@@ -856,14 +868,10 @@ async function renderTimeSlots(){
       }
     });
     // Check which selected staff are on off day
-    console.log('[DEBUG] bkState.date:', bkState.date);
-    console.log('[DEBUG] bkState.staffIds:', bkState.staffIds);
-    staffToCheck.forEach(function(s){console.log('[DEBUG] staff '+s.id+' '+s.name+' off_days:', s.off_days);});
     bkState.staffIds.forEach(function(sid){
       var s=staffToCheck.find(function(x){return x.id===sid;});
       if(s){
         var off=s.off_days||[];
-        console.log('[DEBUG] checking staff',s.name,'off:',off,'date:',bkState.date,'match:',off.indexOf(bkState.date));
         if(off.indexOf(bkState.date)>-1){
           offDayStaffNames.push(nameWithGender(s.name,s.gender));
         }
@@ -1487,6 +1495,7 @@ function openEditGender(sid, curGender){
       var res=await api('/staff/'+sid,'PUT',{gender:g});
       // Always update allStaff in memory regardless of API response
       allStaff.forEach(function(st){if(st.id===sid)st.gender=g;});
+      saveStaffCache();
       showLoading(false);closeModal();
       showToast('✓ Đã cập nhật: '+(g==='female'?'♀ Nữ':'♂ Nam'));
       renderAccountsPage();
@@ -1549,7 +1558,7 @@ function openAddAccount(){
         var res2=await api('/staff','POST',{name:name,gender:gender,login_id:id,pass:pwd,icon:'👤'});
         if(res2&&res2.error){showLoading(false);showToast('✗ '+res2.error);return;}
         // Add new staff to memory with gender, then sync from API preserving existing genders
-        if(res2&&res2.id){res2.gender=res2.gender||gender;allStaff.push(res2);}
+        if(res2&&res2.id){res2.gender=res2.gender||gender;allStaff.push(res2);saveStaffCache();}
         await loadStaff();
       }
       showLoading(false);closeModal();showToast('✓ Tạo TK: '+name+(role==='staff'?' ('+getGenderLabel(gender)+')':''));renderAccountsPage();
@@ -1674,6 +1683,7 @@ async function renderStaffView(stf){
       stf.off_days=off;
       // Sync to allStaff memory so customer booking and manager see updated off_days
       var ms=allStaff.find(function(s){return s.id===stf.id;});if(ms)ms.off_days=off;
+      saveStaffCache();
       showLoading(false);
       showToast('✓ Đã thêm ngày nghỉ: '+d);
       window.switchStaffTab('settings');
@@ -1683,6 +1693,7 @@ async function renderStaffView(stf){
       showLoading(true);await api('/staff/'+stf.id,'PUT',{off_days:[]});
       stf.off_days=[];
       var ms=allStaff.find(function(s){return s.id===stf.id;});if(ms)ms.off_days=[];
+      saveStaffCache();
       showLoading(false);
       showToast('✓ Đã xóa tất cả ngày nghỉ');window.switchStaffTab('settings');
     });
@@ -1693,6 +1704,7 @@ async function renderStaffView(stf){
         showLoading(true);await api('/staff/'+stf.id,'PUT',{off_days:off});
         stf.off_days=off;
         var ms=allStaff.find(function(s){return s.id===stf.id;});if(ms)ms.off_days=off;
+        saveStaffCache();
         showLoading(false);
         showToast('✓ Đã xóa: '+d);window.switchStaffTab('settings');
       });
