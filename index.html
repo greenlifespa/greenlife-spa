@@ -725,13 +725,15 @@ async function renderStaffStep(){
   var date=bkState.date||today();
   var time=bkState.time||'';
 
-  // Always fetch fresh staff to get latest off_days
+  // Fetch fresh staff to get latest off_days, but only update if successful
   var freshStaff=await api('/staff')||[];
-  freshStaff.forEach(function(ns){
-    var old=allStaff.find(function(o){return o.id===ns.id;});
-    if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-  });
-  allStaff=freshStaff;
+  if(freshStaff.length>0){
+    freshStaff.forEach(function(ns){
+      var old=allStaff.find(function(o){return o.id===ns.id;});
+      if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
+    });
+    allStaff=freshStaff;
+  }
 
   if(!allStaff.length){
     document.getElementById('staff-list').innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Chưa có nhân viên</div></div><button id="btn-staff-next" class="btn-green" style="margin-top:12px;">Tiếp tục →</button>';
@@ -833,14 +835,17 @@ async function renderTimeSlots(){
   var busyTimes=[];
   var offDayStaffNames=[];
   if(bkState.staffIds.length>0){
-    // Always fetch fresh staff data to get latest off_days
+    // Try to fetch fresh staff, fall back to memory if failed
     var freshStaff=await api('/staff')||[];
-    // Merge gender from memory into fresh data
-    freshStaff.forEach(function(ns){
-      var old=allStaff.find(function(o){return o.id===ns.id;});
-      if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
-    });
-    allStaff=freshStaff;
+    if(freshStaff.length>0){
+      freshStaff.forEach(function(ns){
+        var old=allStaff.find(function(o){return o.id===ns.id;});
+        if(old&&old.gender&&!ns.gender)ns.gender=old.gender;
+      });
+      allStaff=freshStaff;
+    }
+    // Use allStaff (fresh or memory) for off_days check
+    var staffToCheck=allStaff;
 
     var bks=await api('/bookings')||[];
     bks.forEach(function(b){
@@ -850,11 +855,15 @@ async function renderTimeSlots(){
         if(staffBusy)busyTimes.push(b.time);
       }
     });
-    // Check which selected staff are on off day using fresh data
+    // Check which selected staff are on off day
+    console.log('[DEBUG] bkState.date:', bkState.date);
+    console.log('[DEBUG] bkState.staffIds:', bkState.staffIds);
+    staffToCheck.forEach(function(s){console.log('[DEBUG] staff '+s.id+' '+s.name+' off_days:', s.off_days);});
     bkState.staffIds.forEach(function(sid){
-      var s=freshStaff.find(function(x){return x.id===sid;});
+      var s=staffToCheck.find(function(x){return x.id===sid;});
       if(s){
         var off=s.off_days||[];
+        console.log('[DEBUG] checking staff',s.name,'off:',off,'date:',bkState.date,'match:',off.indexOf(bkState.date));
         if(off.indexOf(bkState.date)>-1){
           offDayStaffNames.push(nameWithGender(s.name,s.gender));
         }
