@@ -418,7 +418,17 @@ html.dark .contact-addr{color:#cbd5e1;}
   <!-- CHANGE 1: Removed "+ Nhân viên" button from services page header, staff list section removed entirely -->
   <div class="mgr-page" id="mgr-services"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span><div style="display:flex;gap:8px;"><button class="btn-sm" id="btn-add-svc">+ Dịch vụ</button></div></div><div id="mgr-svc-list"></div></div>
   <div class="mgr-page" id="mgr-posts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tin tức</span><button class="btn-sm" id="btn-add-post">+ Thêm bài</button></div><div id="mgr-posts-list"></div></div>
-  <div class="mgr-page" id="mgr-bookings"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</div><div class="filter-tabs"><button class="ftab active" id="fb-all">Tất cả</button><button class="ftab" id="fb-pending">Chờ</button><button class="ftab" id="fb-confirmed">Xác nhận</button><button class="ftab" id="fb-done">Hoàn thành</button></div><div id="all-bookings"></div></div>
+  <div class="mgr-page" id="mgr-bookings">
+    <div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</span>
+      <div style="display:flex;gap:6px;">
+        <button id="btn-del-done" style="background:none;border:1px solid #6ee7b7;color:#065f46;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Hoàn thành</button>
+        <button id="btn-del-cancelled" style="background:none;border:1px solid #fca5a5;color:#991b1b;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Đã hủy</button>
+      </div>
+    </div>
+    <div class="filter-tabs"><button class="ftab active" id="fb-all" data-filter="all">Tất cả</button><button class="ftab" id="fb-pending" data-filter="pending">Chờ</button><button class="ftab" id="fb-confirmed" data-filter="confirmed">Xác nhận</button><button class="ftab" id="fb-done" data-filter="done">Hoàn thành</button></div>
+    <div id="all-bookings"></div>
+  </div>
   <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div>
   <div class="mgr-nav">
     <button class="mgr-nav-item active" id="mnav-dash"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📊</span>Tổng quan</button>
@@ -1439,6 +1449,41 @@ async function renderAllBookings(filter){
   });
 }
 
+async function bulkDeleteBookings(status){
+  var stLblMap={done:'Hoàn thành',cancelled:'Đã hủy'};
+  var label=stLblMap[status]||status;
+  openModal('🗑 Xóa lịch '+label,
+    '<div style="text-align:center;padding:8px;">'
+    +'<div style="font-size:2.5rem;margin-bottom:12px;">🗑</div>'
+    +'<div style="font-size:0.9rem;margin-bottom:6px;">Xóa tất cả lịch đặt có trạng thái <b>'+label+'</b>?</div>'
+    +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">Hành động này không thể hoàn tác.</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button id="bulk-cancel-btn" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button>'
+    +'<button id="bulk-confirm-btn" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa tất cả</button>'
+    +'</div></div>');
+  setTimeout(function(){
+    var cancelBtn=document.getElementById('bulk-cancel-btn');
+    var confirmBtn=document.getElementById('bulk-confirm-btn');
+    if(cancelBtn)cancelBtn.addEventListener('click',closeModal);
+    if(confirmBtn)confirmBtn.addEventListener('click',async function(){
+      showLoading(true);
+      var bks=await api('/bookings')||[];
+      var targets=bks.filter(function(b){return b.status===status;});
+      var done=0;
+      for(var i=0;i<targets.length;i++){
+        var res=await api('/bookings/'+targets[i].id,'DELETE');
+        if(!res||!res.error)done++;
+      }
+      showLoading(false);
+      closeModal();
+      showToast('✓ Đã xóa '+done+' lịch '+label);
+      // Reload bookings tab
+      var activeFilter=document.querySelector('#mgr-bookings .ftab.active');
+      renderAllBookings(activeFilter?activeFilter.getAttribute('data-filter')||'all':'all');
+    });
+  },50);
+}
+
 // CHANGE 3: renderAccountsPage — show gender for staff accounts
 // CHANGE 2: openAddAccount — gender selection updates staff gender field
 async function renderAccountsPage(){
@@ -1832,6 +1877,8 @@ window.addEventListener('load',function(){
   document.getElementById('fb-pending').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('pending');});
   document.getElementById('fb-confirmed').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('confirmed');});
   document.getElementById('fb-done').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('done');});
+  document.getElementById('btn-del-done').addEventListener('click',function(){bulkDeleteBookings('done');});
+  document.getElementById('btn-del-cancelled').addEventListener('click',function(){bulkDeleteBookings('cancelled');});
   document.getElementById('modal-close').addEventListener('click',closeModal);
   document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
   document.getElementById('btn-add-post').addEventListener('click',openAddPost);
