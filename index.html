@@ -414,7 +414,7 @@ html.dark .contact-addr{color:#cbd5e1;}
     <div class="mgr-sec"><div class="mgr-sec-title">Doanh thu 7 ngày</div><div id="rev-chart" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);padding:1rem;"></div></div>
   </div>
   <div class="mgr-page" id="mgr-customers"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Khách hàng</div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="cust-search" placeholder="Tìm theo tên, SĐT..."></div><div id="customers-list"></div></div>
-  <div class="mgr-page" id="mgr-points"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div><div class="pts-form"><div style="font-size:0.88rem;font-weight:500;margin-bottom:1rem;">Nạp tiền / Điều chỉnh điểm</div><div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div><div class="fg"><label>Loại thao tác</label><select id="pts-type" class="mgr-inp"><option value="topup">💰 Nạp tiền (VND)</option><option value="add">➕ Cộng điểm</option><option value="sub">➖ Trừ điểm</option></select></div><div class="fg"><label>Số tiền / Điểm</label><input type="number" id="pts-amount" class="mgr-inp"></div><div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div><button class="btn-green" id="btn-adj-pts">Thực hiện</button></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử gần đây</div><div id="pts-history"></div></div>
+  <div class="mgr-page" id="mgr-points"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div><div class="pts-form"><div style="font-size:0.88rem;font-weight:500;margin-bottom:1rem;">Nạp tiền / Điều chỉnh điểm</div><div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div><div class="fg"><label>Loại thao tác</label><select id="pts-type" class="mgr-inp"><option value="topup">💰 Nạp tiền (VND)</option><option value="add">➕ Cộng điểm</option><option value="sub">➖ Trừ điểm</option></select></div><div class="fg"><label>Số tiền / Điểm</label><input type="number" id="pts-amount" class="mgr-inp" placeholder="Nhập số tiền..."><div id="pts-preview" style="display:none;margin-top:8px;padding:10px 14px;background:var(--accent-light);border:1px solid var(--g200);border-radius:8px;font-size:0.85rem;color:var(--g800);">💡 Đối chiếu: <b id="pts-preview-val" style="font-size:1rem;color:var(--accent);"></b></div></div><div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div><button class="btn-green" id="btn-adj-pts">Thực hiện</button></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử gần đây</div><div id="pts-history"></div></div>
   <!-- CHANGE 1: Removed "+ Nhân viên" button from services page header, staff list section removed entirely -->
   <div class="mgr-page" id="mgr-services"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span><div style="display:flex;gap:8px;"><button class="btn-sm" id="btn-add-svc">+ Dịch vụ</button></div></div><div id="mgr-svc-list"></div></div>
   <div class="mgr-page" id="mgr-posts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tin tức</span><button class="btn-sm" id="btn-add-post">+ Thêm bài</button></div><div id="mgr-posts-list"></div></div>
@@ -1406,6 +1406,7 @@ async function adjustPoints(){
     c.rank_points=Math.max(0,(c.rank_points||0)-amount);showToast('✓ Trừ '+fmt(amount)+' điểm của '+c.name);
   }
   document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
+  var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
   showLoading(false);renderPtsPage();
 }
 
@@ -1582,6 +1583,8 @@ async function renderStaffView(stf){
   var posts=await api('/posts')||[];
   var staffFresh=await api('/staff')||[];
   stf=staffFresh.find(function(s){return s.id===stf.id;})||stf;
+  // Restore gender and off_days from localStorage cache (API may not persist these)
+  mergeStaffCache([stf]);
   // Also load customers for display
   if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[];}
   showLoading(false);
@@ -1804,6 +1807,24 @@ window.addEventListener('load',function(){
   document.getElementById('mnav-acc').addEventListener('click',function(){showMgrPage('mgr-accounts','mnav-acc');});
   document.getElementById('cust-search').addEventListener('input',renderCustomers);
   document.getElementById('btn-adj-pts').addEventListener('click',adjustPoints);
+  // Live amount preview: 1000000 → 1.000.000 VND
+  document.getElementById('pts-amount').addEventListener('input',function(){
+    var preview=document.getElementById('pts-preview');
+    var previewVal=document.getElementById('pts-preview-val');
+    var v=parseInt(this.value);
+    var type=document.getElementById('pts-type').value;
+    if(v&&v>0){
+      var unit=type==='topup'?' VND':' điểm';
+      previewVal.textContent=v.toLocaleString('vi-VN')+unit;
+      preview.style.display='block';
+    }else{
+      preview.style.display='none';
+    }
+  });
+  document.getElementById('pts-type').addEventListener('change',function(){
+    var amountEl=document.getElementById('pts-amount');
+    if(amountEl.value)amountEl.dispatchEvent(new Event('input'));
+  });
   document.getElementById('btn-add-svc').addEventListener('click',openAddService);
   document.getElementById('btn-add-account').addEventListener('click',openAddAccount);
   document.getElementById('acc-search').addEventListener('input',function(){renderAccountsPage();});
