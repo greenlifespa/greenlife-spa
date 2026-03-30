@@ -237,7 +237,10 @@ html.dark .contact-addr{color:#cbd5e1;}
   <div style="margin-bottom:1rem;"><img src="/logo.png" alt="Green Life Spa" style="width:140px;height:140px;object-fit:contain;border-radius:50%;"></div>
   <div class="splash-title">Green Life Spa</div>
   <div class="splash-sub">Spa &amp; Wellness</div>
-  <div class="splash-btns"><button class="btn-primary" id="btn-to-auth">Đăng nhập / Đăng ký</button></div>
+  <div class="splash-btns">
+    <button class="btn-primary" id="btn-to-auth">Đăng nhập / Đăng ký</button>
+
+  </div>
 </div>
 
 <div class="screen" id="auth">
@@ -282,11 +285,17 @@ html.dark .contact-addr{color:#cbd5e1;}
       <div style="margin-top:10px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;"><span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">💳 Số dư TK</span><span style="font-size:0.88rem;font-weight:500;" id="home-balance">0 VND</span></div>
       <div style="margin-top:6px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;"><span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">🎁 Điểm Reward</span><span style="font-size:0.88rem;font-weight:500;" id="home-reward-pts">0 RP</span></div>
     </div>
+    <div id="low-balance-warn" style="display:none;background:#fff8e1;border:1px solid #fde68a;border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;gap:10px;align-items:flex-start;">
+      <span style="font-size:1.2rem;flex-shrink:0;">⚠️</span>
+      <div><div style="font-size:0.85rem;font-weight:600;color:#c07000;margin-bottom:2px;">Số dư tài khoản thấp</div><div style="font-size:0.78rem;color:#a05c00;">Số dư hiện tại: <b id="low-bal-amt"></b>. Vui lòng nạp thêm tiền để sử dụng dịch vụ.</div></div>
+    </div>
     <div class="contact-card">
       <div class="contact-card-title">📍 Thông tin liên hệ</div>
       <div class="contact-row"><span style="font-size:1rem;">📞</span><span class="contact-phone"><a href="tel:0902708788">0902.708.788</a></span></div>
+      <div class="contact-row"><span style="font-size:1rem;">💚</span><span><a href="https://zalo.me/0902708788" target="_blank" style="color:#1a7a40;font-weight:600;text-decoration:none;">Zalo: Green Life Spa</a></span></div>
+      <div class="contact-row"><span style="font-size:1rem;">💬</span><span><a href="https://m.me/greenlifespatanphu" target="_blank" style="color:#1a7a40;font-weight:500;text-decoration:none;">Messenger: Green Life Spa</a></span></div>
       <div class="contact-row"><span style="font-size:1rem;">🏠</span><span class="contact-addr">246 Độc Lập, Phú Thọ Hoà, HCM<br><span class="contact-addr-sub">(246 Độc Lập, Tân Thành, Tân Phú, HCM)</span></span></div>
-      <div class="contact-row" style="margin-bottom:0;"><span style="font-size:1rem;">💬</span><span>Fanpage: <a href="https://www.facebook.com/greenlifespatanphu" target="_blank" style="color:#1a7a40;font-weight:500;text-decoration:none;">Green Life Spa</a></span></div>
+      <div class="contact-row" style="margin-bottom:0;"><span style="font-size:1rem;">👍</span><span>Fanpage: <a href="https://www.facebook.com/greenlifespatanphu" target="_blank" style="color:#1a7a40;font-weight:500;text-decoration:none;">Green Life Spa</a></span></div>
     </div>
     <div class="quick-actions">
       <div class="qa" id="qa-booking"><span class="qa-icon">📅</span><div class="qa-lbl">Đặt lịch</div></div>
@@ -372,18 +381,6 @@ html.dark .contact-addr{color:#cbd5e1;}
   <div style="padding:16px;" id="staff-bookings-list"></div>
 </div>
 
-<!-- MANAGER LOGIN -->
-<div class="screen" id="mgr-login">
-  <div class="auth-hdr" style="background:linear-gradient(160deg,#0e2d1e,#1a4d33);">
-    <button class="back-btn" id="mgr-back">← Quay lại</button>
-    <div style="text-align:center;margin-top:4px;"><div style="font-family:'Cormorant Garamond',serif;font-size:1.8rem;color:#fff;">Quản lý Spa</div></div>
-  </div>
-  <div class="auth-body">
-    <div class="fg"><label>Tên đăng nhập</label><input type="text" id="mgr-user" placeholder="admin"></div>
-    <div class="fg"><label>Mật khẩu</label><input type="password" id="mgr-pass"></div>
-    <button class="btn-green" id="btn-mgr-login">Đăng nhập quản lý</button>
-  </div>
-</div>
 
 <!-- MANAGER APP -->
 <div class="screen" id="mgr">
@@ -418,7 +415,17 @@ html.dark .contact-addr{color:#cbd5e1;}
   <!-- CHANGE 1: Removed "+ Nhân viên" button from services page header, staff list section removed entirely -->
   <div class="mgr-page" id="mgr-services"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span><div style="display:flex;gap:8px;"><button class="btn-sm" id="btn-add-svc">+ Dịch vụ</button></div></div><div id="mgr-svc-list"></div></div>
   <div class="mgr-page" id="mgr-posts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tin tức</span><button class="btn-sm" id="btn-add-post">+ Thêm bài</button></div><div id="mgr-posts-list"></div></div>
-  <div class="mgr-page" id="mgr-bookings"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</div><div class="filter-tabs"><button class="ftab active" id="fb-all">Tất cả</button><button class="ftab" id="fb-pending">Chờ</button><button class="ftab" id="fb-confirmed">Xác nhận</button><button class="ftab" id="fb-done">Hoàn thành</button></div><div id="all-bookings"></div></div>
+  <div class="mgr-page" id="mgr-bookings">
+    <div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</span>
+      <div style="display:flex;gap:6px;">
+        <button id="btn-del-done" style="background:none;border:1px solid #6ee7b7;color:#065f46;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Hoàn thành</button>
+        <button id="btn-del-cancelled" style="background:none;border:1px solid #fca5a5;color:#991b1b;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Đã hủy</button>
+      </div>
+    </div>
+    <div class="filter-tabs"><button class="ftab active" id="fb-all" data-filter="all">Tất cả</button><button class="ftab" id="fb-pending" data-filter="pending">Chờ</button><button class="ftab" id="fb-confirmed" data-filter="confirmed">Xác nhận</button><button class="ftab" id="fb-done" data-filter="done">Hoàn thành</button></div>
+    <div id="all-bookings"></div>
+  </div>
   <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div>
   <div class="mgr-nav">
     <button class="mgr-nav-item active" id="mnav-dash"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📊</span>Tổng quan</button>
@@ -471,9 +478,9 @@ function saveStaffCache(){
   try{
     var cache={};
     allStaff.forEach(function(s){
-      cache[s.id]={};
-      if(s.gender)cache[s.id].gender=s.gender;
-      if(s.off_days&&s.off_days.length)cache[s.id].off_days=s.off_days;
+      cache[String(s.id)]={};
+      if(s.gender)cache[String(s.id)].gender=s.gender;
+      if(s.off_days&&s.off_days.length)cache[String(s.id)].off_days=s.off_days;
     });
     localStorage.setItem('gl_staff_cache',JSON.stringify(cache));
   }catch(e){}
@@ -482,10 +489,11 @@ function mergeStaffCache(staffArr){
   try{
     var cache=JSON.parse(localStorage.getItem('gl_staff_cache')||'{}');
     staffArr.forEach(function(s){
-      var c=cache[s.id];
+      var c=cache[String(s.id)];
       if(!c)return;
-      if(!s.gender&&c.gender)s.gender=c.gender;
-      // Always merge off_days from cache — API often doesn't return updated off_days
+      // Always apply cached gender — API doesn't reliably persist it
+      if(c.gender)s.gender=c.gender;
+      // Always apply cached off_days
       if(c.off_days&&c.off_days.length)s.off_days=c.off_days;
     });
   }catch(e){}
@@ -559,7 +567,10 @@ async function doLogin(){
   if(!phone||!pass){showToast('✗ Vui lòng điền đầy đủ');return;}
   showLoading(true);var res=await api('/login','POST',{phone:phone,pass:pass});showLoading(false);
   if(res.error){showToast('✗ '+res.error);return;}
-  if(res.role==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();return;}
+  if(res.role==='admin'){
+    if(phone==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();return;}
+    else{showToast('✗ Sai thông tin đăng nhập');return;}
+  }
   if(res.role==='staff'){currentRole='staff';currentStaff=res.user;goScreen('staff-view');await renderStaffView(res.user);return;}
   if(res.role==='customer'){currentRole='customer';currentUser=res.user;loginAs(res.user);return;}
 }
@@ -612,6 +623,16 @@ async function refreshHome(){
   document.getElementById('home-pts').textContent=fmt(c.rank_points||0);
   document.getElementById('home-tier-bdg').textContent=tier.icon+' '+tier.name;
   document.getElementById('home-balance').textContent=fmt(c.balance||0)+' VND';
+  // Low balance warning
+  var lowBalWarn=document.getElementById('low-balance-warn');
+  if(lowBalWarn){
+    if((c.balance||0)<500000){
+      lowBalWarn.style.display='flex';
+      lowBalWarn.querySelector('#low-bal-amt').textContent=fmt(c.balance||0)+' VND';
+    }else{
+      lowBalWarn.style.display='none';
+    }
+  }
   document.getElementById('home-reward-pts').textContent=fmt(c.reward_points||0)+' RP';
   var nextTier=null;for(var i=0;i<TIERS.length;i++){if(TIERS[i].min>(c.rank_points||0)){nextTier=TIERS[i];break;}}
   var pct=nextTier?Math.min(100,((c.rank_points||0)-tier.min)/(nextTier.min-tier.min)*100):100;
@@ -684,19 +705,32 @@ function renderSvcGrid(fc){
   allServices.forEach(function(s){
     if(fc&&fc!=='all'&&s.cat!==fc)return;
     var cnt=bkState.svcIds.filter(function(id){return id===s.id;}).length;
-    html+='<div class="svc-card'+(cnt>0?' sel':'')+'">'
+    var isSel=cnt>0;
+    html+='<div class="svc-card'+(isSel?' sel':'')+'" data-sid="'+s.id+'" style="cursor:pointer;">'
       +'<div style="display:flex;align-items:center;gap:10px;padding:12px;">'
       +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+(s.icon||'💆')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+s.name+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
       +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ · '+s.duration+'ph</div></div>'
       +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
-      +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(cnt>0?'none':'1px solid var(--border)')+';background:'+(cnt>0?'var(--accent)':'var(--bg3)')+';color:'+(cnt>0?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
-      +(cnt>0?'<button class="svc-minus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>':'')
+      +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(isSel?'none':'1px solid var(--border)')+';background:'+(isSel?'var(--accent)':'var(--bg3)')+';color:'+(isSel?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
+      +(isSel?'<button class="svc-minus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>':'')
       +'</div></div></div>';
   });
   document.getElementById('svc-grid').innerHTML=html;
-  document.querySelectorAll('.svc-plus-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();bkState.svcIds.push(parseInt(this.getAttribute('data-sid')));var cur=document.querySelector('#svc-cats .ftab.active');renderSvcGrid(cur?cur.getAttribute('data-cat'):'all');updateSvcSummary();});});
-  document.querySelectorAll('.svc-minus-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var sid=parseInt(this.getAttribute('data-sid'));var pos=bkState.svcIds.lastIndexOf(sid);if(pos>-1)bkState.svcIds.splice(pos,1);var cur=document.querySelector('#svc-cats .ftab.active');renderSvcGrid(cur?cur.getAttribute('data-cat'):'all');updateSvcSummary();});});
+  var cur=function(){var el=document.querySelector('#svc-cats .ftab.active');return el?el.getAttribute('data-cat'):'all';};
+  // Click on whole card: toggle select (add once if not selected, remove if selected)
+  document.querySelectorAll('.svc-card').forEach(function(card){
+    card.addEventListener('click',function(e){
+      if(e.target.classList.contains('svc-plus-btn')||e.target.classList.contains('svc-minus-btn'))return;
+      var sid=parseInt(this.getAttribute('data-sid'));
+      var pos=bkState.svcIds.indexOf(sid);
+      if(pos>-1){bkState.svcIds.splice(pos,1);}
+      else{bkState.svcIds.push(sid);}
+      renderSvcGrid(cur());updateSvcSummary();
+    });
+  });
+  document.querySelectorAll('.svc-plus-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();bkState.svcIds.push(parseInt(this.getAttribute('data-sid')));renderSvcGrid(cur());updateSvcSummary();});});
+  document.querySelectorAll('.svc-minus-btn').forEach(function(btn){btn.addEventListener('click',function(e){e.stopPropagation();var sid=parseInt(this.getAttribute('data-sid'));var pos=bkState.svcIds.lastIndexOf(sid);if(pos>-1)bkState.svcIds.splice(pos,1);renderSvcGrid(cur());updateSvcSummary();});});
 }
 function updateSvcSummary(){
   var sum=document.getElementById('svc-summary');if(!sum)return;
@@ -1439,6 +1473,41 @@ async function renderAllBookings(filter){
   });
 }
 
+async function bulkDeleteBookings(status){
+  var stLblMap={done:'Hoàn thành',cancelled:'Đã hủy'};
+  var label=stLblMap[status]||status;
+  openModal('🗑 Xóa lịch '+label,
+    '<div style="text-align:center;padding:8px;">'
+    +'<div style="font-size:2.5rem;margin-bottom:12px;">🗑</div>'
+    +'<div style="font-size:0.9rem;margin-bottom:6px;">Xóa tất cả lịch đặt có trạng thái <b>'+label+'</b>?</div>'
+    +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">Hành động này không thể hoàn tác.</div>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button id="bulk-cancel-btn" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button>'
+    +'<button id="bulk-confirm-btn" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa tất cả</button>'
+    +'</div></div>');
+  setTimeout(function(){
+    var cancelBtn=document.getElementById('bulk-cancel-btn');
+    var confirmBtn=document.getElementById('bulk-confirm-btn');
+    if(cancelBtn)cancelBtn.addEventListener('click',closeModal);
+    if(confirmBtn)confirmBtn.addEventListener('click',async function(){
+      showLoading(true);
+      var bks=await api('/bookings')||[];
+      var targets=bks.filter(function(b){return b.status===status;});
+      var done=0;
+      for(var i=0;i<targets.length;i++){
+        var res=await api('/bookings/'+targets[i].id,'DELETE');
+        if(!res||!res.error)done++;
+      }
+      showLoading(false);
+      closeModal();
+      showToast('✓ Đã xóa '+done+' lịch '+label);
+      // Reload bookings tab
+      var activeFilter=document.querySelector('#mgr-bookings .ftab.active');
+      renderAllBookings(activeFilter?activeFilter.getAttribute('data-filter')||'all':'all');
+    });
+  },50);
+}
+
 // CHANGE 3: renderAccountsPage — show gender for staff accounts
 // CHANGE 2: openAddAccount — gender selection updates staff gender field
 async function renderAccountsPage(){
@@ -1793,9 +1862,7 @@ window.addEventListener('load',function(){
   document.getElementById('menu-tier').addEventListener('click',function(){showPage('rewards');});
   document.getElementById('menu-wallet').addEventListener('click',openVoucherWallet);
   document.getElementById('btn-logout').addEventListener('click',doLogout);
-  document.getElementById('mgr-back').addEventListener('click',function(){goScreen('splash');});
-  document.getElementById('btn-mgr-login').addEventListener('click',async function(){var u=document.getElementById('mgr-user').value;var p=document.getElementById('mgr-pass').value;showLoading(true);var res=await api('/login','POST',{phone:u,pass:p});showLoading(false);if(res&&res.role==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();}else showToast('✗ Sai thông tin đăng nhập');});
-  document.getElementById('mgr-pass').addEventListener('keydown',function(e){if(e.key==='Enter')document.getElementById('btn-mgr-login').click();});
+
   document.getElementById('btn-mgr-logout').addEventListener('click',function(){currentRole=null;goScreen('splash');});
   document.getElementById('btn-mgr-change-pwd').addEventListener('click',openChangeAdminPwd);
   document.getElementById('mnav-dash').addEventListener('click',function(){showMgrPage('mgr-dashboard','mnav-dash');});
@@ -1832,6 +1899,8 @@ window.addEventListener('load',function(){
   document.getElementById('fb-pending').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('pending');});
   document.getElementById('fb-confirmed').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('confirmed');});
   document.getElementById('fb-done').addEventListener('click',function(){setActiveFilter(this);renderAllBookings('done');});
+  document.getElementById('btn-del-done').addEventListener('click',function(){bulkDeleteBookings('done');});
+  document.getElementById('btn-del-cancelled').addEventListener('click',function(){bulkDeleteBookings('cancelled');});
   document.getElementById('modal-close').addEventListener('click',closeModal);
   document.getElementById('modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
   document.getElementById('btn-add-post').addEventListener('click',openAddPost);
