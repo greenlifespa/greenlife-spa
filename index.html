@@ -1056,6 +1056,9 @@ function renderConfirm(){
 
 async function confirmBooking(){
   if(!currentUser||!bkState.svcIds.length||!bkState.time){showToast('✗ Thiếu thông tin');return;}
+  var btn=document.getElementById('btn-confirm-bk');
+  if(btn&&btn.disabled)return;
+  if(btn){btn.disabled=true;btn.textContent='Đang xử lý...';}
   var c=currentUser;var tier=getTier(c.rank_points||0);
   var totalPrice=0,svcNames=[];
   bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;svcNames.push(s.name);}});});
@@ -1079,7 +1082,10 @@ async function confirmBooking(){
     await api('/customers/'+c.id,'PUT',{total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:Math.max(0,(c.balance||0)-paid),voucher_wallet:wallet});
     await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
     showLoading(false);showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');showPage('home');
-  }else{showLoading(false);showToast('✗ Lỗi đặt lịch, thử lại');}
+  }else{
+    if(btn){btn.disabled=false;btn.textContent='Xác nhận đặt lịch';}
+    showLoading(false);showToast('✗ Lỗi đặt lịch, thử lại');
+  }
 }
 
 // ============================================================
@@ -1363,7 +1369,7 @@ async function renderDashboard(){
   });
   if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
   document.getElementById('today-bookings').innerHTML=bkHtml;
-  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
+  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
   document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
   var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
   var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
@@ -1417,6 +1423,9 @@ async function renderPtsPage(){
   }).join('');
 }
 async function adjustPoints(){
+  var adjBtn=document.getElementById('btn-adj-pts');
+  if(adjBtn&&adjBtn.disabled)return;
+  if(adjBtn){adjBtn.disabled=true;}
   var custId=parseInt(document.getElementById('pts-cust').value);
   var type=document.getElementById('pts-type').value;
   var amount=parseInt(document.getElementById('pts-amount').value);
@@ -1446,6 +1455,7 @@ async function adjustPoints(){
   }
   document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
   var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
+  if(adjBtn)adjBtn.disabled=false;
   showLoading(false);renderPtsPage();
 }
 
@@ -1798,7 +1808,7 @@ async function renderStaffView(stf){
     });
   }
   function bindBookingBtns(){
-    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
+    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
     document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
   }
 
