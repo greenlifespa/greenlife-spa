@@ -275,11 +275,11 @@ html.dark .contact-addr{color:#cbd5e1;}
     </div>
   </div>
   <div class="page active" id="page-home">
-    <div class="sec-title" style="margin-bottom:0.75rem;">📰 Tin tức nổi bật</div>
-    <div id="home-news-list"><div class="empty-state" style="padding:1rem;"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div></div>
-    <div id="home-news-more" style="display:none;text-align:center;margin-top:4px;margin-bottom:1.25rem;">
-      <button onclick="showPage('news')" style="background:none;border:1px solid var(--border);border-radius:100px;padding:8px 20px;font-size:0.82rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;">Xem tất cả →</button>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+      <span style="font-family:'Cormorant Garamond',serif;font-size:1.1rem;color:var(--g800);">📰 Tin tức nổi bật</span>
+      <button onclick="showPage('news')" style="background:none;border:none;font-size:0.78rem;color:var(--accent);cursor:pointer;font-family:'DM Sans',sans-serif;padding:0;">Xem tất cả →</button>
     </div>
+    <div id="home-news-list"><div class="empty-state" style="padding:0.75rem;"><div class="empty-text" style="font-size:0.82rem;">Chưa có bài viết</div></div></div>
     <div class="member-card">
       <div class="card-tier-lbl">Thành viên</div>
       <div class="card-name" id="home-name">Tên khách hàng</div>
@@ -655,23 +655,26 @@ async function refreshHome(){
   var newsMore=document.getElementById('home-news-more');
   if(newsList){api('/posts').then(function(posts){
     if(!posts||!posts.length)return;
-    var top=posts.slice(0,5);
+    // Sort pinned first
+    posts.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
+    var top=posts.slice(0,6);
     var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí','tintuc':'📰 Tin tức'};
-    var nhtml='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;-ms-overflow-style:none;margin-bottom:1rem;">';
+    var nhtml='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;">';
     top.forEach(function(p){
       var hasVideo=p.video_id&&p.video_type;
       var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
       var clickFn=hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')'  :'window.open(\''+p.url+'\',\'_blank\')';
-      nhtml+='<div onclick="'+clickFn+'" style="flex-shrink:0;width:140px;background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer;">';
-      nhtml+=thumb?'<img src="'+thumb+'" style="width:100%;height:85px;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">'+(hasVideo?'▶':'📰')+'</div>';
-      nhtml+='<div style="padding:6px 8px;">';
-      if(p.category)nhtml+='<span style="font-size:0.6rem;background:var(--accent-light);color:var(--accent);padding:1px 5px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>';
-      nhtml+='<div style="font-size:0.78rem;font-weight:600;margin-top:3px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;">'+p.title+'</div>';
+      var isPinned=!!p.pinned;
+      nhtml+='<div onclick="'+clickFn+'" style="flex-shrink:0;width:120px;background:var(--card-bg);border-radius:10px;border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';overflow:hidden;cursor:pointer;">';
+      nhtml+=thumb?'<img src="'+thumb+'" style="width:100%;height:72px;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">'  :'<div style="width:100%;height:72px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">'+(hasVideo?'▶':'📰')+'</div>';
+      nhtml+='<div style="padding:5px 7px;">';
+      if(isPinned)nhtml+='<span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:100px;font-weight:600;">📌 Nổi bật</span>';
+      nhtml+='<div style="font-size:0.72rem;font-weight:600;margin-top:2px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;">'+p.title+'</div>';
       nhtml+='</div></div>';
     });
     nhtml+='</div>';
     newsList.innerHTML=nhtml;
-    if(newsMore&&posts.length>5)newsMore.style.display='block';
+    if(newsMore&&posts.length>6)newsMore.style.display='block';
   });}
 }
 async function checkPendingReview(){
@@ -1244,21 +1247,56 @@ async function renderNews(cat){
   document.getElementById('news-list').innerHTML=html;
 }
 
+
+async function renderDashboard(){
+  showLoading(true);var bks=await api('/bookings')||[];showLoading(false);
+  var totalRev=0,doneBks=0;bks.forEach(function(b){if(b.status==='done'){totalRev+=b.actual_paid||b.amount||0;doneBks++;}});
+  var pending=bks.filter(function(b){return b.status==='pending';}).length;
+  var confirmed=bks.filter(function(b){return b.status==='confirmed';}).length;
+  document.getElementById('mgr-stats').innerHTML='<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">'+allCustomers.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">'+bks.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Hoàn thành</div><div class="stat-card-val">'+doneBks+'</div></div><div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val" style="font-size:1.1rem;">'+fmt(totalRev)+'</div></div>';
+  var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
+  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
+  var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
+  active.forEach(function(b){
+    var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
+    bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+b.date+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';
+  });
+  if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
+  document.getElementById('today-bookings').innerHTML=bkHtml;
+  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
+  document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
+  var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
+  var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
+  var barHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
+  days.forEach(function(d){var h=Math.max(4,Math.round((d.rev/maxRev)*100));var revK=d.rev>=1000000?(d.rev/1000000).toFixed(1)+'M':d.rev>=1000?Math.round(d.rev/1000)+'K':'';barHtml+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="font-size:0.55rem;color:var(--accent);font-weight:600;min-height:12px;">'+revK+'</div><div style="flex:1;width:100%;background:var(--bg3);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;"><div style="background:var(--accent);border-radius:4px;height:'+h+'%;min-height:'+(d.rev>0?4:0)+'px;"></div></div><span style="font-size:0.62rem;color:var(--muted);">'+d.label+'</span></div>';});
+  barHtml+='</div>';document.getElementById('rev-chart').innerHTML=barHtml;
+}
+
 async function renderMgrPosts(){
   showLoading(true);var posts=await api('/posts')||[];showLoading(false);
   var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí','tintuc':'📰 Tin tức'};
   var html='';
   if(!posts.length)html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
+  posts.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
   posts.forEach(function(p){
     var thumb=p.thumbnail||(p.video_id?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">'
+    var isPinned=!!p.pinned;
+    html+='<div style="background:var(--card-bg);border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">'
       +(thumb?'<img src="'+thumb+'" style="width:72px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
-      +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div><div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div></div>'
-      +'<div style="display:flex;gap:6px;flex-shrink:0;"><button data-edit-post="'+p.id+'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text);">✏️</button><button data-del-post="'+p.id+'" style="background:none;border:1px solid #fca5a5;border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:#dc2626;">🗑</button></div></div>';
+      +'<div style="flex:1;min-width:0;">'
+      +(isPinned?'<span style="font-size:0.6rem;background:var(--accent);color:#fff;padding:1px 6px;border-radius:100px;font-weight:600;display:inline-block;margin-bottom:3px;">📌 Ghim</span>':'')
+      +'<div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div>'
+      +'<div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div></div>'
+      +'<div style="display:flex;gap:4px;flex-shrink:0;">'
+      +'<button data-pin-post="'+p.id+'" data-pinned="'+(isPinned?'1':'0')+'" style="background:'+(isPinned?'var(--accent-light)':'none')+';border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:'+(isPinned?'var(--accent)':'var(--muted)')+';">📌</button>'
+      +'<button data-edit-post="'+p.id+'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text);">✏️</button>'
+      +'<button data-del-post="'+p.id+'" style="background:none;border:1px solid #fca5a5;border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:#dc2626;">🗑</button>'
+      +'</div></div>';
   });
   var el=document.getElementById('mgr-posts-list');if(el)el.innerHTML=html;
   document.querySelectorAll('[data-edit-post]').forEach(function(btn){btn.addEventListener('click',function(){var pid=parseInt(this.getAttribute('data-edit-post'));var p=posts.find(function(x){return x.id===pid;});if(p)openEditPost(p);});});
   document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xóa bài viết này?'))return;showLoading(true);await api('/posts/'+pid,'DELETE');showLoading(false);showToast('✓ Đã xóa');renderMgrPosts();});});
+  document.querySelectorAll('[data-pin-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-pin-post'));var isPinned=this.getAttribute('data-pinned')==='1';showLoading(true);await api('/posts/'+pid,'PUT',{pinned:!isPinned});showLoading(false);showToast(isPinned?'✓ Đã bỏ ghim':'📌 Đã ghim nổi bật');renderMgrPosts();});});
 }
 function openAddPost(){
   openModal('➕ Thêm bài viết','<div class="fg"><label>Tiêu đề</label><input type="text" id="post-title" class="mgr-inp"></div><div class="fg"><label>Mô tả ngắn</label><textarea id="post-desc" class="mgr-inp" rows="2"></textarea></div><div class="fg"><label>Link URL</label><input type="text" id="post-url" class="mgr-inp" placeholder="https://youtube.com/..."></div><div class="fg"><label>Thumbnail URL (để trống nếu dùng YouTube)</label><input type="text" id="post-thumb" class="mgr-inp" placeholder="https://..."></div><div class="fg"><label>Danh mục</label><select id="post-cat" class="mgr-inp"><option value="suckhoe">💚 Sức khoẻ</option><option value="lamdep">✨ Làm đẹp</option><option value="giaitri">🎬 Giải trí</option><option value="tintuc">📰 Tin tức</option></select></div><div style="display:flex;gap:8px;"><button id="post-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="post-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đăng</button></div>');
@@ -1296,10 +1334,6 @@ function openEditPost(p){
     });
   },50);
 }
-
-// ============================================================
-// PROFILE
-// ============================================================
 async function refreshProfile(){
   if(!currentUser)return;await reloadUser();var c=currentUser;
   document.getElementById('prof-name').textContent=c.name;document.getElementById('prof-phone').textContent=c.phone;
@@ -1311,15 +1345,11 @@ function openVoucherWallet(){
   var active=wallet.filter(function(v){return !v.used;});var used=wallet.filter(function(v){return v.used;});
   var html='';
   if(!active.length&&!used.length){html='<div class="empty-state"><div class="empty-icon">🎟</div><div class="empty-text">Chưa có voucher<br><span style="color:var(--accent);font-size:0.78rem;">Đổi RP tại mục Phần thưởng</span></div></div>';}
-  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+v.name+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+(v.date||'')+(v.usedDate?' → Dùng: '+v.usedDate:'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
+  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+v.name+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+(v.date||'')+(v.usedDate?' → Dùng: '+v.usedDate:'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
   if(active.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--accent);margin-bottom:8px;">Còn hiệu lực ('+active.length+')</div>';active.forEach(function(v){html+=vCard(v,false);});}
   if(used.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--muted);margin:12px 0 8px;">Đã sử dụng</div>';used.forEach(function(v){html+=vCard(v,true);});}
   openModal('🎟 Kho Voucher',html);
 }
-
-// ============================================================
-// REVIEW POPUP
-// ============================================================
 var pendingReviewBkId=null;
 function showReviewPopup(bk){
   pendingReviewBkId=bk.id;
@@ -1327,11 +1357,7 @@ function showReviewPopup(bk){
   var staffCheckboxes='';
   staffIds.forEach(function(sid){
     var s=allStaff.find(function(x){return x.id===sid;});
-    if(s){
-      var gShort=getGenderShort(s.gender);
-      var gColor=s.gender==='male'||s.gender==='nam'?'#1d4ed8':'#be185d';
-      staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;background:var(--card-bg);"><input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> <span style="font-size:0.88rem;">'+(s.icon||'👤')+' '+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</span></label>';
-    }
+    if(s){var gLabel=getGenderLabel(s.gender);staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;background:var(--card-bg);"><input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> <span style="font-size:0.88rem;">'+(s.icon||'👤')+' '+s.name+(gLabel?' <span style="font-size:0.72rem;color:var(--muted);">'+gLabel+'</span>':'')+'</span></label>';}
   });
   var html='<div style="text-align:center;margin-bottom:12px;"><div style="font-size:2rem;">⭐</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;color:var(--g800);margin-top:4px;">Đánh giá dịch vụ</div><div style="font-size:0.78rem;color:var(--muted);">'+bk.service+'</div></div>'
     +'<div style="margin-bottom:12px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">Chạm sao để đánh giá</div><div id="popup-star-row" style="display:flex;gap:8px;justify-content:center;"><button class="popup-rv-star" data-s="1" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="2" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="3" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="4" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="5" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button></div></div>'
@@ -1352,34 +1378,6 @@ function showReviewPopup(bk){
   });
 }
 function closeReviewPopup(){document.getElementById('review-popup-ov').style.display='none';}
-
-// ============================================================
-// MANAGER DASHBOARD
-// CHANGE 3: Show staff gender in booking items
-// ============================================================
-async function renderDashboard(){
-  showLoading(true);var bks=await api('/bookings')||[];showLoading(false);
-  var totalRev=0,doneBks=0;bks.forEach(function(b){if(b.status==='done'){totalRev+=b.actual_paid||b.amount||0;doneBks++;}});
-  var pending=bks.filter(function(b){return b.status==='pending';}).length;
-  var confirmed=bks.filter(function(b){return b.status==='confirmed';}).length;
-  document.getElementById('mgr-stats').innerHTML='<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">'+allCustomers.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">'+bks.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Hoàn thành</div><div class="stat-card-val">'+doneBks+'</div></div><div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val" style="font-size:1.1rem;">'+fmt(totalRev)+'</div></div>';
-  var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
-  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
-  var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
-  active.forEach(function(b){
-    var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+b.date+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';
-  });
-  if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
-  document.getElementById('today-bookings').innerHTML=bkHtml;
-  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
-  document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
-  var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
-  var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
-  var barHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
-  days.forEach(function(d){var h=Math.max(4,Math.round((d.rev/maxRev)*100));var revK=d.rev>=1000000?(d.rev/1000000).toFixed(1)+'M':d.rev>=1000?Math.round(d.rev/1000)+'K':'';barHtml+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="font-size:0.55rem;color:var(--accent);font-weight:600;min-height:12px;">'+revK+'</div><div style="flex:1;width:100%;background:var(--bg3);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;"><div style="background:var(--accent);border-radius:4px;height:'+h+'%;min-height:'+(d.rev>0?4:0)+'px;"></div></div><span style="font-size:0.62rem;color:var(--muted);">'+d.label+'</span></div>';});
-  barHtml+='</div>';document.getElementById('rev-chart').innerHTML=barHtml;
-}
 
 async function renderCustomers(){
   var q=(document.getElementById('cust-search').value||'').toLowerCase();
