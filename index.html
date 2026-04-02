@@ -1241,7 +1241,6 @@ function openPostDetail(title, description, thumb, url){
   }
   // Bài viết chữ → hiện modal
   var body='';
-  if(thumb)body+='<img src="'+thumb+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px;" onerror="this.style.display=\'none\'">';
   body+='<div style="font-size:0.88rem;line-height:1.7;color:var(--text);white-space:pre-line;">'+description+'</div>';
   if(url)body+='<a href="'+url+'" target="_blank" style="display:block;margin-top:16px;text-align:center;color:var(--accent);font-size:0.85rem;font-weight:500;text-decoration:none;border:1px solid var(--accent);border-radius:100px;padding:10px;">🔗 Xem nguồn gốc →</a>';
   openModal(title, body);
