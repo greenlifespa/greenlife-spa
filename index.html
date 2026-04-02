@@ -1227,6 +1227,19 @@ function getVideoInfo(url){
   return{id:null,type:null};
 }
 function openPostDetail(title, description, thumb, url){
+  // Nếu URL là video → phát trong app
+  if(url){
+    var vi=getVideoInfo(url);
+    if(vi.id&&vi.type){openVideoPopup(vi.id,vi.type,title);return;}
+    // Fallback: embed iframe nếu là link video phổ biến
+    if(/youtube\.com|youtu\.be|tiktok\.com|facebook\.com|fb\.watch/i.test(url)){
+      document.getElementById('video-iframe').src=url;
+      document.getElementById('video-popup-title').textContent=title||'';
+      document.getElementById('video-popup-ov').style.display='flex';
+      return;
+    }
+  }
+  // Bài viết chữ → hiện modal
   var body='';
   if(thumb)body+='<img src="'+thumb+'" style="width:100%;max-height:220px;object-fit:cover;border-radius:var(--radius);margin-bottom:12px;" onerror="this.style.display=\'none\'">';
   body+='<div style="font-size:0.88rem;line-height:1.7;color:var(--text);white-space:pre-line;">'+description+'</div>';
