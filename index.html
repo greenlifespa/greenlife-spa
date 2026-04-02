@@ -655,22 +655,23 @@ async function refreshHome(){
   var newsMore=document.getElementById('home-news-more');
   if(newsList){api('/posts').then(function(posts){
     if(!posts||!posts.length)return;
-    var top=posts.slice(0,3);
+    var top=posts.slice(0,5);
     var catLabel={'suckhoe':'💚 Sức khoẻ','lamdep':'✨ Làm đẹp','giaitri':'🎬 Giải trí','tintuc':'📰 Tin tức'};
-    var nhtml='';
+    var nhtml='<div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:6px;scrollbar-width:none;-ms-overflow-style:none;margin-bottom:1rem;">';
     top.forEach(function(p){
       var hasVideo=p.video_id&&p.video_type;
       var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-      nhtml+='<div onclick="'+(hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')':'window.open(\''+p.url+'\',\'_blank\')')+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:10px;overflow:hidden;cursor:pointer;display:flex;gap:10px;align-items:center;">'
-        +(thumb?'<img src="'+thumb+'" style="width:80px;height:64px;object-fit:cover;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
-        +'<div style="padding:8px 10px 8px '+(thumb?'0':'10px')+';flex:1;min-width:0;">'
-        +(p.category?'<span style="font-size:0.65rem;background:var(--accent-light);color:var(--accent);padding:1px 6px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
-        +'<div style="font-size:0.85rem;font-weight:600;margin:4px 0 2px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+p.title+'</div>'
-        +(p.description?'<div style="font-size:0.75rem;color:var(--muted);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;">'+p.description+'</div>':'')
-        +'</div>'+(hasVideo?'<div style="padding-right:10px;color:var(--muted);font-size:1.1rem;">▶</div>':'')+'</div>';
+      var clickFn=hasVideo?'openVideoPopup(\''+p.video_id+'\',\''+p.video_type+'\',\''+p.title.replace(/'/g,'')+'\')'  :'window.open(\''+p.url+'\',\'_blank\')';
+      nhtml+='<div onclick="'+clickFn+'" style="flex-shrink:0;width:140px;background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);overflow:hidden;cursor:pointer;">';
+      nhtml+=thumb?'<img src="'+thumb+'" style="width:100%;height:85px;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">':'<div style="width:100%;height:85px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.6rem;">'+(hasVideo?'▶':'📰')+'</div>';
+      nhtml+='<div style="padding:6px 8px;">';
+      if(p.category)nhtml+='<span style="font-size:0.6rem;background:var(--accent-light);color:var(--accent);padding:1px 5px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>';
+      nhtml+='<div style="font-size:0.78rem;font-weight:600;margin-top:3px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;">'+p.title+'</div>';
+      nhtml+='</div></div>';
     });
+    nhtml+='</div>';
     newsList.innerHTML=nhtml;
-    if(newsMore&&posts.length>3)newsMore.style.display='block';
+    if(newsMore&&posts.length>5)newsMore.style.display='block';
   });}
 }
 async function checkPendingReview(){
