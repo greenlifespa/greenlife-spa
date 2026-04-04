@@ -525,6 +525,7 @@ var bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,vouch
 
 function getTier(pts){var t=TIERS[0];for(var i=0;i<TIERS.length;i++){if(pts>=TIERS[i].min)t=TIERS[i];}return t;}
 function fmt(n){return Math.abs(n||0).toLocaleString('vi-VN');}
+  function fmtDate(d){if(!d)return'';var p=d.split('-');if(p.length!==3)return d;return p[2]+'/'+p[1]+'/'+p[0];}
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2500);}
 function goScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 function openModal(title,html){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal').classList.add('open');}
@@ -648,7 +649,7 @@ async function refreshHome(){
     var iconBg=t.type==='earn'?'var(--g50)':t.type==='redeem'?'#fef3c7':'#f0fdf4';
     var amtHtml='';if(t.amount&&t.amount!==0){var ac=t.amount>0?'#16a34a':'#dc2626';amtHtml='<div style="font-size:0.82rem;font-weight:600;color:'+ac+';">'+(t.amount>0?'+':'-')+fmt(Math.abs(t.amount))+' VND</div>';}
     var rpHtml='';if(t.reward&&t.reward!==0){rpHtml='<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';}
-    html+='<div class="act-item"><div style="display:flex;align-items:center;gap:10px;"><div class="act-ic" style="background:'+iconBg+'">'+icon+'</div><div><div class="act-name">'+t.note+'</div><div class="act-date">'+t.date+'</div></div></div><div style="text-align:right;">'+amtHtml+rpHtml+'</div></div>';
+    html+='<div class="act-item"><div style="display:flex;align-items:center;gap:10px;"><div class="act-ic" style="background:'+iconBg+'">'+icon+'</div><div><div class="act-name">'+t.note+'</div><div class="act-date">'+fmtDate(t.date)+'</div></div></div><div style="text-align:right;">'+amtHtml+rpHtml+'</div></div>';
   });
   list.innerHTML=html;}
   var newsList=document.getElementById('home-news-list');
@@ -911,13 +912,13 @@ async function renderTimeSlots(){
     bks.forEach(function(b){
       if((b.status==='confirmed'||b.status==='pending')&&b.date===bkState.date){
         var staffBusy=false;
-        bkState.staffIds.forEach(function(sid){if((b.staff_ids||[]).indexOf(sid)>-1)staffBusy=true;});
+        bkState.staffIds.forEach(function(sid){if((b.staff_ids||[]).some(function(bid){return String(bid)===String(sid);}))staffBusy=true;});
         if(staffBusy)busyTimes.push(b.time);
       }
     });
     // Check which selected staff are on off day
     bkState.staffIds.forEach(function(sid){
-      var s=staffToCheck.find(function(x){return x.id===sid;});
+      var s=staffToCheck.find(function(x){return String(x.id)===String(sid);});
       if(s){
         var off=s.off_days||[];
         if(off.indexOf(bkState.date)>-1){
@@ -1043,7 +1044,7 @@ function renderConfirm(){
   document.getElementById('bk-sum').innerHTML=
     svcLines
     +'<div class="sum-row"><span>Nhân viên</span><span style="text-align:right;">'+(staffNames||'--')+'</span></div>'
-    +'<div class="sum-row"><span>Ngày</span><span>'+(bkState.date||today())+'</span></div>'
+    +'<div class="sum-row"><span>Ngày</span><span>'+fmtDate(bkState.date||today())+'</span></div>'
     +'<div class="sum-row"><span>Giờ</span><span>'+(bkState.time||'--')+'</span></div>'
     +'<div class="sum-row"><span>Thời gian</span><span>'+totalDur+' phút</span></div>'
     +'<div class="sum-row sum-total"><span>Tổng</span><span>'+fmt(totalPrice)+'đ</span></div>'
@@ -1155,7 +1156,7 @@ async function renderHistory(filter){
     var html='';
     bks.forEach(function(b){
       html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+b.service+'</div><div style="text-align:right;"><div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(b.actual_paid||b.amount)+' VND</div>'+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+b.addon_voucher+'</div>':'')+'</div></div>'
-        +'<div class="hist-meta"><span>📅 '+b.date+' '+b.time+'</span><span>👤 '+(b.staff_names||'')+'</span><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span></div>'
+        +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+b.time+'</span><span>👤 '+(b.staff_names||'')+'</span><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span></div>'
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
         +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
         +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
@@ -1176,7 +1177,7 @@ async function renderHistory(filter){
     else if(t.type==='earn'&&t.amount&&t.amount!==0)amtLine='<div style="font-size:0.95rem;font-weight:700;color:#dc2626;">-'+fmt(Math.abs(t.amount))+' VND</div>';
     var rpLine='';if(t.reward&&t.reward!==0)rpLine='<div style="font-size:0.78rem;font-weight:600;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';
     var label=t.type==='earn'?'🛎 '+t.note:t.type==='topup'?'💰 Nạp tiền':'🎁 Đổi điểm';
-    tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+t.note+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+t.date+'</span></div></div>';
+    tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+t.note+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+fmtDate(t.date)+'</span></div></div>';
   });
   list.innerHTML=tHtml;
 }
@@ -1205,7 +1206,7 @@ async function mgrCancelBooking(bkId,onDone){
   var paid=bk.actual_paid||bk.amount||0;var custName=cust?cust.name:'Khách hàng';
   var hrs=hoursUntilBooking(bk);
   var timeNote=hrs>=1?'<div style="font-size:0.78rem;color:#16a34a;margin-bottom:8px;">⏱ Còn '+hrs.toFixed(1)+' giờ</div>':'<div style="font-size:0.78rem;color:#f59e0b;margin-bottom:8px;">⚠️ Đã qua thời hạn – Admin vẫn có quyền huỷ.</div>';
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+custName+' – '+bk.service+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+bk.date+' '+bk.time+'</div>'+timeNote+'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+custName+'.</div><div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+custName+' – '+bk.service+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+fmtDate(bk.date)+' '+bk.time+'</div>'+timeNote+'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+custName+'.</div><div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('mgr-cancel-no');var yes=document.getElementById('mgr-cancel-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
@@ -1291,7 +1292,7 @@ async function renderDashboard(){
   var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
   active.forEach(function(b){
     var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+b.date+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';
+    bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';
   });
   if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
   document.getElementById('today-bookings').innerHTML=bkHtml;
@@ -1377,7 +1378,7 @@ function openVoucherWallet(){
   var active=wallet.filter(function(v){return !v.used;});var used=wallet.filter(function(v){return v.used;});
   var html='';
   if(!active.length&&!used.length){html='<div class="empty-state"><div class="empty-icon">🎟</div><div class="empty-text">Chưa có voucher<br><span style="color:var(--accent);font-size:0.78rem;">Đổi RP tại mục Phần thưởng</span></div></div>';}
-  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+v.name+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+(v.date||'')+(v.usedDate?' → Dùng: '+v.usedDate:'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
+  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+v.name+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+fmtDate(v.date||'')+(v.usedDate?' → Dùng: '+fmtDate(v.usedDate):'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
   if(active.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--accent);margin-bottom:8px;">Còn hiệu lực ('+active.length+')</div>';active.forEach(function(v){html+=vCard(v,false);});}
   if(used.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--muted);margin:12px 0 8px;">Đã sử dụng</div>';used.forEach(function(v){html+=vCard(v,true);});}
   openModal('🎟 Kho Voucher',html);
@@ -1452,7 +1453,7 @@ async function renderPtsPage(){
     var cust=allCustomers.find(function(c){return c.id===t.cust_id;});
     var amtStr=t.amount&&t.amount!==0?((t.amount>0?'+':'-')+fmt(Math.abs(t.amount))+' VND'):'';
     var rpStr=t.reward&&t.reward!==0?((t.reward>0?'+':'')+fmt(t.reward)+' RP'):'';
-    return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+(cust?cust.name:'KH')+'</div><div style="text-align:right;">'+(amtStr?'<div style="font-size:0.82rem;font-weight:600;color:'+(t.amount>0?'#16a34a':'#dc2626')+';">'+amtStr+'</div>':'')+(rpStr?'<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+rpStr+'</div>':'')+'</div></div><div class="hist-meta"><span>'+t.note+'</span><span>'+t.date+'</span></div></div>';
+    return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+(cust?cust.name:'KH')+'</div><div style="text-align:right;">'+(amtStr?'<div style="font-size:0.82rem;font-weight:600;color:'+(t.amount>0?'#16a34a':'#dc2626')+';">'+amtStr+'</div>':'')+(rpStr?'<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+rpStr+'</div>':'')+'</div></div><div class="hist-meta"><span>'+t.note+'</span><span>'+fmtDate(t.date)+'</span></div></div>';
   }).join('');
 }
 async function adjustPoints(){
@@ -1507,7 +1508,7 @@ async function renderAllBookings(filter){
     html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div>'
       +'<select data-bid="'+b.id+'" style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;background:var(--card-bg);color:var(--text);">'
       +['pending','confirmed','done','cancelled'].map(function(st){return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>';}).join('')+'</select></div>'
-      +'<div class="bk-meta">⏰ '+b.date+' '+b.time+' · 👤 '+(b.staff_names||'')+' · <b>'+fmt(b.actual_paid||b.amount)+' VND</b></div>'
+      +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+b.time+' · 👤 '+(b.staff_names||'')+' · <b>'+fmt(b.actual_paid||b.amount)+' VND</b></div>'
       +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+b.review.comment+'</span>':'')+'</div>':'')
       +'</div>';
   });
@@ -1739,7 +1740,7 @@ async function renderStaffView(stf){
         +'<span class="st-bdg st-'+b.status+'">'+(stLbl[b.status]||b.status)+'</span></div>'
         +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+b.service+'</div>'
         +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+b.addon_voucher+'</div>':'')
-        +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+b.date+' '+b.time+'</div>'
+        +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+b.time+'</div>'
         +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span><span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(b.actual_paid||b.amount)+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
           ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
