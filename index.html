@@ -1700,11 +1700,13 @@ async function renderStaffView(stf){
   var bks=await api('/bookings')||[];
   var posts=await api('/posts')||[];
   var staffFresh=await api('/staff')||[];
-  stf=staffFresh.find(function(s){return s.id===stf.id;})||stf;
-  // Restore gender and off_days from localStorage cache (API may not persist these)
-  mergeStaffCache([stf]);
-  // Also load customers for display
-  if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[];}
+if(staffFresh.length>0){
+  mergeStaffCache(staffFresh);
+  allStaff=staffFresh;
+}
+stf=allStaff.find(function(s){return s.id===stf.id;})||stf;
+// Also load customers for display
+if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[];}
   showLoading(false);
   var myBks=bks.filter(function(b){return (b.staff_ids||[]).indexOf(stf.id)>-1||(b.staff_names||'').toLowerCase().indexOf((stf.name||'').toLowerCase())>-1;});
   var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
