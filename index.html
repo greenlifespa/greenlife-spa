@@ -606,7 +606,7 @@ async function doLogin(){
   showLoading(true);var res=await api('/login','POST',{phone:phone,pass:pass});showLoading(false);
   if(res.error){showToast('✗ '+res.error);return;}
   if(res.role==='admin'){
-    if(phone==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();saveSession();startPolling();setupIdleTracking();return;}
+    if(phone==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();saveSession();startPolling();setupIdleTracking();tryInitPush();return;}
     else{showToast('✗ Sai thông tin đăng nhập');return;}
   }
   if(res.role==='staff'){currentRole='staff';currentStaff=res.user;saveSession();goScreen('staff-view');await renderStaffView(res.user);setupIdleTracking();return;}
