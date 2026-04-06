@@ -643,7 +643,7 @@ async function loginAs(user){
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
 async function loadServices(){
   var raw=await api('/services')||[];
-  allServices=filterDeletedSvcs(raw);
+  allServices=raw;
 }
 // Preserve gender edits made in memory — API may not return updated gender field
 async function loadStaff(){
@@ -654,7 +654,7 @@ async function loadStaff(){
 }
 async function loadAllData(){
   var r=await Promise.all([api('/services'),api('/staff'),api('/customers')]);
-  allServices=filterDeletedSvcs(r[0]||[]);
+  allServices=r[0]||[];
   var fresh=r[1]||[];
   mergeStaffCache(fresh);
   allStaff=fresh;
