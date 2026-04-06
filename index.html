@@ -637,7 +637,7 @@ async function loginAs(user){
   document.getElementById('topbar-av').textContent=user.name.slice(-2);
   await loadServices();await loadStaff();
   saveSession();
-  goScreen('app');showPage('home');tryInitPush();
+  goScreen('app');showPage('home');
   setTimeout(checkPendingReview,600);
 }
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
