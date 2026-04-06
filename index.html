@@ -233,7 +233,7 @@ async function initPush(){
   }catch(e){}
 }
 if('serviceWorker' in navigator&&'Notification' in window){
-  navigator.serviceWorker.register('/sw.js').then(function(){
+  navigator.serviceWorker.register('/greenlife-spa/sw.js').then(function(){
     // Chỉ hỏi xin quyền sau khi user đăng nhập xong
     window._pushReady=true;
   });
