@@ -224,7 +224,7 @@ html.dark .contact-addr{color:#cbd5e1;}
 const VAPID_KEY='BFG2bUVqSt3uSe9Y-Wr_z-lWgO2V0UnmXoZBZM6iabRxvyi7iFIZxhxxVmDYvsiP6sLg9uI_o_3NpNLX_WTNvZc';
 async function initPush(){
   try{
-    firebase.initializeApp(FIREBASE_CONFIG);
+    if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     const messaging=firebase.messaging();
     console.log('messaging ok');
     const perm=await Notification.requestPermission();
