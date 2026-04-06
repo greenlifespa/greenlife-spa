@@ -1,9 +1,6 @@
 // ===== PWA CACHE =====
 const CACHE_NAME = 'greenlife-v1';
-const CACHE_URLS = [
-  '/greenlife-spa/',
-  '/greenlife-spa/index.html'
-];
+const CACHE_URLS = [];
 self.addEventListener('install', function(event) {
   event.waitUntil(
     caches.open(CACHE_NAME).then(function(cache) {
