@@ -217,9 +217,30 @@ html.dark .contact-addr{color:#cbd5e1;}
   ::-webkit-scrollbar-thumb:hover{background:var(--g400);}
 }
 </style>
-</head>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script></head>
 <body>
-<script>var API_URL='https://greenlifespa-api.vinhluong0501.workers.dev/api';</script>
+<script>var API_URL='https://greenlifespa-api.vinhluong0501.workers.dev/api';const FIREBASE_CONFIG={apiKey:"AIzaSyA8JhpIVGZ_EHNfkYob1kkOsoANgJ0ShZE",authDomain:"greenlifespa-c902e.firebaseapp.com",projectId:"greenlifespa-c902e",storageBucket:"greenlifespa-c902e.firebasestorage.app",messagingSenderId:"842746435603",appId:"1:842746435603:web:6f07a823b74d5b86ec47e6"};
+const VAPID_KEY='BFG2bUVqSt3uSe9Y-Wr_z-lWgO2V0UnmXoZBZM6iabRxvyi7iFIZxhxxVmDYvsiP6sLg9uI_o_3NpNLX_WTNvZc';
+async function initPush(){
+  try{
+    firebase.initializeApp(FIREBASE_CONFIG);
+    const messaging=firebase.messaging();
+    const perm=await Notification.requestPermission();
+    if(perm!=='granted')return;
+    const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:await navigator.serviceWorker.ready});
+    if(token)await fetch(API_URL+'/fcm-tokens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+  }catch(e){}
+}
+if('serviceWorker' in navigator&&'Notification' in window){
+  navigator.serviceWorker.register('/sw.js').then(function(){
+    // Chỉ hỏi xin quyền sau khi user đăng nhập xong
+    window._pushReady=true;
+  });
+}
+function tryInitPush(){
+  if(window._pushReady)initPush();
+}</script>
 <div class="toast" id="toast"></div>
 <div class="review-popup-ov" id="review-popup-ov" style="display:none;"><div class="review-popup-box"><button id="review-popup-close" style="position:absolute;right:1rem;top:1rem;background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--muted);">✕</button><div id="review-popup-body"></div></div></div>
 <div class="loading-ov" id="loading-ov" style="display:none;"><div class="loading-box">⏳ Đang tải...</div></div>
@@ -608,7 +629,7 @@ async function loginAs(user){
   document.getElementById('topbar-av').textContent=user.name.slice(-2);
   await loadServices();await loadStaff();
   saveSession();
-  goScreen('app');showPage('home');
+  goScreen('app');showPage('home');tryInitPush();
   setTimeout(checkPendingReview,600);
 }
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
