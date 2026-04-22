@@ -527,12 +527,17 @@ function mergeStaffCache(staffArr){
   try{
     var cache=JSON.parse(localStorage.getItem('gl_staff_cache')||'{}');
     staffArr.forEach(function(s){
+      // Parse off_days nếu API trả về dạng chuỗi JSON thay vì array
+      if(s.off_days&&typeof s.off_days==='string'){
+        try{s.off_days=JSON.parse(s.off_days);}catch(e){s.off_days=[];}
+      }
       var c=cache[String(s.id)];
       if(!c)return;
-      // Always apply cached gender — API doesn't reliably persist it
-      
-      // Always apply cached off_days
-      if(c.off_days&&c.off_days.length)s.off_days=c.off_days;
+      // Gender: cache ưu tiên — API không lưu bền
+      if(!s.gender&&c.gender)s.gender=c.gender;
+      // off_days: ưu tiên API (dữ liệu tươi); cache chỉ là fallback khi API không trả về
+      if((!s.off_days||!s.off_days.length)&&c.off_days&&c.off_days.length)
+        s.off_days=c.off_days;
     });
   }catch(e){}
 }
@@ -651,6 +656,7 @@ async function loadStaff(){
   var fresh=(s||[]).filter(function(x){return x.login_id&&x.login_id.trim();});
   mergeStaffCache(fresh);
   allStaff=fresh;
+  saveStaffCache();
 }
 async function loadAllData(){
   var r=await Promise.all([api('/services'),api('/staff'),api('/customers')]);
@@ -844,6 +850,7 @@ async function renderStaffStep(){
   if(freshStaff.length>0){
     mergeStaffCache(freshStaff);
     allStaff=freshStaff;
+    saveStaffCache();
   }
 
   if(!allStaff.length){
@@ -951,6 +958,7 @@ async function renderTimeSlots(){
     if(freshStaff.length>0){
       mergeStaffCache(freshStaff);
       allStaff=freshStaff;
+      saveStaffCache();
     }
     // Use allStaff (fresh or memory) for off_days check
     var staffToCheck=allStaff;
