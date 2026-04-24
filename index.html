@@ -1994,6 +1994,15 @@ if(staffFresh.length>0){
   allStaff=staffFresh;
 }
 stf=allStaff.find(function(s){return s.id===stf.id;})||stf;
+  // Fetch off_days moi nhat tu server khi NV dang nhap (cross-device sync)
+  try{
+    var _stfData=await api('/staff/'+stf.id);
+    if(_stfData&&!_stfData.error){
+      stf.off_days=parseOffDays(_stfData.off_days);
+      var _stfMem=allStaff.find(function(s){return s.id===stf.id;});
+      if(_stfMem){_stfMem.off_days=stf.off_days;saveStaffCache();}
+    }
+  }catch(e){}
 // Also load customers for display
 if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[];}
   showLoading(false);
