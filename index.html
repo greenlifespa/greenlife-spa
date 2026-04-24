@@ -460,7 +460,22 @@ function tryInitPush(){
     <div class="filter-tabs"><button class="ftab active" id="fb-all" data-filter="all">Tất cả</button><button class="ftab" id="fb-pending" data-filter="pending">Chờ</button><button class="ftab" id="fb-confirmed" data-filter="confirmed">Xác nhận</button><button class="ftab" id="fb-done" data-filter="done">Hoàn thành</button></div>
     <div id="all-bookings"></div>
   </div>
-  <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div>
+  <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border);">
+  <button id="acc-tab-accounts" onclick="switchAccTab('accounts')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;">🔑 Tài khoản</button>
+  <button id="acc-tab-offdays" onclick="switchAccTab('offdays')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:400;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">📅 Lịch nghỉ NV</button>
+</div>
+<div id="acc-pane-accounts" style="margin-top:12px;">
+  <div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div>
+  <div id="accounts-list"></div>
+</div>
+<div id="acc-pane-offdays" style="display:none;margin-top:12px;">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <span style="font-size:0.82rem;color:var(--muted);">Quản lý ngày nghỉ cho từng nhân viên</span>
+    <button onclick="renderStaffOffMgr()" style="background:none;border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-size:0.75rem;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;">🔄 Làm mới</button>
+  </div>
+  <div id="staff-off-mgr"></div>
+</div>
+</div>
   <div class="mgr-nav">
     <button class="mgr-nav-item active" id="mnav-dash"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📊</span>Tổng quan</button>
     <button class="mgr-nav-item" id="mnav-cust"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">👥</span>Khách</button>
@@ -631,7 +646,7 @@ function showMgrPage(pid,bid){
   if(pid==='mgr-points')renderPtsPage();
   if(pid==='mgr-services')renderServicesPage();
   if(pid==='mgr-posts')renderMgrPosts();
-  if(pid==='mgr-accounts')renderAccountsPage();
+  if(pid==='mgr-accounts'){renderAccountsPage();switchAccTab('accounts');}
   window.scrollTo(0,0);
 }
 
@@ -1724,6 +1739,108 @@ async function renderAccountsPage(){
   document.querySelectorAll('[data-del-cust]').forEach(function(btn){btn.addEventListener('click',async function(){var cid=parseInt(this.getAttribute('data-del-cust'));var cust=allCustomers.find(function(c){return c.id===cid;});if(!cust)return;openModal('Xóa tài khoản','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⚠️</div><div style="font-size:0.9rem;margin-bottom:4px;">Xóa: <b>'+cust.name+'</b></div><div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Nhập mật khẩu admin để xác nhận.</div><input type="password" id="del-pwd" class="mgr-inp" placeholder="Mật khẩu admin" style="margin-bottom:12px;"><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="del-confirm" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;">Xóa</button></div></div>');setTimeout(function(){var cancel=document.getElementById('del-cancel');var conf=document.getElementById('del-confirm');if(cancel)cancel.addEventListener('click',closeModal);if(conf)conf.addEventListener('click',async function(){var pwd=document.getElementById('del-pwd').value;showLoading(true);var res=await api('/customers/'+parseInt(this.getAttribute('data-cid')),'DELETE',{admin_pass:pwd});showLoading(false);if(res&&res.error){showToast('✗ '+res.error);return;}closeModal();showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});},50);});});
 }
 
+function switchAccTab(tab){
+  var pAcc=document.getElementById('acc-pane-accounts');
+  var pOff=document.getElementById('acc-pane-offdays');
+  var tAcc=document.getElementById('acc-tab-accounts');
+  var tOff=document.getElementById('acc-tab-offdays');
+  if(!pAcc||!pOff)return;
+  if(tab==='offdays'){
+    pAcc.style.display='none';pOff.style.display='block';
+    tAcc.style.fontWeight='400';tAcc.style.color='var(--muted)';tAcc.style.borderBottom='2px solid transparent';
+    tOff.style.fontWeight='600';tOff.style.color='var(--accent)';tOff.style.borderBottom='2px solid var(--accent)';
+    renderStaffOffMgr();
+  }else{
+    pAcc.style.display='block';pOff.style.display='none';
+    tAcc.style.fontWeight='600';tAcc.style.color='var(--accent)';tAcc.style.borderBottom='2px solid var(--accent)';
+    tOff.style.fontWeight='400';tOff.style.color='var(--muted)';tOff.style.borderBottom='2px solid transparent';
+  }
+}
+
+async function renderStaffOffMgr(){
+  var container=document.getElementById('staff-off-mgr');
+  if(!container)return;
+  container.innerHTML='<div class="empty-state"><div class="empty-icon">⏳</div><div class="empty-text">Đang tải...</div></div>';
+  var freshStaff=await api('/staff')||[];
+  if(freshStaff.length>0){mergeStaffCache(freshStaff);allStaff=freshStaff;saveStaffCache();}
+  if(!allStaff.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">👥</div><div class="empty-text">Chưa có nhân viên</div></div>';return;}
+  var html='';
+  allStaff.forEach(function(s){
+    var off=parseOffDays(s.off_days);
+    var gShort=getGenderShort(s.gender);
+    var gColor=(s.gender==='male'||s.gender==='nam')?'#1d4ed8':'#be185d';
+    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;">';
+    html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">';
+    html+='<div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">'+(s.icon||'👤')+'</div>';
+    html+='<div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">'+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+' </div>';
+    html+='<div style="font-size:0.72rem;color:var(--muted);">ID: '+(s.login_id||'-')+'</div></div>';
+    html+='<span style="font-size:0.72rem;background:'+(off.length>0?'var(--g50)':'var(--bg3)')+';color:'+(off.length>0?'var(--g800)':'var(--muted)')+';padding:3px 10px;border-radius:100px;font-weight:600;">'+off.length+' ngày nghỉ</span>';
+    html+='</div>';
+    if(off.length>0){
+      html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
+      off.forEach(function(d){
+        html+='<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:100px;padding:4px 10px;font-size:0.78rem;">';
+        html+='📅 '+d;
+        html+='<button data-rmv-sid="'+s.id+'" data-rmv-day="'+d+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.85rem;padding:0 0 0 4px;line-height:1;">✕</button>';
+        html+='</div>';
+      });
+      html+='</div>';
+    }else{
+      html+='<div style="font-size:0.78rem;color:var(--muted);margin-bottom:10px;font-style:italic;padding:6px 0;">Chưa có ngày nghỉ nào</div>';
+    }
+    html+='<div style="display:flex;gap:8px;align-items:center;">';
+    html+='<input type="date" id="off-inp-'+s.id+'" class="mgr-inp" style="flex:1;padding:8px 12px;" min="'+today()+'">';
+    html+='<button data-add-sid="'+s.id+'" style="background:var(--accent);color:#fff;border:none;padding:8px 14px;border-radius:100px;font-size:0.8rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;white-space:nowrap;">+ Thêm</button>';
+    if(off.length>0)html+='<button data-clr-sid="'+s.id+'" style="background:none;border:1px solid #fca5a5;color:#dc2626;padding:8px 10px;border-radius:100px;font-size:0.75rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;white-space:nowrap;">🗑 Xoá tất cả</button>';
+    html+='</div></div>';
+  });
+  container.innerHTML=html;
+  document.querySelectorAll('[data-rmv-sid]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var sid=this.getAttribute('data-rmv-sid');
+      var day=this.getAttribute('data-rmv-day');
+      var s=allStaff.find(function(x){return String(x.id)===String(sid);});
+      if(!s)return;
+      var off=parseOffDays(s.off_days).filter(function(d){return d!==day;});
+      showLoading(true);await api('/staff/'+sid,'PUT',{off_days:off});
+      s.off_days=off;saveStaffCache();
+      showLoading(false);showToast('✓ Đã xoá: '+day+' của '+s.name);renderStaffOffMgr();
+    });
+  });
+  document.querySelectorAll('[data-add-sid]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var sid=this.getAttribute('data-add-sid');
+      var inp=document.getElementById('off-inp-'+sid);
+      var day=inp?inp.value:'';
+      if(!day){showToast('✗ Vui lòng chọn ngày');return;}
+      var s=allStaff.find(function(x){return String(x.id)===String(sid);});
+      if(!s)return;
+      var off=parseOffDays(s.off_days);
+      if(off.indexOf(day)>-1){showToast('✗ Ngày '+day+' đã có rồi');return;}
+      off.push(day);off.sort();
+      showLoading(true);await api('/staff/'+sid,'PUT',{off_days:off});
+      s.off_days=off;saveStaffCache();
+      showLoading(false);showToast('✓ Đã thêm '+day+' cho '+s.name);renderStaffOffMgr();
+    });
+  });
+  document.querySelectorAll('[data-clr-sid]').forEach(function(btn){
+    btn.addEventListener('click',async function(){
+      var sid=this.getAttribute('data-clr-sid');
+      var s=allStaff.find(function(x){return String(x.id)===String(sid);});
+      if(!s)return;
+      openModal('🗑 Xoá lịch nghỉ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">🗑</div><div style="font-size:0.9rem;margin-bottom:12px;">Xoá tất cả ngày nghỉ của <b>'+s.name+'</b>?</div><div style="display:flex;gap:10px;"><button id="clr-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="clr-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xoá tất cả</button></div></div>');
+      setTimeout(function(){
+        var no=document.getElementById('clr-no');var yes=document.getElementById('clr-yes');
+        if(no)no.addEventListener('click',closeModal);
+        if(yes)yes.addEventListener('click',async function(){
+          showLoading(true);await api('/staff/'+sid,'PUT',{off_days:[]});
+          s.off_days=[];saveStaffCache();
+          showLoading(false);closeModal();showToast('✓ Đã xoá tất cả ngày nghỉ của '+s.name);renderStaffOffMgr();
+        });
+      },50);
+    });
+  });
+}  
 function resetStaffPwd(sid){
   openModal('Đặt lại MK nhân viên','<div class="fg"><label>Mật khẩu mới</label><input type="password" id="sf-pwd1" class="mgr-inp"></div><div class="fg"><label>Nhập lại</label><input type="password" id="sf-pwd2" class="mgr-inp"></div><div style="display:flex;gap:8px;"><button id="sf-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="sf-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button></div>');
   setTimeout(function(){var cancel=document.getElementById('sf-cancel');var ok=document.getElementById('sf-ok');if(cancel)cancel.addEventListener('click',closeModal);if(ok)ok.addEventListener('click',async function(){var p1=document.getElementById('sf-pwd1').value;var p2=document.getElementById('sf-pwd2').value;if(!p1||p1.length<4){showToast('✗ Ít nhất 4 ký tự');return;}if(p1!==p2){showToast('✗ Không khớp');return;}showLoading(true);await api('/staff/'+sid,'PUT',{pass:p1});showLoading(false);closeModal();showToast('✓ Đã đặt lại mật khẩu');});},50);
