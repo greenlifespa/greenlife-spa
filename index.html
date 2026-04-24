@@ -508,6 +508,35 @@ function getGenderBadge(gender){
 // ============================================================
 // STAFF LOCAL CACHE — gender & off_days persist across navigation/re-login
 // ============================================================
+// ============================================================
+// PARSE OFF_DAYS — xử lý mọi định dạng backend trả về
+// ============================================================
+function parseOffDays(val){
+  if(!val)return[];
+  if(Array.isArray(val))return val.filter(function(d){return d&&typeof d==='string';});
+  if(typeof val==='string'){
+    var s=val.trim();if(!s)return[];
+    try{var p=JSON.parse(s);return Array.isArray(p)?p.filter(function(d){return d&&typeof d==='string';}):(typeof p==='string'&&p?[p]:[]);}catch(e){}
+    return s.split(',').map(function(d){return d.trim();}).filter(function(d){return d&&/^\d{4}-\d{2}-\d{2}$/.test(d);});
+  }
+  return[];
+}
+// fetchStaffOffDays: thử GET /staff/:id riêng lẻ để đảm bảo off_days mới nhất
+async function fetchStaffOffDays(staffId,freshArr){
+  // Ưu tiên 1: dùng từ mảng fresh đã fetch
+  if(freshArr&&freshArr.length){
+    var fs=freshArr.find(function(x){return String(x.id)===String(staffId);});
+    if(fs)return parseOffDays(fs.off_days);
+  }
+  // Ưu tiên 2: gọi individual endpoint (fallback khi GET /staff không trả về off_days)
+  try{
+    var ind=await api('/staff/'+staffId);
+    if(ind&&!ind.error)return parseOffDays(ind.off_days);
+  }catch(e){}
+  // Ưu tiên 3: memory
+  var mem=allStaff.find(function(x){return x.id===staffId;});
+  return mem?parseOffDays(mem.off_days):[];
+}
 function getDeletedSvcIds(){try{return JSON.parse(localStorage.getItem('gl_del_svcs')||'[]');}catch(e){return[];}}
 function saveDeletedSvcIds(ids){try{localStorage.setItem('gl_del_svcs',JSON.stringify(ids));}catch(e){}}
 function filterDeletedSvcs(arr){var del=getDeletedSvcIds();return arr.filter(function(s){return del.indexOf(s.id)<0;});}function getDeletedBkIds(){try{return JSON.parse(localStorage.getItem('gl_del_bks')||'[]');}catch(e){return[];}}
@@ -518,7 +547,7 @@ function filterDeletedBks(arr){var del=getDeletedBkIds();return arr.filter(funct
     allStaff.forEach(function(s){
       cache[String(s.id)]={};
       if(s.gender)cache[String(s.id)].gender=s.gender;
-      if(s.off_days&&s.off_days.length)cache[String(s.id)].off_days=s.off_days;
+      var off=parseOffDays(s.off_days);if(off.length)cache[String(s.id)].off_days=off;
     });
     localStorage.setItem('gl_staff_cache',JSON.stringify(cache));
   }catch(e){}
@@ -527,17 +556,14 @@ function mergeStaffCache(staffArr){
   try{
     var cache=JSON.parse(localStorage.getItem('gl_staff_cache')||'{}');
     staffArr.forEach(function(s){
-      // Parse off_days nếu API trả về dạng chuỗi JSON thay vì array
-      if(s.off_days&&typeof s.off_days==='string'){
-        try{s.off_days=JSON.parse(s.off_days);}catch(e){s.off_days=[];}
-      }
+      // Chuẩn hóa off_days về array qua parseOffDays (xử lý string/null/array)
+      s.off_days=parseOffDays(s.off_days);
       var c=cache[String(s.id)];
       if(!c)return;
       // Gender: cache ưu tiên — API không lưu bền
       if(!s.gender&&c.gender)s.gender=c.gender;
-      // off_days: ưu tiên API (dữ liệu tươi); cache chỉ là fallback khi API không trả về
-      if((!s.off_days||!s.off_days.length)&&c.off_days&&c.off_days.length)
-        s.off_days=c.off_days;
+      // off_days: API là nguồn chính; cache chỉ là fallback khi API trả về mảng rỗng
+      if(!s.off_days.length&&c.off_days&&c.off_days.length)s.off_days=c.off_days.slice();
     });
   }catch(e){}
 }
@@ -873,7 +899,7 @@ async function renderStaffStep(){
       var gShort=getGenderShort(s.gender);
       var gColor=(s.gender==='male'||s.gender==='nam')?'#1d4ed8':'#be185d';
       var isFull=bkState.staffIds.length>=n;
-      var isOnLeave=(s.off_days||[]).indexOf(date)>-1;
+      var isOnLeave=parseOffDays(s.off_days).indexOf(date)>-1;
       var isDisabled=(isFull&&cnt===0)||isOnLeave;
       html+='<div class="staff-item'+(cnt>0?' sel':'')+'" data-id="'+s.id+'" style="'+(isDisabled?'opacity:0.45;pointer-events:none;':'')+'">'
         +'<div class="staff-av">'+(s.icon||'👤')+'</div>'
@@ -960,9 +986,6 @@ async function renderTimeSlots(){
       allStaff=freshStaff;
       saveStaffCache();
     }
-    // Use allStaff (fresh or memory) for off_days check
-    var staffToCheck=allStaff;
-
     var bks=await api('/bookings')||[];
     bks.forEach(function(b){
       if((b.status==='confirmed'||b.status==='pending')&&b.date===bkState.date){
@@ -971,16 +994,15 @@ async function renderTimeSlots(){
         if(staffBusy)busyTimes.push(b.time);
       }
     });
-    // Check which selected staff are on off day
-    bkState.staffIds.forEach(function(sid){
-      var s=staffToCheck.find(function(x){return String(x.id)===String(sid);});
-      if(s){
-        var off=s.off_days||[];
-        if(off.indexOf(bkState.date)>-1){
-          offDayStaffNames.push(nameWithGender(s.name,s.gender));
-        }
+    // Check off day — dùng fetchStaffOffDays (async) để đảm bảo dữ liệu từ server, không phụ thuộc cache thiết bị
+    for(var _si=0;_si<bkState.staffIds.length;_si++){
+      var _stfId=bkState.staffIds[_si];
+      var _stfOff=await fetchStaffOffDays(_stfId,freshStaff.length?freshStaff:null);
+      if(_stfOff.indexOf(bkState.date)>-1){
+        var _stfObj=(function(id){return allStaff.find(function(x){return String(x.id)===String(id);});}(_stfId));
+        if(_stfObj)offDayStaffNames.push(nameWithGender(_stfObj.name,_stfObj.gender));
       }
-    });
+    }
   }
 
   var hasOffDay=offDayStaffNames.length>0;
