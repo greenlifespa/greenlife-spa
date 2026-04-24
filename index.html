@@ -523,16 +523,17 @@ function parseOffDays(val){
 }
 // fetchStaffOffDays: thử GET /staff/:id riêng lẻ để đảm bảo off_days mới nhất
 async function fetchStaffOffDays(staffId,freshArr){
-  // Ưu tiên 1: dùng từ mảng fresh đã fetch
-  if(freshArr&&freshArr.length){
-    var fs=freshArr.find(function(x){return String(x.id)===String(staffId);});
-    if(fs)return parseOffDays(fs.off_days);
-  }
-  // Ưu tiên 2: gọi individual endpoint (fallback khi GET /staff không trả về off_days)
+  // Ưu tiên 1: GỌI API RIÊNG LẺ — luôn lấy dữ liệu mới nhất từ server
+  // (tránh bị freshArr cũ hoặc cache gây ra sai lệch cross-device)
   try{
     var ind=await api('/staff/'+staffId);
     if(ind&&!ind.error)return parseOffDays(ind.off_days);
   }catch(e){}
+  // Ưu tiên 2: freshArr làm fallback khi API lỗi mạng
+  if(freshArr&&freshArr.length){
+    var fs=freshArr.find(function(x){return String(x.id)===String(staffId);});
+    if(fs)return parseOffDays(fs.off_days);
+  }
   // Ưu tiên 3: memory
   var mem=allStaff.find(function(x){return x.id===staffId;});
   return mem?parseOffDays(mem.off_days):[];
@@ -556,14 +557,17 @@ function mergeStaffCache(staffArr){
   try{
     var cache=JSON.parse(localStorage.getItem('gl_staff_cache')||'{}');
     staffArr.forEach(function(s){
-      // Chuẩn hóa off_days về array qua parseOffDays (xử lý string/null/array)
+      // Lưu raw value trước parseOffDays để phân biệt null vs []
+      var _rawOff=s.off_days;
       s.off_days=parseOffDays(s.off_days);
       var c=cache[String(s.id)];
       if(!c)return;
       // Gender: cache ưu tiên — API không lưu bền
       if(!s.gender&&c.gender)s.gender=c.gender;
-      // off_days: API là nguồn chính; cache chỉ là fallback khi API trả về mảng rỗng
-      if(!s.off_days.length&&c.off_days&&c.off_days.length)s.off_days=c.off_days.slice();
+      // off_days: CHỈ khôi phục cache khi server không gửi field (null/undefined)
+      // KHÔNG khôi phục khi server gửi [] (admin/NV đã xóa hết — phải tôn trọng)
+      if((_rawOff===null||_rawOff===undefined)&&c.off_days&&c.off_days.length)
+        s.off_days=c.off_days.slice();
     });
   }catch(e){}
 }
