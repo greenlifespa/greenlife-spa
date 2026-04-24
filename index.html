@@ -460,22 +460,7 @@ function tryInitPush(){
     <div class="filter-tabs"><button class="ftab active" id="fb-all" data-filter="all">Tất cả</button><button class="ftab" id="fb-pending" data-filter="pending">Chờ</button><button class="ftab" id="fb-confirmed" data-filter="confirmed">Xác nhận</button><button class="ftab" id="fb-done" data-filter="done">Hoàn thành</button></div>
     <div id="all-bookings"></div>
   </div>
-  <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border);">
-  <button id="acc-tab-accounts" onclick="switchAccTab('accounts')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;">🔑 Tài khoản</button>
-  <button id="acc-tab-offdays" onclick="switchAccTab('offdays')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:400;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">📅 Lịch nghỉ NV</button>
-</div>
-<div id="acc-pane-accounts" style="margin-top:12px;">
-  <div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div>
-  <div id="accounts-list"></div>
-</div>
-<div id="acc-pane-offdays" style="display:none;margin-top:12px;">
-  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-    <span style="font-size:0.82rem;color:var(--muted);">Quản lý ngày nghỉ cho từng nhân viên</span>
-    <button onclick="renderStaffOffMgr()" style="background:none;border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-size:0.75rem;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;">🔄 Làm mới</button>
-  </div>
-  <div id="staff-off-mgr"></div>
-</div>
-</div>
+  <div class="mgr-page" id="mgr-accounts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tài khoản</span><button class="btn-sm" id="btn-add-account">+ Tạo TK</button></div><div style="display:flex;gap:0;margin-bottom:0;border-bottom:2px solid var(--border);"><button id="acc-tab-accounts" onclick="switchAccTab('accounts')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:600;color:var(--accent);border-bottom:2px solid var(--accent);margin-bottom:-2px;">🔑 Tài khoản</button><button id="acc-tab-offdays" onclick="switchAccTab('offdays')" style="flex:1;padding:10px;border:none;background:none;font-family:'DM Sans',sans-serif;font-size:0.85rem;cursor:pointer;font-weight:400;color:var(--muted);border-bottom:2px solid transparent;margin-bottom:-2px;">📅 Lịch nghỉ NV</button></div><div id="acc-pane-accounts" style="margin-top:12px;"><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="acc-search" placeholder="Tìm tài khoản..."></div><div id="accounts-list"></div></div><div id="acc-pane-offdays" style="display:none;margin-top:12px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;"><span style="font-size:0.82rem;color:var(--muted);">Quản lý ngày nghỉ cho từng nhân viên</span><button onclick="renderStaffOffMgr()" style="background:none;border:1px solid var(--border);border-radius:100px;padding:5px 12px;font-size:0.75rem;cursor:pointer;color:var(--muted);font-family:'DM Sans',sans-serif;">🔄 Làm mới</button></div><div id="staff-off-mgr"></div></div></div>
   <div class="mgr-nav">
     <button class="mgr-nav-item active" id="mnav-dash"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">📊</span>Tổng quan</button>
     <button class="mgr-nav-item" id="mnav-cust"><span style="display:block;font-size:1.1rem;margin-bottom:2px;">👥</span>Khách</button>
@@ -1772,7 +1757,7 @@ async function renderStaffOffMgr(){
     html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;">';
     html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">';
     html+='<div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">'+(s.icon||'👤')+'</div>';
-    html+='<div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">'+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+' </div>';
+    html+='<div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">'+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+ gShort+')</span>':'')+' </div>';
     html+='<div style="font-size:0.72rem;color:var(--muted);">ID: '+(s.login_id||'-')+'</div></div>';
     html+='<span style="font-size:0.72rem;background:'+(off.length>0?'var(--g50)':'var(--bg3)')+';color:'+(off.length>0?'var(--g800)':'var(--muted)')+';padding:3px 10px;border-radius:100px;font-weight:600;">'+off.length+' ngày nghỉ</span>';
     html+='</div>';
@@ -1840,7 +1825,8 @@ async function renderStaffOffMgr(){
       },50);
     });
   });
-}  
+}
+
 function resetStaffPwd(sid){
   openModal('Đặt lại MK nhân viên','<div class="fg"><label>Mật khẩu mới</label><input type="password" id="sf-pwd1" class="mgr-inp"></div><div class="fg"><label>Nhập lại</label><input type="password" id="sf-pwd2" class="mgr-inp"></div><div style="display:flex;gap:8px;"><button id="sf-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="sf-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button></div>');
   setTimeout(function(){var cancel=document.getElementById('sf-cancel');var ok=document.getElementById('sf-ok');if(cancel)cancel.addEventListener('click',closeModal);if(ok)ok.addEventListener('click',async function(){var p1=document.getElementById('sf-pwd1').value;var p2=document.getElementById('sf-pwd2').value;if(!p1||p1.length<4){showToast('✗ Ít nhất 4 ký tự');return;}if(p1!==p2){showToast('✗ Không khớp');return;}showLoading(true);await api('/staff/'+sid,'PUT',{pass:p1});showLoading(false);closeModal();showToast('✓ Đã đặt lại mật khẩu');});},50);
@@ -2111,7 +2097,6 @@ if(staffFresh.length>0){
   allStaff=staffFresh;
 }
 stf=allStaff.find(function(s){return s.id===stf.id;})||stf;
-  // Fetch off_days moi nhat tu server khi NV dang nhap (cross-device sync)
   try{
     var _stfData=await api('/staff/'+stf.id);
     if(_stfData&&!_stfData.error){
