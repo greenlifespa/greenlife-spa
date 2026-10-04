@@ -226,25 +226,23 @@ async function initPush(){
   try{
     if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
     const messaging=firebase.messaging();
-    console.log('messaging ok');
     const perm=await Notification.requestPermission();
-    console.log('permission:', perm);
     if(perm!=='granted')return;
     const reg=await navigator.serviceWorker.ready;
-    console.log('sw ready:', reg);
     const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
-    console.log('token:', token);
     if(token){
-      const res=await fetch(API_URL+'/fcm-tokens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
-      console.log('saved:', res.status);
+      await fetch(API_URL+'/fcm-tokens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
     }
-  }catch(e){console.error('Push error:',e);}
+  }catch(e){console.error('Push error:',e&&e.message);}
 }
 if('serviceWorker' in navigator&&'Notification' in window){
-  navigator.serviceWorker.register('/greenlife-spa/sw.js').then(function(){
+  // Service worker nằm ở gốc site (greenlifespa.net/sw.js); nếu không có thì thử đường dẫn cũ /greenlife-spa/sw.js
+  navigator.serviceWorker.register('/sw.js').catch(function(){
+    return navigator.serviceWorker.register('/greenlife-spa/sw.js');
+  }).then(function(){
     // Chỉ hỏi xin quyền sau khi user đăng nhập xong
     window._pushReady=true;
-  });
+  }).catch(function(){});
 }
 function tryInitPush(){
   if(window._pushReady)initPush();
@@ -603,15 +601,179 @@ var bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,vouch
 
 function getTier(pts){var t=TIERS[0];for(var i=0;i<TIERS.length;i++){if(pts>=TIERS[i].min)t=TIERS[i];}return t;}
 function fmt(n){return Math.abs(n||0).toLocaleString('vi-VN');}
-  function fmtDate(d){if(!d)return'';var p=d.split('-');if(p.length!==3)return d;return p[2]+'/'+p[1]+'/'+p[0];}
+// Chống chèn mã (XSS): mọi chuỗi do người dùng nhập phải qua esc() trước khi đưa vào HTML
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// Chỉ nhận đường dẫn http(s); còn lại (javascript:, data:...) bị bỏ
+function safeUrl(u){u=String(u==null?'':u).trim();var l=u.toLowerCase();return(l.indexOf('http://')===0||l.indexOf('https://')===0)?u:'';}
+function fmtDate(d){if(!d)return'';d=String(d);var p=d.split('-');if(p.length!==3)return esc(d);return esc(p[2])+'/'+esc(p[1])+'/'+esc(p[0]);}
 function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2500);}
 function goScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 function openModal(title,html){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal').classList.add('open');}
 function closeModal(){document.getElementById('modal').classList.remove('open');}
 function setActiveFilter(btn){btn.parentNode.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');}
 function toggleTheme(){var isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('gl_theme',isDark?'dark':'light');document.querySelectorAll('#theme-toggle,#mgr-theme-toggle').forEach(function(b){b.textContent=isDark?'☀️':'🌙';});}
-function hoursUntilBooking(bk){try{var p=(bk.date||'').split('-'),t=(bk.time||'').split(':');return(new Date(+p[0],+p[1]-1,+p[2],+t[0],+t[1]).getTime()-Date.now())/3600000;}catch(e){return 999;}}
-function today(){return new Date().toISOString().split('T')[0];}
+// ============================================================
+// GIỜ VIỆT NAM (UTC+7) — dùng cho ngày/giờ đặt lịch, không phụ thuộc múi giờ thiết bị
+// ============================================================
+function vnNow(){var d=new Date(Date.now()+7*3600000);return{date:d.toISOString().slice(0,10),min:d.getUTCHours()*60+d.getUTCMinutes()};}
+function today(){return vnNow().date;}
+function vnDateOffset(n){return new Date(Date.now()+7*3600000+n*86400000).toISOString().slice(0,10);}
+function toMin(t){var p=String(t||'').split(':');return(parseInt(p[0],10)||0)*60+(parseInt(p[1],10)||0);}
+function hoursUntilBooking(bk){
+  try{
+    var tp=String(bk.time||'00:00').split(':');
+    var hh=('0'+(parseInt(tp[0],10)||0)).slice(-2),mm=('0'+(parseInt(tp[1],10)||0)).slice(-2);
+    var t=new Date(String(bk.date||'')+'T'+hh+':'+mm+':00+07:00').getTime();
+    if(isNaN(t))return 999;
+    return(t-Date.now())/3600000;
+  }catch(e){return 999;}
+}
+
+// ============================================================
+// KIỂM TRA LỊCH ĐẶT: khung giờ, trùng lịch theo thời lượng
+// ============================================================
+var BK_OPEN_MIN=8*60,BK_LAST_START_MIN=20*60+30;
+function bkTotalDuration(){
+  var t=0;
+  bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});t+=(s&&s.duration)?s.duration:60;});
+  return t||60;
+}
+// Thời lượng của một lịch đã đặt: suy ra từ tên dịch vụ (lịch cũ không lưu service_id). Không tìm thấy → 60 phút.
+function bookingDuration(b){
+  var str=String(b.service||''),tot=0;
+  var svcs=allServices.slice().sort(function(a,c){return String(c.name).length-String(a.name).length;});
+  var guard=0;
+  while(str.length&&guard++<50){
+    var hit=null;
+    for(var i=0;i<svcs.length;i++){var n=String(svcs[i].name);if(str===n||str.indexOf(n+' + ')===0){hit=svcs[i];break;}}
+    if(hit){tot+=hit.duration||60;str=(str===String(hit.name))?'':str.slice(String(hit.name).length+3);}
+    else{var k=str.indexOf(' + ');tot+=60;str=k<0?'':str.slice(k+3);}
+  }
+  return tot||60;
+}
+// Các khoảng bận [bắt đầu, kết thúc) (phút) của nhân viên được chọn trong một ngày
+function staffBusyIntervals(bks,date,staffIds){
+  var out=[];
+  (bks||[]).forEach(function(b){
+    if(!(b.status==='confirmed'||b.status==='pending')||b.date!==date)return;
+    var hit=(b.staff_ids||[]).some(function(id){return (staffIds||[]).some(function(sid){return String(sid)===String(id);});});
+    if(!hit)return;
+    var st=toMin(b.time);out.push([st,st+bookingDuration(b)]);
+  });
+  return out;
+}
+function hasOverlap(iv,start,end){return (iv||[]).some(function(x){return start<x[1]&&end>x[0];});}
+// Trả về chuỗi lỗi, hoặc '' nếu hợp lệ
+function checkBookingTime(date,time,dur,intervals){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date||''))return 'Ngày không hợp lệ';
+  if(!/^\d{2}:\d{2}$/.test(time||''))return 'Giờ không hợp lệ';
+  var hh=parseInt(time.slice(0,2),10),mm=parseInt(time.slice(3),10);
+  if(hh>23||mm>59)return 'Giờ không hợp lệ';
+  var m=hh*60+mm;
+  if(m<BK_OPEN_MIN||m>BK_LAST_START_MIN)return 'Giờ đặt lịch từ 08:00 đến 20:30';
+  var now=vnNow();
+  if(date<now.date)return 'Không thể đặt lịch cho ngày đã qua';
+  if(date===now.date&&m<=now.min)return 'Giờ này đã qua, vui lòng chọn giờ khác';
+  if(hasOverlap(intervals,m,m+dur))return 'Nhân viên đã có lịch trùng khung giờ này';
+  return '';
+}
+
+// ============================================================
+// GHI DỮ LIỆU AN TOÀN: đọc số liệu mới nhất trước khi ghi, ghi xong đọc lại để xác minh
+// ============================================================
+async function reloadCustomers(){var r=await api('/customers');if(Array.isArray(r))allCustomers=r;}
+async function getBookingById(id,custId){
+  var list=await api(custId?'/bookings?cust_id='+custId:'/bookings');
+  if(!Array.isArray(list))return null;
+  return list.find(function(b){return String(b.id)===String(id);})||null;
+}
+var CUST_NUM_FIELDS=['balance','visits','total_spend','rank_points','reward_points'];
+// So sánh ví voucher không phụ thuộc thứ tự khoá (jsonb có thể đổi thứ tự)
+function stableStr(v){
+  if(v===null||v===undefined)return 'null';
+  if(Array.isArray(v))return '['+v.map(stableStr).join(',')+']';
+  if(typeof v==='object')return '{'+Object.keys(v).sort().map(function(k){return JSON.stringify(k)+':'+stableStr(v[k]);}).join(',')+'}';
+  return JSON.stringify(v);
+}
+function custFieldSame(k,a,b){
+  if(k==='voucher_wallet')return stableStr(a||[])===stableStr(b||[]);
+  return Number(a||0)===Number(b||0);
+}
+// PUT khách rồi đọc lại. Trả về: 'applied' (đã ghi đúng) | 'unchanged' (chưa ghi) | 'other' (đã đổi, giá trị khác — có thay đổi song song) | 'unknown' (không đọc lại được)
+async function putCustomerVerified(id,patch,orig){
+  await api('/customers/'+id,'PUT',patch);
+  var u=null;
+  for(var i=0;i<3&&!u;i++){var g=await api('/customers/'+id);if(g&&!g.error&&g.id)u=g;}
+  if(!u)return 'unknown';
+  var keys=CUST_NUM_FIELDS.concat(['voucher_wallet']).filter(function(k){return patch[k]!==undefined;});
+  if(keys.every(function(k){return custFieldSame(k,u[k],patch[k]);}))return 'applied';
+  if(keys.every(function(k){return custFieldSame(k,u[k],orig[k]);}))return 'unchanged';
+  return 'other';
+}
+// Số tiền khách thực trả cho một lịch. actual_paid = 0 là hợp lệ (voucher trả hết) nên không được rơi về "amount";
+// chỉ lịch cũ chưa có actual_paid (null) mới dùng amount.
+function bkPaid(b){var v=(b.actual_paid!==null&&b.actual_paid!==undefined)?b.actual_paid:b.amount;return Number(v)||0;}
+// Hoàn lại voucher đã dùng cho lịch bị huỷ (lịch chỉ lưu tên/giá trị voucher, nên khớp theo tên/giá trị + ngày dùng)
+function restoreVouchers(wallet,bk){
+  var w=(wallet||[]).slice();
+  function restoreOne(pred){
+    for(var i=0;i<w.length;i++){
+      var v=w[i];
+      if(v&&v.used&&v.usedDate===bk.date&&pred(v)){var nv=Object.assign({},v);nv.used=false;delete nv.usedDate;w[i]=nv;return;}
+    }
+  }
+  if(bk.addon_voucher)restoreOne(function(v){return v.isAddon&&v.name===bk.addon_voucher;});
+  if((bk.voucher_discount||0)>0)restoreOne(function(v){return !v.isAddon&&Number(v.value)===Number(bk.voucher_discount);});
+  return w;
+}
+// Huỷ lịch + hoàn tiền (+ voucher) về đúng khách của lịch, dù ai bấm huỷ (khách / nhân viên / quản lý)
+async function cancelBookingAndRefund(bkId,custId){
+  var bk=await getBookingById(bkId,custId);
+  if(!bk)return{ok:false,msg:'Không tải được lịch đặt, vui lòng thử lại'};
+  if(bk.status==='cancelled')return{ok:false,msg:'Lịch này đã được huỷ trước đó'};
+  var paid=bkPaid(bk);
+  await api('/bookings/'+bkId,'PUT',{status:'cancelled'});
+  var chk=await getBookingById(bkId,custId);
+  if(!chk)return{ok:false,msg:'Chưa xác nhận được kết quả huỷ, vui lòng kiểm tra lại danh sách lịch trước khi thao tác tiếp'};
+  if(chk.status!=='cancelled')return{ok:false,msg:'Không huỷ được lịch, vui lòng thử lại'};
+  var hasVoucher=!!bk.addon_voucher||(bk.voucher_discount||0)>0;
+  if(!(paid>0||hasVoucher))return{ok:true,paid:0};
+  var c=await api('/customers/'+bk.cust_id);
+  if(!c||c.error||!c.id)return{ok:true,paid:paid,warn:'Đã huỷ lịch nhưng chưa hoàn được tiền (không tải được tài khoản khách). Vui lòng báo quản lý hoàn thủ công '+fmt(paid)+' VND.'};
+  var patch={balance:(c.balance||0)+paid};
+  var wallet=restoreVouchers(c.voucher_wallet,bk);
+  if(JSON.stringify(wallet)!==JSON.stringify(c.voucher_wallet||[]))patch.voucher_wallet=wallet;
+  var st=await putCustomerVerified(c.id,patch,c);
+  if(st==='unchanged')st=await putCustomerVerified(c.id,patch,c);
+  if(st==='unchanged'||st==='unknown')return{ok:true,paid:paid,warn:'Đã huỷ lịch nhưng chưa xác nhận được việc hoàn '+fmt(paid)+' VND. Vui lòng báo quản lý kiểm tra số dư của khách.'};
+  if(paid>0){
+    var tx=await api('/transactions','POST',{cust_id:c.id,type:'topup',amount:paid,reward:0,note:'Hoàn tiền huỷ lịch: '+bk.service,date:today()});
+    if(!tx||tx.error||!tx.id)return{ok:true,paid:paid,warn:'Đã hoàn tiền nhưng chưa ghi được lịch sử giao dịch. Vui lòng báo quản lý.'};
+  }
+  return{ok:true,paid:paid};
+}
+// Đánh dấu hoàn thành — chặn bấm lặp (tránh cộng điểm RP hai lần)
+async function markBookingDone(bkId){
+  var bk=await getBookingById(bkId,null);
+  if(!bk)return{ok:false,msg:'Không tải được lịch đặt, vui lòng thử lại'};
+  if(bk.status==='done')return{ok:false,msg:'Lịch này đã hoàn thành trước đó'};
+  if(bk.status==='cancelled')return{ok:false,msg:'Lịch này đã bị huỷ'};
+  var r=await api('/bookings/'+bkId,'PUT',{status:'done'});
+  if(r&&r.error)return{ok:false,msg:'Không cập nhật được, vui lòng thử lại'};
+  return{ok:true};
+}
+// Lịch có thuộc nhân viên này không: so theo id; lịch cũ không lưu id thì so đúng tên (bỏ hậu tố "(nam)/(nữ)")
+function bookingBelongsToStaff(b,stf){
+  var ids=Array.isArray(b.staff_ids)?b.staff_ids:[];
+  if(ids.length)return ids.some(function(id){return String(id)===String(stf.id);});
+  var me=String(stf.name||'').trim().toLowerCase();
+  if(!me)return false;
+  return String(b.staff_names||'').split(',').some(function(n){return n.replace(/\s*\((nam|nữ|nu)\)\s*$/i,'').trim().toLowerCase()===me;});
+}
+// Ảnh bìa bài viết: chỉ nhận đường dẫn http(s)
+function postThumb(p){return safeUrl(p.thumbnail)||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+encodeURIComponent(p.video_id)+'/hqdefault.jpg':'');}
+// Chuỗi sao đánh giá: luôn nằm trong khoảng 0–5 sao
+function starStr(n){n=Math.max(0,Math.min(5,parseInt(n,10)||0));return '\u2605'.repeat(n)+'\u2606'.repeat(5-n);}
 
 function showPage(pageId){
   document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
@@ -630,12 +792,12 @@ function showMgrPage(pid,bid){
   document.querySelectorAll('.mgr-page').forEach(function(p){p.classList.remove('active');});document.getElementById(pid).classList.add('active');
   document.querySelectorAll('.mgr-nav-item').forEach(function(b){b.classList.remove('active');});document.getElementById(bid).classList.add('active');
   if(pid==='mgr-dashboard')renderDashboard();
-  if(pid==='mgr-customers')renderCustomers();
+  if(pid==='mgr-customers'){renderCustomers();reloadCustomers().then(function(){if(document.getElementById('mgr-customers').classList.contains('active'))renderCustomers();});}
   if(pid==='mgr-bookings')renderAllBookings('all');
-  if(pid==='mgr-points')renderPtsPage();
+  if(pid==='mgr-points'){reloadCustomers().then(function(){renderPtsPage();});}
   if(pid==='mgr-services')renderServicesPage();
   if(pid==='mgr-posts')renderMgrPosts();
-  if(pid==='mgr-accounts'){renderAccountsPage();switchAccTab('accounts');}
+  if(pid==='mgr-accounts'){reloadCustomers().then(function(){renderAccountsPage();});switchAccTab('accounts');}
   window.scrollTo(0,0);
 }
 
@@ -677,24 +839,25 @@ async function loginAs(user){
 }
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
 async function loadServices(){
-  var raw=await api('/services')||[];
-  allServices=raw;
+  var raw=await api('/services');
+  if(Array.isArray(raw))allServices=raw;
 }
 // Preserve gender edits made in memory — API may not return updated gender field
 async function loadStaff(){
   var s=await api('/staff');
-  var fresh=(s||[]).filter(function(x){return x.login_id&&x.login_id.trim();});
+  if(!Array.isArray(s))return;
+  var fresh=s.filter(function(x){return x.login_id&&x.login_id.trim();});
   mergeStaffCache(fresh);
   allStaff=fresh;
   saveStaffCache();
 }
 async function loadAllData(){
   var r=await Promise.all([api('/services'),api('/staff'),api('/customers')]);
-  allServices=r[0]||[];
-  var fresh=r[1]||[];
+  if(Array.isArray(r[0]))allServices=r[0];
+  var fresh=Array.isArray(r[1])?r[1]:allStaff;
   mergeStaffCache(fresh);
   allStaff=fresh;
-  allCustomers=r[2]||[];
+  if(Array.isArray(r[2]))allCustomers=r[2];
 }
 async function reloadUser(){if(!currentUser)return;var u=await api('/customers/'+currentUser.id);if(u&&!u.error)currentUser=u;}
 
@@ -732,7 +895,7 @@ async function refreshHome(){
     var iconBg=t.type==='earn'?'var(--g50)':t.type==='redeem'?'#fef3c7':'#f0fdf4';
     var amtHtml='';if(t.amount&&t.amount!==0){var ac=t.amount>0?'#16a34a':'#dc2626';amtHtml='<div style="font-size:0.82rem;font-weight:600;color:'+ac+';">'+(t.amount>0?'+':'-')+fmt(Math.abs(t.amount))+' VND</div>';}
     var rpHtml='';if(t.reward&&t.reward!==0){rpHtml='<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';}
-    html+='<div class="act-item"><div style="display:flex;align-items:center;gap:10px;"><div class="act-ic" style="background:'+iconBg+'">'+icon+'</div><div><div class="act-name">'+t.note+'</div><div class="act-date">'+fmtDate(t.date)+'</div></div></div><div style="text-align:right;">'+amtHtml+rpHtml+'</div></div>';
+    html+='<div class="act-item"><div style="display:flex;align-items:center;gap:10px;"><div class="act-ic" style="background:'+iconBg+'">'+icon+'</div><div><div class="act-name">'+esc(t.note)+'</div><div class="act-date">'+fmtDate(t.date)+'</div></div></div><div style="text-align:right;">'+amtHtml+rpHtml+'</div></div>';
   });
   list.innerHTML=html;}
   checkNewPosts();var newsList=document.getElementById('home-news-list');
@@ -746,13 +909,13 @@ async function refreshHome(){
     var nhtml='<div style="display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;-ms-overflow-style:none;">';
     top.forEach(function(p){
       var hasVideo=!!(p.video_id&&p.video_type);
-      var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+      var thumb=postThumb(p);
       var isPinned=!!p.pinned;
-      nhtml+='<div class="home-news-card" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+(p.video_id||'')+'" data-video-type="'+(p.video_type||'')+'" data-url="'+(p.url||'')+'" data-title="'+p.title.replace(/"/g,'&quot;')+'" data-desc="'+(p.description||'').replace(/"/g,'&quot;')+'" data-thumb="'+(p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':''))+'" style="flex-shrink:0;width:120px;background:var(--card-bg);border-radius:10px;border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';overflow:hidden;cursor:pointer;">';
-      nhtml+=thumb?'<img src="'+thumb+'" style="width:100%;height:72px;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">'  :'<div style="width:100%;height:72px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">'+(hasVideo?'▶':'📰')+'</div>';
+      nhtml+='<div class="home-news-card" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+esc(p.video_id)+'" data-video-type="'+esc(p.video_type)+'" data-url="'+esc(safeUrl(p.url))+'" data-title="'+esc(p.title)+'" data-desc="'+esc(p.description)+'" data-thumb="'+esc(postThumb(p))+'" style="flex-shrink:0;width:120px;background:var(--card-bg);border-radius:10px;border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';overflow:hidden;cursor:pointer;">';
+      nhtml+=thumb?'<img src="'+esc(thumb)+'" style="width:100%;height:72px;object-fit:cover;display:block;" onerror="this.style.display=\'none\'">'  :'<div style="width:100%;height:72px;background:var(--bg3);display:flex;align-items:center;justify-content:center;font-size:1.4rem;">'+(hasVideo?'▶':'📰')+'</div>';
       nhtml+='<div style="padding:5px 7px;">';
       if(isPinned)nhtml+='<span style="font-size:0.58rem;background:var(--accent);color:#fff;padding:1px 5px;border-radius:100px;font-weight:600;">📌 Nổi bật</span>';
-      nhtml+='<div style="font-size:0.72rem;font-weight:600;margin-top:2px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;">'+p.title+'</div>';
+      nhtml+='<div style="font-size:0.72rem;font-weight:600;margin-top:2px;color:var(--text);overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3;">'+esc(p.title)+'</div>';
       nhtml+='</div></div>';
     });
     nhtml+='</div>';
@@ -784,10 +947,11 @@ async function checkPendingReview(){
 // ============================================================
 function initBooking(){
   bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,voucherDiscount:0,addonWalletIdx:-1};
+  var cfmBtn=document.getElementById('btn-confirm-bk');if(cfmBtn){cfmBtn.disabled=false;cfmBtn.textContent='Xác nhận đặt lịch';}
   showStep('svc');
-  var cats=[];allServices.forEach(function(s){if(cats.indexOf(s.cat)<0)cats.push(s.cat);});
+  var cats=[];allServices.forEach(function(s){if(s.cat&&cats.indexOf(s.cat)<0)cats.push(s.cat);});
   var catHtml='<div class="filter-tabs" id="svc-cats"><button class="ftab active" data-cat="all">Tất cả</button>';
-  cats.forEach(function(c){catHtml+='<button class="ftab" data-cat="'+c+'">'+c+'</button>';});catHtml+='</div>';
+  cats.forEach(function(c){catHtml+='<button class="ftab" data-cat="'+esc(c)+'">'+esc(c)+'</button>';});catHtml+='</div>';
   document.getElementById('step-svc').innerHTML=
     '<div style="font-size:0.9rem;color:var(--muted);margin-bottom:4px;">1. Chọn dịch vụ</div>'
     +'<div style="font-size:0.75rem;color:var(--accent);margin-bottom:8px;">✓ Có thể chọn nhiều dịch vụ</div>'
@@ -806,8 +970,8 @@ function renderSvcGrid(fc){
     var isSel=cnt>0;
     html+='<div class="svc-card'+(isSel?' sel':'')+'" data-sid="'+s.id+'" style="cursor:pointer;">'
       +'<div style="display:flex;align-items:center;gap:10px;padding:12px;">'
-      +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+(s.icon||'💆')+'</div>'
-      +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+s.name+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
+      +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+esc(s.icon||'💆')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+esc(s.name)+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
       +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ · '+s.duration+'ph</div></div>'
       +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
       +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(isSel?'none':'1px solid var(--border)')+';background:'+(isSel?'var(--accent)':'var(--bg3)')+';color:'+(isSel?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
@@ -835,15 +999,19 @@ function updateSvcSummary(){
   if(bkState.svcIds.length===0){sum.style.display='none';return;}
   var total=0,names={},order=[];
   bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){total+=s.price;if(!names[s.name]){names[s.name]=0;order.push(s.name);}names[s.name]++;}});});
-  sum.style.display='block';sum.innerHTML='<b>Đã chọn ('+bkState.svcIds.length+'):</b> '+order.map(function(n){return names[n]>1?n+' ×'+names[n]:n;}).join(', ')+'<br><b style="color:var(--accent);">Tổng: '+fmt(total)+'đ</b>';
+  sum.style.display='block';sum.innerHTML='<b>Đã chọn ('+bkState.svcIds.length+'):</b> '+order.map(function(n){return names[n]>1?esc(n)+' ×'+names[n]:esc(n);}).join(', ')+'<br><b style="color:var(--accent);">Tổng: '+fmt(total)+'đ</b>';
 }
 
 async function getBusyStaffIds(date,time){
   if(!date||!time)return[];
-  var bks=await api('/bookings')||[];
+  var bks=await api('/bookings');
+  if(!Array.isArray(bks))return[];
+  var start=toMin(time),end=start+bkTotalDuration();
   var busy=[];
   bks.forEach(function(b){
-    if((b.status==='confirmed'||b.status==='pending')&&b.date===date&&b.time===time){
+    if(!(b.status==='confirmed'||b.status==='pending')||b.date!==date)return;
+    var bs=toMin(b.time),be=bs+bookingDuration(b);
+    if(start<be&&end>bs){
       (b.staff_ids||[]).forEach(function(id){if(busy.indexOf(id)<0)busy.push(id);});
     }
   });
@@ -906,9 +1074,9 @@ async function renderStaffStep(){
       var isOnLeave=parseOffDays(s.off_days).indexOf(date)>-1;
       var isDisabled=(isFull&&cnt===0)||isOnLeave;
       html+='<div class="staff-item'+(cnt>0?' sel':'')+'" data-id="'+s.id+'" style="'+(isDisabled?'opacity:0.45;pointer-events:none;':'')+'">'
-        +'<div class="staff-av">'+(s.icon||'👤')+'</div>'
+        +'<div class="staff-av">'+esc(s.icon||'👤')+'</div>'
         +'<div style="flex:1;">'
-        +'<div style="font-size:0.9rem;font-weight:500;">'+s.name+(gShort?' <span style="font-size:0.8rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'<span style="font-size:0.72rem;color:#f59e0b;"> ⚠ chưa có giới tính</span>')+'</div>'
+        +'<div style="font-size:0.9rem;font-weight:500;">'+esc(s.name)+(gShort?' <span style="font-size:0.8rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'<span style="font-size:0.72rem;color:#f59e0b;"> ⚠ chưa có giới tính</span>')+'</div>'
         +'<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">'+(isOnLeave?'<span style="color:#dc2626;font-size:0.72rem;">🚫 Nghỉ ngày này</span>':'⭐ '+(s.rating||5.0).toFixed(1))+'</div>'
         +'</div>'
         +(cnt>0?'<div style="background:var(--accent);color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:0.78rem;font-weight:600;flex-shrink:0;">'+cnt+'</div>':'')
@@ -973,14 +1141,16 @@ async function renderStaffStep(){
 function showStep(name){['svc','staff','dt','cfm'].forEach(function(s){document.getElementById('step-'+s).style.display=(s===name)?'block':'none';});}
 
 // CHANGE 4: Time slots and custom time input — enforce 24h HH:MM format
+// Khung giờ: 08:00–20:30, không chọn giờ đã qua, không trùng lịch của nhân viên (tính theo thời lượng dịch vụ)
 async function renderTimeSlots(){
   var td=today();
   var dateEl=document.getElementById('bk-date');
+  if(bkState.date&&bkState.date<td)bkState.date=td;
   dateEl.value=bkState.date||td;dateEl.min=td;
-  dateEl.onchange=function(){bkState.date=this.value;bkState.time=null;renderTimeSlots();};
+  dateEl.onchange=function(){bkState.date=this.value||today();bkState.time=null;renderTimeSlots();};
   bkState.date=bkState.date||td;
 
-  var busyTimes=[];
+  var intervals=[];
   var offDayStaffNames=[];
   if(bkState.staffIds.length>0){
     // Try to fetch fresh staff, fall back to memory if failed
@@ -991,13 +1161,7 @@ async function renderTimeSlots(){
       saveStaffCache();
     }
     var bks=await api('/bookings')||[];
-    bks.forEach(function(b){
-      if((b.status==='confirmed'||b.status==='pending')&&b.date===bkState.date){
-        var staffBusy=false;
-        bkState.staffIds.forEach(function(sid){if((b.staff_ids||[]).some(function(bid){return String(bid)===String(sid);}))staffBusy=true;});
-        if(staffBusy)busyTimes.push(b.time);
-      }
-    });
+    intervals=staffBusyIntervals(Array.isArray(bks)?bks:[],bkState.date,bkState.staffIds);
     // Check off day — dùng fetchStaffOffDays (async) để đảm bảo dữ liệu từ server, không phụ thuộc cache thiết bị
     for(var _si=0;_si<bkState.staffIds.length;_si++){
       var _stfId=bkState.staffIds[_si];
@@ -1010,6 +1174,8 @@ async function renderTimeSlots(){
   }
 
   var hasOffDay=offDayStaffNames.length>0;
+  var totalDur=bkTotalDuration();
+  var nowVN=vnNow();
 
   var slots=[];
   for(var h=8;h<=20;h++){
@@ -1023,18 +1189,22 @@ async function renderTimeSlots(){
     html='<div style="background:#fee2e2;border:1px solid #fca5a5;border-radius:10px;padding:14px;margin-bottom:14px;font-size:0.85rem;color:#b91c1c;display:flex;gap:10px;align-items:flex-start;">'
       +'<span style="font-size:1.2rem;flex-shrink:0;">🚫</span>'
       +'<div><div style="font-weight:600;margin-bottom:4px;">Nhân viên đang trong ngày nghỉ</div>'
-      +'<div><b>'+offDayStaffNames.join(', ')+'</b> đã đăng ký nghỉ vào ngày này.</div>'
+      +'<div><b>'+offDayStaffNames.map(esc).join(', ')+'</b> đã đăng ký nghỉ vào ngày này.</div>'
       +'<div style="margin-top:6px;color:#dc2626;">Vui lòng quay lại chọn nhân viên khác hoặc chọn ngày khác.</div>'
       +'</div></div>';
   }
 
   html+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;">';
   slots.forEach(function(t){
+    var m=toMin(t);
     var isOffDay=hasOffDay;
-    var isBusy=!isOffDay&&busyTimes.indexOf(t)>-1;
-    var cls='time-slot'+(isOffDay?' busy':'')+(isBusy?' busy':'')+(bkState.time===t&&!isOffDay?' sel':'');
+    var isPast=!isOffDay&&bkState.date===nowVN.date&&m<=nowVN.min;
+    var isBusy=!isOffDay&&!isPast&&hasOverlap(intervals,m,m+totalDur);
+    var blocked=isOffDay||isPast||isBusy;
+    var cls='time-slot'+(blocked?' busy':'')+(bkState.time===t&&!blocked?' sel':'');
     var label=isOffDay
       ?t+'<div style="font-size:0.58rem;color:#ef4444;margin-top:2px;">ngày nghỉ</div>'
+      :isPast?t+'<div style="font-size:0.62rem;color:#aaa;">đã qua</div>'
       :isBusy?t+'<div style="font-size:0.62rem;color:#aaa;">đã bận</div>':t;
     html+='<div class="'+cls+'" data-time="'+t+'" '+(isOffDay?'title="Nhân viên đang trong ngày nghỉ, vui lòng chọn nhân viên khác"':'')+'>'+label+'</div>';
   });
@@ -1044,8 +1214,8 @@ async function renderTimeSlots(){
   if(!hasOffDay){
     html+='<div style="margin-bottom:16px;background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;">'
       +'<div style="font-size:0.82rem;font-weight:500;margin-bottom:6px;color:var(--muted);">⏰ Hoặc nhập giờ tuỳ chọn (định dạng 24 giờ)</div>'
-      +'<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">Ví dụ: 09:00 · 13:00 · 13:30 · 18:00 · 20:30</div>'
-      +'<input type="text" id="custom-time" class="mgr-inp" inputmode="numeric" maxlength="5" autocomplete="off" style="width:100%;font-size:1.15rem;padding:10px 14px;letter-spacing:0.1em;text-align:center;" value="'+(bkState.time||'')+'" placeholder="13:30"/>'
+      +'<div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px;">Ví dụ: 09:00 · 13:00 · 13:30 · 18:00 · 20:30 (nhận lịch từ 08:00 đến 20:30)</div>'
+      +'<input type="text" id="custom-time" class="mgr-inp" inputmode="numeric" maxlength="5" autocomplete="off" style="width:100%;font-size:1.15rem;padding:10px 14px;letter-spacing:0.1em;text-align:center;" value="'+esc(bkState.time||'')+'" placeholder="13:30"/>'
       +'</div>';
     html+='<button id="btn-time-next" class="btn-green">Tiếp tục →</button>';
   } else {
@@ -1089,7 +1259,8 @@ async function renderTimeSlots(){
     });
   }
 
-  document.getElementById('btn-time-next').addEventListener('click',function(){
+  var nextBtn=document.getElementById('btn-time-next');
+  if(nextBtn)nextBtn.addEventListener('click',function(){
     var ct2=document.getElementById('custom-time');
     var val=ct2?ct2.value.trim():'';
     // Accept shorthand 4 digits
@@ -1099,6 +1270,8 @@ async function renderTimeSlots(){
     if(!/^\d{2}:\d{2}$/.test(val)){showToast('✗ Định dạng không đúng — nhập VD: 08:00, 13:30, 20:00');return;}
     var h=parseInt(val.split(':')[0]),m=parseInt(val.split(':')[1]);
     if(h<0||h>23||m<0||m>59){showToast('✗ Giờ không hợp lệ (0-23) hoặc phút (0-59)');return;}
+    var err=checkBookingTime(bkState.date||today(),val,totalDur,intervals);
+    if(err){showToast('✗ '+err);return;}
     bkState.time=val;
     showStep('cfm');renderConfirm();
   });
@@ -1107,7 +1280,7 @@ async function renderTimeSlots(){
 function renderConfirm(){
   var c=currentUser;var tier=c?getTier(c.rank_points||0):TIERS[0];
   var totalPrice=0,svcLines='',totalDur=0;
-  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=s.duration;svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+(s.icon||'💆')+' '+s.name+'</span><span>'+fmt(s.price)+'đ</span></div>';}});});
+  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=s.duration;svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+esc(s.icon||'💆')+' '+esc(s.name)+'</span><span>'+fmt(s.price)+'đ</span></div>';}});});
 
   // Show gender in confirm screen as "Tên (nam/nữ)"
   var staffNames=bkState.staffIds.map(function(sid){
@@ -1119,12 +1292,12 @@ function renderConfirm(){
   bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;bkState.addonWalletIdx=-1;
   var wallet=(c&&c.voucher_wallet)||[];
   var discOpts='<option value="-1">-- Không dùng --</option>';
-  wallet.forEach(function(v,idx){if(v.used||v.isAddon)return;if(v.minBill>0&&totalPrice<v.minBill)return;discOpts+='<option value="'+idx+'" data-val="'+v.value+'">'+v.name+' (-'+fmt(v.value)+'đ)</option>';});
+  wallet.forEach(function(v,idx){if(v.used||v.isAddon)return;if(v.minBill>0&&totalPrice<v.minBill)return;discOpts+='<option value="'+idx+'" data-val="'+esc(v.value)+'">'+esc(v.name)+' (-'+fmt(v.value)+'đ)</option>';});
   var addonOpts='<option value="-1">-- Không dùng --</option>';
-  wallet.forEach(function(v,idx){if(v.used||!v.isAddon)return;addonOpts+='<option value="'+idx+'">'+v.name+'</option>';});
+  wallet.forEach(function(v,idx){if(v.used||!v.isAddon)return;addonOpts+='<option value="'+idx+'">'+esc(v.name)+'</option>';});
   document.getElementById('bk-sum').innerHTML=
     svcLines
-    +'<div class="sum-row"><span>Nhân viên</span><span style="text-align:right;">'+(staffNames||'--')+'</span></div>'
+    +'<div class="sum-row"><span>Nhân viên</span><span style="text-align:right;">'+(esc(staffNames)||'--')+'</span></div>'
     +'<div class="sum-row"><span>Ngày</span><span>'+fmtDate(bkState.date||today())+'</span></div>'
     +'<div class="sum-row"><span>Giờ</span><span>'+(bkState.time||'--')+'</span></div>'
     +'<div class="sum-row"><span>Thời gian</span><span>'+totalDur+' phút</span></div>'
@@ -1155,32 +1328,91 @@ async function confirmBooking(){
   var btn=document.getElementById('btn-confirm-bk');
   if(btn&&btn.disabled)return;
   if(btn){btn.disabled=true;btn.textContent='Đang xử lý...';}
-  var c=currentUser;var tier=getTier(c.rank_points||0);
-  var totalPrice=0,svcNames=[];
-  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;svcNames.push(s.name);}});});
-  var disc=bkState.voucherDiscount||0;var paid=Math.max(0,totalPrice-disc);
-  if((c.balance||0)<paid){openModal('Số dư không đủ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💰</div><div style="font-size:0.9rem;color:#dc2626;margin-bottom:12px;">Số dư <b>'+fmt(c.balance||0)+'đ</b>, cần <b>'+fmt(paid)+'đ</b></div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');return;}
-  var earnRP=Math.floor(paid*tier.earnRate/100);
-  var bkDate=bkState.date||today();
-  var wallet=(c.voucher_wallet||[]).slice();
-  var addonName=null;
-  if(bkState.addonWalletIdx>=0&&wallet[bkState.addonWalletIdx]){addonName=wallet[bkState.addonWalletIdx].name;wallet[bkState.addonWalletIdx]={...wallet[bkState.addonWalletIdx],used:true,usedDate:bkDate};}
-  if(bkState.voucherWalletIdx>=0&&wallet[bkState.voucherWalletIdx]){wallet[bkState.voucherWalletIdx]={...wallet[bkState.voucherWalletIdx],used:true,usedDate:bkDate};}
+  function resetBtn(){if(btn){btn.disabled=false;btn.textContent='Xác nhận đặt lịch';}}
+  function stop(msg){showLoading(false);resetBtn();showToast(msg);}
   showLoading(true);
-  // Save staff names with gender: "Tên (nam/nữ)"
-  var staffNames=bkState.staffIds.map(function(sid){
-    var f=allStaff.find(function(s){return s.id===sid;});
-    if(!f)return '?';
-    return nameWithGender(f.name,f.gender);
-  });
-  var bkRes=await api('/bookings','POST',{cust_id:c.id,service:svcNames.join(' + '),staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,amount:totalPrice,actual_paid:paid,voucher_discount:disc,addon_voucher:addonName,status:'confirmed',reward_earned:earnRP,reviewed:false});
-  if(bkRes&&!bkRes.error){
-    await api('/customers/'+c.id,'PUT',{total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:Math.max(0,(c.balance||0)-paid),voucher_wallet:wallet});
-    await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
-    showLoading(false);showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');showPage('home');
-  }else{
-    if(btn){btn.disabled=false;btn.textContent='Xác nhận đặt lịch';}
-    showLoading(false);showToast('✗ Lỗi đặt lịch, thử lại');
+  var createdBkId=null;
+  try{
+    // 1) Số liệu khách mới nhất (không dùng số dư đã lưu tạm trên máy)
+    var c=await api('/customers/'+currentUser.id);
+    if(!c||c.error||!c.id){stop('✗ Không tải được tài khoản, vui lòng thử lại');return;}
+    currentUser=c;
+    var tier=getTier(c.rank_points||0);
+    var totalPrice=0,svcNames=[];
+    bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;svcNames.push(s.name);}});});
+    if(svcNames.length!==bkState.svcIds.length){stop('✗ Có dịch vụ không còn tồn tại, vui lòng chọn lại');return;}
+    var bkDate=bkState.date||today();
+
+    // 2) Kiểm tra lại giờ, ngày nghỉ và trùng lịch bằng dữ liệu mới nhất
+    var allBks=await api('/bookings');
+    if(!Array.isArray(allBks)){stop('✗ Không kiểm tra được lịch trống, vui lòng thử lại');return;}
+    var terr=checkBookingTime(bkDate,bkState.time,bkTotalDuration(),staffBusyIntervals(allBks,bkDate,bkState.staffIds));
+    if(terr){stop('✗ '+terr);return;}
+    for(var si=0;si<bkState.staffIds.length;si++){
+      var offs=await fetchStaffOffDays(bkState.staffIds[si],null);
+      if(offs.indexOf(bkDate)>-1){stop('✗ Nhân viên đã đăng ký nghỉ ngày này, vui lòng chọn lại');return;}
+    }
+
+    // 3) Voucher (theo ví mới nhất) và số dư
+    var wallet=(c.voucher_wallet||[]).slice();
+    var disc=0,addonName=null;
+    var wi=bkState.voucherWalletIdx,ai=bkState.addonWalletIdx;
+    if(wi>=0){
+      var vv=wallet[wi];
+      if(!vv||vv.used||vv.isAddon){stop('✗ Voucher giảm giá không còn hiệu lực');return;}
+      if(vv.minBill>0&&totalPrice<vv.minBill){stop('✗ Hoá đơn chưa đủ điều kiện dùng voucher');return;}
+      disc=parseInt(vv.value)||0;
+    }
+    if(ai>=0){
+      var av=wallet[ai];
+      if(!av||av.used||!av.isAddon){stop('✗ Voucher add-on không còn hiệu lực');return;}
+      addonName=av.name;
+    }
+    var paid=Math.max(0,totalPrice-disc);
+    if((c.balance||0)<paid){
+      showLoading(false);resetBtn();
+      openModal('Số dư không đủ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💰</div><div style="font-size:0.9rem;color:#dc2626;margin-bottom:12px;">Số dư <b>'+fmt(c.balance||0)+'đ</b>, cần <b>'+fmt(paid)+'đ</b></div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
+      return;
+    }
+    var earnRP=Math.floor(paid*tier.earnRate/100);
+    if(ai>=0)wallet[ai]={...wallet[ai],used:true,usedDate:bkDate};
+    if(wi>=0)wallet[wi]={...wallet[wi],used:true,usedDate:bkDate};
+    // Save staff names with gender: "Tên (nam/nữ)"
+    var staffNames=bkState.staffIds.map(function(sid){
+      var f=allStaff.find(function(s){return s.id===sid;});
+      if(!f)return '?';
+      return nameWithGender(f.name,f.gender);
+    });
+
+    // 4) Tạo lịch
+    var bkRes=await api('/bookings','POST',{cust_id:c.id,service:svcNames.join(' + '),staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,amount:totalPrice,actual_paid:paid,voucher_discount:disc,addon_voucher:addonName,status:'confirmed',reward_earned:earnRP,reviewed:false});
+    if(!bkRes||bkRes.error||!bkRes.id){stop('✗ Lỗi đặt lịch, thử lại');return;}
+    createdBkId=bkRes.id;
+
+    // 5) Trừ tiền — đọc lại để xác minh; nếu không ghi được thì gỡ lịch vừa tạo để không bị mất tiền/mất lịch
+    var patch={total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:(c.balance||0)-paid,voucher_wallet:wallet};
+    var st=await putCustomerVerified(c.id,patch,c);
+    if(st==='unchanged')st=await putCustomerVerified(c.id,patch,c);
+    if(st==='unchanged'){
+      await api('/bookings/'+createdBkId,'DELETE');
+      var still=await getBookingById(createdBkId,c.id);
+      if(still)await api('/bookings/'+createdBkId,'PUT',{status:'cancelled'});
+      createdBkId=null;
+      stop('✗ Không trừ được tiền nên lịch chưa được đặt. Tài khoản của bạn không bị trừ, vui lòng thử lại.');
+      return;
+    }
+
+    // 6) Ghi lịch sử giao dịch
+    var tx=await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
+    var txOk=!!(tx&&!tx.error&&tx.id);
+    showLoading(false);resetBtn();
+    if(st==='unknown'||!txOk)showToast('⚠ Đã đặt lịch nhưng chưa xác nhận được việc ghi nhận đầy đủ — vui lòng kiểm tra mục Lịch sử hoặc báo quản lý');
+    else showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
+    await reloadUser();
+    showPage('home');
+  }catch(e){
+    showLoading(false);resetBtn();
+    showToast(createdBkId?'⚠ Có lỗi sau khi tạo lịch — vui lòng kiểm tra mục Lịch sử hoặc báo quản lý':'✗ Lỗi đặt lịch, thử lại');
   }
 }
 
@@ -1195,23 +1427,38 @@ async function refreshRewards(){
   var vouchers=tier.vouchers.concat(ADDON_VOUCHERS);
   var html='';
   if(rwd<20000){html='<div style="grid-column:span 2;background:#fffbf0;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:1.5rem;margin-bottom:6px;">🎁</div><div style="font-size:0.88rem;font-weight:500;color:#92400e;">Cần tối thiểu 20.000 RP</div><div style="font-size:0.78rem;color:#a07830;margin-top:6px;">Bạn có: <b>'+fmt(rwd)+' RP</b></div></div>';}
-  else{vouchers.forEach(function(v){if(rwd<v.rp)return;var ia=v.isAddon;html+='<div class="rwd-card" style="border:'+(ia?'1px solid #c07000':'1px solid var(--border)')+';cursor:pointer;" data-vid="'+v.id+'" data-rp="'+v.rp+'" data-name="'+v.name+'" data-val="'+v.value+'" data-minbill="'+v.minBill+'" data-addon="'+(ia?'1':'0')+'">'+(ia?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div class="rwd-val" style="color:'+(ia?'#c07000':'var(--gold2)')+';">'+v.name+'</div><div class="rwd-desc">'+(v.desc||(v.minBill>0?'HĐ từ '+fmt(v.minBill)+'đ':'Không giới hạn'))+'</div><div class="rwd-cost">⭐ '+fmt(v.rp)+' RP → Đổi ngay</div></div>';});}
+  else{vouchers.forEach(function(v){if(rwd<v.rp)return;var ia=v.isAddon;html+='<div class="rwd-card" style="border:'+(ia?'1px solid #c07000':'1px solid var(--border)')+';cursor:pointer;" data-vid="'+v.id+'" data-rp="'+v.rp+'" data-name="'+esc(v.name)+'" data-val="'+esc(v.value)+'" data-minbill="'+v.minBill+'" data-addon="'+(ia?'1':'0')+'">'+(ia?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div class="rwd-val" style="color:'+(ia?'#c07000':'var(--gold2)')+';">'+esc(v.name)+'</div><div class="rwd-desc">'+(v.desc?esc(v.desc):(v.minBill>0?'HĐ từ '+fmt(v.minBill)+'đ':'Không giới hạn'))+'</div><div class="rwd-cost">⭐ '+fmt(v.rp)+' RP → Đổi ngay</div></div>';});}
   document.getElementById('rwd-cards').innerHTML=html;
   document.querySelectorAll('.rwd-card[data-vid]').forEach(function(card){card.addEventListener('click',function(){redeemReward(this.getAttribute('data-vid'),parseInt(this.getAttribute('data-rp')),this.getAttribute('data-name'),parseInt(this.getAttribute('data-val')),parseInt(this.getAttribute('data-minbill')),this.getAttribute('data-addon')==='1');});});
 }
 async function redeemReward(vid,rp,name,val,minBill,isAddon){
   var c=currentUser;if((c.reward_points||0)<rp){showToast('✗ Không đủ RP');return;}
-  openModal('Đổi điểm Reward','<div style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">'+(isAddon?'✨':'🎁')+'</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;">'+name+'</div><div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;"><div>⭐ Tốn: <b>'+fmt(rp)+' RP</b></div>'+(minBill>0?'<div style="color:#e65c00;margin-top:4px;">HĐ tối thiểu: '+fmt(minBill)+'đ</div>':'')+'</div><div style="display:flex;gap:10px;"><button id="rdm-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Hủy</button><button id="rdm-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;cursor:pointer;font-weight:500;">Đổi ngay</button></div></div>');
+  openModal('Đổi điểm Reward','<div style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">'+(isAddon?'✨':'🎁')+'</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;">'+esc(name)+'</div><div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;"><div>⭐ Tốn: <b>'+fmt(rp)+' RP</b></div>'+(minBill>0?'<div style="color:#e65c00;margin-top:4px;">HĐ tối thiểu: '+fmt(minBill)+'đ</div>':'')+'</div><div style="display:flex;gap:10px;"><button id="rdm-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Hủy</button><button id="rdm-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;cursor:pointer;font-weight:500;">Đổi ngay</button></div></div>');
   setTimeout(function(){
     var c2=document.getElementById('rdm-cancel');var ok=document.getElementById('rdm-ok');
     if(c2)c2.addEventListener('click',closeModal);
     if(ok)ok.addEventListener('click',async function(){
+      var self=this;
+      if(self.disabled)return;self.disabled=true;
       showLoading(true);
-      var wallet=(currentUser.voucher_wallet||[]).slice();
-      wallet.push({id:'VCH'+Date.now(),name:name,rpCost:rp,value:val,minBill:minBill,isAddon:isAddon||false,used:false,date:today()});
-      await api('/customers/'+currentUser.id,'PUT',{reward_points:Math.max(0,(currentUser.reward_points||0)-rp),voucher_wallet:wallet});
-      await api('/transactions','POST',{cust_id:currentUser.id,type:'redeem',amount:0,reward:-rp,note:'Đổi: '+name,date:today()});
-      await reloadUser();showLoading(false);closeModal();showToast('✓ Đổi thành công!');refreshRewards();
+      try{
+        // Đọc số liệu mới nhất rồi mới ghi
+        var fresh=await api('/customers/'+currentUser.id);
+        if(!fresh||fresh.error||!fresh.id){showToast('✗ Không tải được tài khoản, vui lòng thử lại');return;}
+        currentUser=fresh;
+        if((fresh.reward_points||0)<rp){closeModal();showToast('✗ Không đủ RP');return;}
+        var wallet=(fresh.voucher_wallet||[]).slice();
+        wallet.push({id:'VCH'+Date.now(),name:name,rpCost:rp,value:val,minBill:minBill,isAddon:isAddon||false,used:false,date:today()});
+        var patch={reward_points:Math.max(0,(fresh.reward_points||0)-rp),voucher_wallet:wallet};
+        var st=await putCustomerVerified(fresh.id,patch,fresh);
+        if(st==='unchanged')st=await putCustomerVerified(fresh.id,patch,fresh);
+        if(st==='unchanged'){showToast('✗ Đổi điểm chưa thành công, điểm của bạn không bị trừ. Vui lòng thử lại.');return;}
+        var tx=await api('/transactions','POST',{cust_id:fresh.id,type:'redeem',amount:0,reward:-rp,note:'Đổi: '+name,date:today()});
+        var txOk=!!(tx&&!tx.error&&tx.id);
+        await reloadUser();closeModal();
+        showToast(st==='unknown'||!txOk?'⚠ Đã đổi nhưng chưa xác nhận được việc ghi nhận đầy đủ — vui lòng kiểm tra mục Lịch sử':'✓ Đổi thành công!');
+        refreshRewards();
+      }finally{showLoading(false);self.disabled=false;}
     });
   },100);
 }
@@ -1226,7 +1473,7 @@ async function renderHistory(filter){
   var txs=await api('/transactions?cust_id='+currentUser.id)||[];
   showLoading(false);
   var totalSpent=0,totalBks=0,totalEarnRP=0;
-  bks.forEach(function(b){if(b.status==='done'){totalSpent+=b.actual_paid||b.amount||0;totalBks++;}});
+  bks.forEach(function(b){if(b.status==='done'){totalSpent+=bkPaid(b);totalBks++;}});
   txs.forEach(function(t){if(t.type==='earn')totalEarnRP+=t.reward||0;});
   var statsEl=document.getElementById('history-stats');
   if(statsEl)statsEl.innerHTML='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;padding:12px 0;margin-bottom:4px;"><div style="text-align:center;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:10px;"><div style="font-size:0.95rem;font-weight:600;color:#dc2626;">-'+fmt(totalSpent)+'đ</div><div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">Đã chi</div></div><div style="text-align:center;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:10px;"><div style="font-size:0.95rem;font-weight:600;">'+totalBks+'</div><div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">Lần dịch vụ</div></div><div style="text-align:center;background:var(--card-bg);border:1px solid var(--border);border-radius:10px;padding:10px;"><div style="font-size:0.95rem;font-weight:600;color:#a07830;">+'+fmt(totalEarnRP)+'</div><div style="font-size:0.65rem;color:var(--muted);margin-top:2px;">RP tích luỹ</div></div></div>';
@@ -1236,8 +1483,8 @@ async function renderHistory(filter){
     var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};
     var html='';
     bks.forEach(function(b){
-      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+b.service+'</div><div style="text-align:right;"><div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(b.actual_paid||b.amount)+' VND</div>'+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+b.addon_voucher+'</div>':'')+'</div></div>'
-        +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+b.time+'</span><span>👤 '+(b.staff_names||'')+'</span><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span></div>'
+      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;"><div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>'+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
+        +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
         +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
         +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
@@ -1257,8 +1504,8 @@ async function renderHistory(filter){
     if(t.type==='topup')amtLine='<div style="font-size:0.95rem;font-weight:700;color:#16a34a;">+'+fmt(t.amount)+' VND</div>';
     else if(t.type==='earn'&&t.amount&&t.amount!==0)amtLine='<div style="font-size:0.95rem;font-weight:700;color:#dc2626;">-'+fmt(Math.abs(t.amount))+' VND</div>';
     var rpLine='';if(t.reward&&t.reward!==0)rpLine='<div style="font-size:0.78rem;font-weight:600;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+(t.reward>0?'+':'')+fmt(t.reward)+' RP</div>';
-    var label=t.type==='earn'?'🛎 '+t.note:t.type==='topup'?'💰 Nạp tiền':'🎁 Đổi điểm';
-    tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+t.note+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+fmtDate(t.date)+'</span></div></div>';
+    var label=t.type==='earn'?'🛎 '+esc(t.note):t.type==='topup'?'💰 Nạp tiền':'🎁 Đổi điểm';
+    tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+esc(t.note)+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+fmtDate(t.date)+'</span></div></div>';
   });
   list.innerHTML=tHtml;
 }
@@ -1267,34 +1514,54 @@ async function renderHistory(filter){
 // CANCEL
 // ============================================================
 function customerCancelBooking(bk,onDone){
+  var byCustomer=(currentRole==='customer');
   var hrs=hoursUntilBooking(bk);
   if(hrs<1){openModal('Không thể huỷ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⛔</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;color:#dc2626;">Không thể huỷ lịch</div><div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Chỉ được huỷ trước giờ hẹn ít nhất <b>1 giờ</b>.</div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đã hiểu</button></div>');return;}
-  var paid=bk.actual_paid||bk.amount||0;
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">Bạn có chắc muốn huỷ lịch?</div><div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản.</div><div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
+  var paid=bkPaid(bk);
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">'+(byCustomer?'Bạn có chắc muốn huỷ lịch?':'Bạn có chắc muốn huỷ lịch này?')+'</div><div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản'+(byCustomer?'':' của khách')+'.</div><div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('cc-no');var yes=document.getElementById('cc-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
     if(yes)yes.addEventListener('click',async function(){
-      showLoading(true);await api('/bookings/'+bk.id,'PUT',{status:'cancelled'});
-      if(currentUser&&paid>0){await api('/customers/'+currentUser.id,'PUT',{balance:(currentUser.balance||0)+paid});await api('/transactions','POST',{cust_id:currentUser.id,type:'topup',amount:paid,reward:0,note:'Hoàn tiền huỷ lịch: '+bk.service,date:today()});await reloadUser();}
-      showLoading(false);closeModal();showToast('✓ Đã huỷ – Hoàn '+fmt(paid)+' VND về TK');if(onDone)onDone();
+      if(this.disabled)return;this.disabled=true;
+      showLoading(true);
+      try{
+        // Hoàn tiền về đúng khách của lịch đặt (kể cả khi nhân viên là người bấm huỷ)
+        var res=await cancelBookingAndRefund(bk.id,byCustomer&&currentUser?currentUser.id:null);
+        if(byCustomer)await reloadUser();
+        closeModal();
+        if(!res.ok)showToast('✗ '+res.msg);
+        else if(res.warn)showToast('⚠ '+res.warn);
+        else showToast('✓ Đã huỷ – Hoàn '+fmt(res.paid)+' VND '+(byCustomer?'về TK':'cho khách'));
+      }finally{showLoading(false);}
+      if(onDone)onDone();
     });
   },60);
 }
 async function mgrCancelBooking(bkId,onDone){
-  var allBks=await api('/bookings');var bk=(allBks||[]).find(function(b){return b.id===bkId;});if(!bk)return;
+  var allBks=await api('/bookings');var bk=(Array.isArray(allBks)?allBks:[]).find(function(b){return b.id===bkId;});
+  if(!bk){showToast('✗ Không tải được lịch đặt, vui lòng thử lại');return;}
+  if(bk.status==='cancelled'){showToast('✗ Lịch này đã được huỷ trước đó');if(onDone)onDone();return;}
   var cust=allCustomers.find(function(c){return c.id===bk.cust_id;});
-  var paid=bk.actual_paid||bk.amount||0;var custName=cust?cust.name:'Khách hàng';
+  var paid=bkPaid(bk);var custName=cust?cust.name:'Khách hàng';
   var hrs=hoursUntilBooking(bk);
   var timeNote=hrs>=1?'<div style="font-size:0.78rem;color:#16a34a;margin-bottom:8px;">⏱ Còn '+hrs.toFixed(1)+' giờ</div>':'<div style="font-size:0.78rem;color:#f59e0b;margin-bottom:8px;">⚠️ Đã qua thời hạn – Admin vẫn có quyền huỷ.</div>';
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+custName+' – '+bk.service+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+fmtDate(bk.date)+' '+bk.time+'</div>'+timeNote+'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+custName+'.</div><div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+esc(custName)+' – '+esc(bk.service)+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+fmtDate(bk.date)+' '+esc(bk.time)+'</div>'+timeNote+'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+esc(custName)+'.</div><div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('mgr-cancel-no');var yes=document.getElementById('mgr-cancel-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
     if(yes)yes.addEventListener('click',async function(){
-      showLoading(true);await api('/bookings/'+bkId,'PUT',{status:'cancelled'});
-      if(cust&&paid>0){await api('/customers/'+cust.id,'PUT',{balance:(cust.balance||0)+paid});await api('/transactions','POST',{cust_id:cust.id,type:'topup',amount:paid,reward:0,note:'Hoàn tiền huỷ lịch: '+bk.service,date:today()});cust.balance=(cust.balance||0)+paid;}
-      showLoading(false);closeModal();showToast('✓ Đã huỷ – Hoàn '+fmt(paid)+' VND cho '+custName);if(onDone)onDone();
+      if(this.disabled)return;this.disabled=true;
+      showLoading(true);
+      try{
+        var res=await cancelBookingAndRefund(bkId,null);
+        await reloadCustomers();
+        closeModal();
+        if(!res.ok)showToast('✗ '+res.msg);
+        else if(res.warn)showToast('⚠ '+res.warn);
+        else showToast('✓ Đã huỷ – Hoàn '+fmt(res.paid)+' VND cho '+custName);
+      }finally{showLoading(false);}
+      if(onDone)onDone();
     });
   },60);
 }
@@ -1317,13 +1584,14 @@ function openPostDetail(title, description, thumb, url){
   // Bài viết chữ → hiện modal trong app
   var body='';
   if(description&&description.trim())
-    body+='<div style="font-size:0.88rem;line-height:1.7;color:var(--text);white-space:pre-line;margin-bottom:8px;">'+description+'</div>';
+    body+='<div style="font-size:0.88rem;line-height:1.7;color:var(--text);white-space:pre-line;margin-bottom:8px;">'+esc(description)+'</div>';
   else
     body+='<div style="font-size:0.88rem;color:var(--muted);font-style:italic;margin-bottom:8px;">Không có nội dung mô tả.</div>';
-  if(url)body+='<a href="'+url+'" target="_blank" style="display:block;margin-top:12px;text-align:center;color:var(--accent);font-size:0.85rem;font-weight:500;text-decoration:none;border:1px solid var(--accent);border-radius:100px;padding:10px;">🔗 Xem nguồn gốc →</a>';
+  if(safeUrl(url))body+='<a href="'+esc(safeUrl(url))+'" target="_blank" rel="noopener noreferrer" style="display:block;margin-top:12px;text-align:center;color:var(--accent);font-size:0.85rem;font-weight:500;text-decoration:none;border:1px solid var(--accent);border-radius:100px;padding:10px;">🔗 Xem nguồn gốc →</a>';
   openModal(title, body);
 }
 function openVideoPopup(videoId,videoType,title){
+  videoId=encodeURIComponent(videoId||'');
   var src='';
   if(videoType==='youtube')src='https://www.youtube.com/embed/'+videoId+'?autoplay=1';
   else if(videoType==='tiktok')src='https://www.tiktok.com/embed/'+videoId;
@@ -1341,13 +1609,13 @@ async function renderNews(cat){
   if(!posts.length)html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
   posts.forEach(function(p){
     var hasVideo=!!(p.video_id&&p.video_type);
-    var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-    html+='<div class="news-card-item" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+(p.video_id||'')+'" data-video-type="'+(p.video_type||'')+'" data-url="'+(p.url||'')+'" data-title="'+p.title.replace(/"/g,'&quot;')+'" data-desc="'+(p.description||'').replace(/"/g,'&quot;')+'" data-thumb="'+(p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':''))+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
-      +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:180px;object-fit:cover;" onerror=\"this.style.display=\'none\'\">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.4rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
-      +'<div style="padding:12px;">'+(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
-      +'<div style="font-size:0.92rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+p.title+'</div>'
-      +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+p.description+'</div>':'')
-      +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div></div></div>';
+    var thumb=postThumb(p);
+    html+='<div class="news-card-item" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+esc(p.video_id)+'" data-video-type="'+esc(p.video_type)+'" data-url="'+esc(safeUrl(p.url))+'" data-title="'+esc(p.title)+'" data-desc="'+esc(p.description)+'" data-thumb="'+esc(postThumb(p))+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
+      +(thumb?'<div style="position:relative;"><img src="'+esc(thumb)+'" style="width:100%;height:180px;object-fit:cover;" onerror=\"this.style.display=\'none\'\">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:52px;height:52px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.4rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
+      +'<div style="padding:12px;">'+(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+esc(catLabel[p.category]||p.category)+'</span>':'')
+      +'<div style="font-size:0.92rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+esc(p.title)+'</div>'
+      +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+esc(p.description)+'</div>':'')
+      +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+esc(String(p.created_at).split('T')[0]):'')+'</div></div></div>';
   });
   document.getElementById('news-list').innerHTML=html;
   document.querySelectorAll('#news-list .news-card-item').forEach(function(el){
@@ -1364,26 +1632,7 @@ async function renderNews(cat){
 
 async function renderDashboard(){
   showLoading(true);var bks=await api('/bookings')||[];showLoading(false);
-  var totalRev=0,doneBks=0;bks.forEach(function(b){if(b.status==='done'){totalRev+=b.actual_paid||b.amount||0;doneBks++;}});
-  var pending=bks.filter(function(b){return b.status==='pending';}).length;
-  var confirmed=bks.filter(function(b){return b.status==='confirmed';}).length;
-  document.getElementById('mgr-stats').innerHTML='<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">'+allCustomers.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">'+bks.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Hoàn thành</div><div class="stat-card-val">'+doneBks+'</div></div><div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val" style="font-size:1.1rem;">'+fmt(totalRev)+'</div></div>';
-  var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
-  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
-  var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
-  active.forEach(function(b){
-    var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';
-  });
-  if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
-  document.getElementById('today-bookings').innerHTML=bkHtml;
-  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
-  document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
-  var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
-  var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
-  var barHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
-  days.forEach(function(d){var h=Math.max(4,Math.round((d.rev/maxRev)*100));var revK=d.rev>=1000000?(d.rev/1000000).toFixed(1)+'M':d.rev>=1000?Math.round(d.rev/1000)+'K':'';barHtml+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="font-size:0.55rem;color:var(--accent);font-weight:600;min-height:12px;">'+revK+'</div><div style="flex:1;width:100%;background:var(--bg3);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;"><div style="background:var(--accent);border-radius:4px;height:'+h+'%;min-height:'+(d.rev>0?4:0)+'px;"></div></div><span style="font-size:0.62rem;color:var(--muted);">'+d.label+'</span></div>';});
-  barHtml+='</div>';document.getElementById('rev-chart').innerHTML=barHtml;
+  renderDashboardWith(Array.isArray(bks)?bks:[]);
 }
 
 async function renderMgrPosts(){
@@ -1393,14 +1642,14 @@ async function renderMgrPosts(){
   if(!posts.length)html='<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
   posts.sort(function(a,b){return (b.pinned?1:0)-(a.pinned?1:0);});
   posts.forEach(function(p){
-    var thumb=p.thumbnail||(p.video_id?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
+    var thumb=safeUrl(p.thumbnail)||(p.video_id?'https://img.youtube.com/vi/'+encodeURIComponent(p.video_id)+'/hqdefault.jpg':'');
     var isPinned=!!p.pinned;
     html+='<div style="background:var(--card-bg);border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';border-radius:var(--radius);padding:12px;margin-bottom:8px;display:flex;gap:10px;align-items:flex-start;">'
-      +(thumb?'<img src="'+thumb+'" style="width:72px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
+      +(thumb?'<img src="'+esc(thumb)+'" style="width:72px;height:52px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'')
       +'<div style="flex:1;min-width:0;">'
       +(isPinned?'<span style="font-size:0.6rem;background:var(--accent);color:#fff;padding:1px 6px;border-radius:100px;font-weight:600;display:inline-block;margin-bottom:3px;">📌 Ghim</span>':'')
-      +'<div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+p.title+'</div>'
-      +'<div style="font-size:0.72rem;color:var(--muted);">'+(catLabel[p.category]||p.category||'')+(p.video_type?' · '+p.video_type:'')+'</div></div>'
+      +'<div style="font-size:0.85rem;font-weight:500;margin-bottom:2px;">'+esc(p.title)+'</div>'
+      +'<div style="font-size:0.72rem;color:var(--muted);">'+esc(catLabel[p.category]||p.category||'')+(p.video_type?' · '+esc(p.video_type):'')+'</div></div>'
       +'<div style="display:flex;gap:4px;flex-shrink:0;">'
       +'<button data-pin-post="'+p.id+'" data-pinned="'+(isPinned?'1':'0')+'" style="background:'+(isPinned?'var(--accent-light)':'none')+';border:1px solid '+(isPinned?'var(--accent)':'var(--border)')+';border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:'+(isPinned?'var(--accent)':'var(--muted)')+';">📌</button>'
       +'<button data-edit-post="'+p.id+'" style="background:none;border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;cursor:pointer;color:var(--text);">✏️</button>'
@@ -1432,7 +1681,7 @@ function openAddPost(){
   },50);
 }
 function openEditPost(p){
-  openModal('✏️ Sửa bài viết','<div class="fg"><label>Tiêu đề</label><input type="text" id="ep-title" class="mgr-inp" value="'+p.title+'"></div><div class="fg"><label>Mô tả</label><textarea id="ep-desc" class="mgr-inp" rows="2">'+(p.description||'')+'</textarea></div><div class="fg"><label>Link URL</label><input type="text" id="ep-url" class="mgr-inp" value="'+(p.url||'')+'"></div><div class="fg"><label>Thumbnail</label><input type="text" id="ep-thumb" class="mgr-inp" value="'+(p.thumbnail||'')+'"></div><div class="fg"><label>Danh mục</label><select id="ep-cat" class="mgr-inp"><option value="suckhoe"'+(p.category==='suckhoe'?' selected':'')+'>💚 Sức khoẻ</option><option value="lamdep"'+(p.category==='lamdep'?' selected':'')+'>✨ Làm đẹp</option><option value="giaitri"'+(p.category==='giaitri'?' selected':'')+'>🎬 Giải trí</option><option value="tintuc"'+(p.category==='tintuc'?' selected':'')+'>📰 Tin tức</option></select></div><div style="display:flex;gap:8px;"><button id="ep-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="ep-ok" data-pid="'+p.id+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Lưu</button></div>');
+  openModal('✏️ Sửa bài viết','<div class="fg"><label>Tiêu đề</label><input type="text" id="ep-title" class="mgr-inp" value="'+esc(p.title)+'"></div><div class="fg"><label>Mô tả</label><textarea id="ep-desc" class="mgr-inp" rows="2">'+esc(p.description)+'</textarea></div><div class="fg"><label>Link URL</label><input type="text" id="ep-url" class="mgr-inp" value="'+esc(p.url)+'"></div><div class="fg"><label>Thumbnail</label><input type="text" id="ep-thumb" class="mgr-inp" value="'+esc(p.thumbnail)+'"></div><div class="fg"><label>Danh mục</label><select id="ep-cat" class="mgr-inp"><option value="suckhoe"'+(p.category==='suckhoe'?' selected':'')+'>💚 Sức khoẻ</option><option value="lamdep"'+(p.category==='lamdep'?' selected':'')+'>✨ Làm đẹp</option><option value="giaitri"'+(p.category==='giaitri'?' selected':'')+'>🎬 Giải trí</option><option value="tintuc"'+(p.category==='tintuc'?' selected':'')+'>📰 Tin tức</option></select></div><div style="display:flex;gap:8px;"><button id="ep-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="ep-ok" data-pid="'+p.id+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Lưu</button></div>');
   setTimeout(function(){
     var cancel=document.getElementById('ep-cancel');var ok=document.getElementById('ep-ok');
     if(cancel)cancel.addEventListener('click',closeModal);
@@ -1459,7 +1708,7 @@ function openVoucherWallet(){
   var active=wallet.filter(function(v){return !v.used;});var used=wallet.filter(function(v){return v.used;});
   var html='';
   if(!active.length&&!used.length){html='<div class="empty-state"><div class="empty-icon">🎟</div><div class="empty-text">Chưa có voucher<br><span style="color:var(--accent);font-size:0.78rem;">Đổi RP tại mục Phần thưởng</span></div></div>';}
-  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+v.name+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+fmtDate(v.date||'')+(v.usedDate?' → Dùng: '+fmtDate(v.usedDate):'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
+  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+esc(v.name)+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+fmtDate(v.date||'')+(v.usedDate?' → Dùng: '+fmtDate(v.usedDate):'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
   if(active.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--accent);margin-bottom:8px;">Còn hiệu lực ('+active.length+')</div>';active.forEach(function(v){html+=vCard(v,false);});}
   if(used.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--muted);margin:12px 0 8px;">Đã sử dụng</div>';used.forEach(function(v){html+=vCard(v,true);});}
   openModal('🎟 Kho Voucher',html);
@@ -1471,9 +1720,9 @@ function showReviewPopup(bk){
   var staffCheckboxes='';
   staffIds.forEach(function(sid){
     var s=allStaff.find(function(x){return x.id===sid;});
-    if(s){var gLabel=getGenderLabel(s.gender);staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;background:var(--card-bg);"><input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> <span style="font-size:0.88rem;">'+(s.icon||'👤')+' '+s.name+(gLabel?' <span style="font-size:0.72rem;color:var(--muted);">'+gLabel+'</span>':'')+'</span></label>';}
+    if(s){var gLabel=getGenderLabel(s.gender);staffCheckboxes+='<label style="display:flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--border);border-radius:8px;cursor:pointer;margin-bottom:6px;background:var(--card-bg);"><input type="checkbox" name="popup-tip-staff" value="'+s.id+'" style="accent-color:var(--accent);width:16px;height:16px;"> <span style="font-size:0.88rem;">'+esc(s.icon||'👤')+' '+esc(s.name)+(gLabel?' <span style="font-size:0.72rem;color:var(--muted);">'+gLabel+'</span>':'')+'</span></label>';}
   });
-  var html='<div style="text-align:center;margin-bottom:12px;"><div style="font-size:2rem;">⭐</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;color:var(--g800);margin-top:4px;">Đánh giá dịch vụ</div><div style="font-size:0.78rem;color:var(--muted);">'+bk.service+'</div></div>'
+  var html='<div style="text-align:center;margin-bottom:12px;"><div style="font-size:2rem;">⭐</div><div style="font-family:\'Cormorant Garamond\',serif;font-size:1.2rem;color:var(--g800);margin-top:4px;">Đánh giá dịch vụ</div><div style="font-size:0.78rem;color:var(--muted);">'+esc(bk.service)+'</div></div>'
     +'<div style="margin-bottom:12px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">Chạm sao để đánh giá</div><div id="popup-star-row" style="display:flex;gap:8px;justify-content:center;"><button class="popup-rv-star" data-s="1" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="2" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="3" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="4" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button><button class="popup-rv-star" data-s="5" style="font-size:2rem;background:none;border:none;cursor:pointer;">☆</button></div></div>'
     +'<div style="margin-bottom:12px;"><textarea id="popup-rv-comment" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;resize:none;height:72px;font-family:\'DM Sans\',sans-serif;" placeholder="Chia sẻ trải nghiệm của bạn..."></textarea></div>'
     +(staffCheckboxes?'<div style="margin-bottom:16px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:8px;">👤 Nhân viên phục vụ bạn</div>'+staffCheckboxes+'</div>':'')
@@ -1498,7 +1747,7 @@ async function renderCustomers(){
   var html='';
   allCustomers.filter(function(c){if(!q)return true;return c.name.toLowerCase().indexOf(q)>-1||c.phone.indexOf(q)>-1;}).forEach(function(c){
     var tier=getTier(c.rank_points||0);
-    html+='<div class="cust-item" data-cid="'+c.id+'"><div class="cust-av">'+c.name.slice(-2)+'</div><div style="flex:1;"><div style="font-size:0.9rem;font-weight:500;">'+c.name+'</div><div style="font-size:0.75rem;color:var(--muted);">📱 '+c.phone+' · ⭐ '+fmt(c.rank_points||0)+' · 💳 '+fmt(c.balance||0)+'đ</div></div><span class="tier-bdg '+tier.cls+'">'+tier.icon+' '+tier.name+'</span></div>';
+    html+='<div class="cust-item" data-cid="'+c.id+'"><div class="cust-av">'+esc(c.name.slice(-2))+'</div><div style="flex:1;"><div style="font-size:0.9rem;font-weight:500;">'+esc(c.name)+'</div><div style="font-size:0.75rem;color:var(--muted);">📱 '+esc(c.phone)+' · ⭐ '+fmt(c.rank_points||0)+' · 💳 '+fmt(c.balance||0)+'đ</div></div><span class="tier-bdg '+tier.cls+'">'+tier.icon+' '+tier.name+'</span></div>';
   });
   document.getElementById('customers-list').innerHTML=html||'<div class="empty-state"><div class="empty-text">Không tìm thấy</div></div>';
   document.querySelectorAll('.cust-item').forEach(function(item){item.addEventListener('click',function(){openCustDetail(parseInt(this.getAttribute('data-cid')));});});
@@ -1509,7 +1758,7 @@ function openCustDetail(id){
   var tier=getTier(c.rank_points||0);
   var html='<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;">'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Cấp bậc</span><span>'+tier.icon+' '+tier.name+'</span></div>'
-    +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">SĐT</span><span>'+c.phone+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">SĐT</span><span>'+esc(c.phone)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Điểm xếp hạng</span><span>'+fmt(c.rank_points||0)+'</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Reward Points</span><span>'+fmt(c.reward_points||0)+' RP</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số dư TK</span><span style="font-weight:600;color:var(--accent);">'+fmt(c.balance||0)+'đ</span></div>'
@@ -1528,50 +1777,66 @@ function openCustDetail(id){
 }
 
 async function renderPtsPage(){
-  var sel=document.getElementById('pts-cust');sel.innerHTML=allCustomers.map(function(c){return '<option value="'+c.id+'">'+c.name+' ('+fmt(c.rank_points||0)+' đ)</option>';}).join('');
-  var hist=await api('/transactions')||[];
+  var sel=document.getElementById('pts-cust');var prevSel=sel.value;sel.innerHTML=allCustomers.map(function(c){return '<option value="'+c.id+'">'+esc(c.name)+' ('+fmt(c.rank_points||0)+' đ)</option>';}).join('');
+  if(prevSel)sel.value=prevSel;
+  var hist=await api('/transactions');if(!Array.isArray(hist))hist=[];
   document.getElementById('pts-history').innerHTML=hist.slice(0,10).map(function(t){
     var cust=allCustomers.find(function(c){return c.id===t.cust_id;});
     var amtStr=t.amount&&t.amount!==0?((t.amount>0?'+':'-')+fmt(Math.abs(t.amount))+' VND'):'';
     var rpStr=t.reward&&t.reward!==0?((t.reward>0?'+':'')+fmt(t.reward)+' RP'):'';
-    return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+(cust?cust.name:'KH')+'</div><div style="text-align:right;">'+(amtStr?'<div style="font-size:0.82rem;font-weight:600;color:'+(t.amount>0?'#16a34a':'#dc2626')+';">'+amtStr+'</div>':'')+(rpStr?'<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+rpStr+'</div>':'')+'</div></div><div class="hist-meta"><span>'+t.note+'</span><span>'+fmtDate(t.date)+'</span></div></div>';
+    return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(cust?cust.name:'KH')+'</div><div style="text-align:right;">'+(amtStr?'<div style="font-size:0.82rem;font-weight:600;color:'+(t.amount>0?'#16a34a':'#dc2626')+';">'+amtStr+'</div>':'')+(rpStr?'<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+rpStr+'</div>':'')+'</div></div><div class="hist-meta"><span>'+esc(t.note)+'</span><span>'+fmtDate(t.date)+'</span></div></div>';
   }).join('');
 }
 async function adjustPoints(){
   var adjBtn=document.getElementById('btn-adj-pts');
   if(adjBtn&&adjBtn.disabled)return;
-  if(adjBtn){adjBtn.disabled=true;}
-  var custId=parseInt(document.getElementById('pts-cust').value);
-  var type=document.getElementById('pts-type').value;
-  var amount=parseInt(document.getElementById('pts-amount').value);
-  var note=document.getElementById('pts-note').value||'Điều chỉnh thủ công';
-  if(!amount||amount<=0){showToast('✗ Nhập số hợp lệ');return;}
-  var c=allCustomers.find(function(x){return x.id===custId;});if(!c)return;
-  showLoading(true);
-  if(type==='topup'){
-    var rk=Math.round(amount/1000);
-    await api('/customers/'+custId,'PUT',{balance:(c.balance||0)+amount,rank_points:(c.rank_points||0)+rk});
-    await api('/transactions','POST',{cust_id:custId,type:'topup',amount:amount,reward:0,note:note,date:today()});
-    c.balance=(c.balance||0)+amount;c.rank_points=(c.rank_points||0)+rk;showToast('✓ Nạp '+fmt(amount)+' VND cho '+c.name);
-  }else if(type==='deduct'){
-    if((c.balance||0)<amount){showLoading(false);showToast('✗ Số dư không đủ (hiện: '+fmt(c.balance||0)+' VND)');return;}
-    await api('/customers/'+custId,'PUT',{balance:Math.max(0,(c.balance||0)-amount)});
-    await api('/transactions','POST',{cust_id:custId,type:'earn',amount:-amount,reward:0,note:note,date:today()});
-    c.balance=Math.max(0,(c.balance||0)-amount);showToast('✓ Trừ '+fmt(amount)+' VND của '+c.name);
-  }else if(type==='add'){
-    await api('/customers/'+custId,'PUT',{rank_points:(c.rank_points||0)+amount});
-    await api('/transactions','POST',{cust_id:custId,type:'earn',amount:0,reward:0,note:note,date:today()});
-    c.rank_points=(c.rank_points||0)+amount;showToast('✓ Cộng +'+fmt(amount)+' điểm cho '+c.name);
-  }else{
-    if((c.rank_points||0)<amount){showLoading(false);showToast('✗ Không đủ điểm');return;}
-    await api('/customers/'+custId,'PUT',{rank_points:Math.max(0,(c.rank_points||0)-amount)});
-    await api('/transactions','POST',{cust_id:custId,type:'redeem',amount:0,reward:0,note:note,date:today()});
-    c.rank_points=Math.max(0,(c.rank_points||0)-amount);showToast('✓ Trừ '+fmt(amount)+' điểm của '+c.name);
+  if(adjBtn)adjBtn.disabled=true;
+  try{
+    var custId=parseInt(document.getElementById('pts-cust').value);
+    var type=document.getElementById('pts-type').value;
+    var amount=parseInt(document.getElementById('pts-amount').value);
+    var note=document.getElementById('pts-note').value||'Điều chỉnh thủ công';
+    if(!amount||amount<=0){showToast('✗ Nhập số hợp lệ');return;}
+    if(amount>1000000000){showToast('✗ Số quá lớn');return;}
+    if(!custId){showToast('✗ Chọn khách hàng');return;}
+    showLoading(true);
+    // Đọc số liệu mới nhất của khách (danh sách trên máy có thể đã cũ)
+    var c=await api('/customers/'+custId);
+    if(!c||c.error||!c.id){showToast('✗ Không tải được khách hàng, vui lòng thử lại');return;}
+    var patch,txn,okMsg;
+    if(type==='topup'){
+      var rk=Math.round(amount/1000);
+      patch={balance:(c.balance||0)+amount,rank_points:(c.rank_points||0)+rk};
+      txn={cust_id:custId,type:'topup',amount:amount,reward:0,note:note,date:today()};
+      okMsg='✓ Nạp '+fmt(amount)+' VND cho '+c.name;
+    }else if(type==='deduct'){
+      if((c.balance||0)<amount){showToast('✗ Số dư không đủ (hiện: '+fmt(c.balance||0)+' VND)');return;}
+      patch={balance:(c.balance||0)-amount};
+      txn={cust_id:custId,type:'earn',amount:-amount,reward:0,note:note,date:today()};
+      okMsg='✓ Trừ '+fmt(amount)+' VND của '+c.name;
+    }else if(type==='add'){
+      patch={rank_points:(c.rank_points||0)+amount};
+      txn={cust_id:custId,type:'earn',amount:0,reward:0,note:note,date:today()};
+      okMsg='✓ Cộng +'+fmt(amount)+' điểm cho '+c.name;
+    }else{
+      if((c.rank_points||0)<amount){showToast('✗ Không đủ điểm');return;}
+      patch={rank_points:(c.rank_points||0)-amount};
+      txn={cust_id:custId,type:'redeem',amount:0,reward:0,note:note,date:today()};
+      okMsg='✓ Trừ '+fmt(amount)+' điểm của '+c.name;
+    }
+    var st=await putCustomerVerified(custId,patch,c);
+    if(st==='unchanged'){showToast('✗ Chưa cập nhật được, số liệu của khách không đổi. Vui lòng thử lại.');return;}
+    var tx=await api('/transactions','POST',txn);
+    var txOk=!!(tx&&!tx.error&&tx.id);
+    await reloadCustomers();
+    document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
+    var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
+    showToast(st==='unknown'||!txOk?'⚠ Đã cập nhật nhưng chưa xác nhận được việc ghi nhận đầy đủ, vui lòng kiểm tra lại':okMsg);
+    await renderPtsPage();
+  }finally{
+    showLoading(false);
+    if(adjBtn)adjBtn.disabled=false;
   }
-  document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
-  var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
-  if(adjBtn)adjBtn.disabled=false;
-  showLoading(false);renderPtsPage();
 }
 
 // CHANGE 1: renderServicesPage — removed staff list and add-staff button entirely
@@ -1583,13 +1848,13 @@ async function renderServicesPage(){
     return s.name.toLowerCase().indexOf(q)>-1||(s.cat||'').toLowerCase().indexOf(q)>-1;
   }).forEach(function(s){
     shtml+='<div class="svc-mgr-item">'
-      +'<div><div style="font-size:0.9rem;font-weight:500;">'+(s.icon||'💆')+' '+s.name+'</div>'
-      +'<div style="font-size:0.75rem;color:var(--muted);">'+s.cat+' · '+s.duration+'ph</div></div>'
+      +'<div><div style="font-size:0.9rem;font-weight:500;">'+esc(s.icon||'💆')+' '+esc(s.name)+'</div>'
+      +'<div style="font-size:0.75rem;color:var(--muted);">'+esc(s.cat)+' · '+s.duration+'ph</div></div>'
       +'<div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">'
       +'<div style="font-size:0.95rem;font-weight:500;color:var(--g600);">'+fmt(s.price)+'đ</div>'
       +'<div style="display:flex;gap:6px;">'
       +'<button class="btn-sm-out edit-svc-btn" data-sid="'+s.id+'">Sửa</button>'
-      +'<button class="del-svc-btn" data-sid="'+s.id+'" data-name="'+s.name.replace(/"/g,'&quot;')+'" style="background:none;border:1px solid #fca5a5;color:#dc2626;padding:7px 14px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
+      +'<button class="del-svc-btn" data-sid="'+s.id+'" data-name="'+esc(s.name)+'" style="background:none;border:1px solid #fca5a5;color:#dc2626;padding:7px 14px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
       +'</div></div></div>';
   });
   document.getElementById('mgr-svc-list').innerHTML=shtml||'<div class="empty-state" style="padding:2rem;"><div class="empty-icon">✨</div><div class="empty-text">Chưa có dịch vụ</div></div>';
@@ -1607,10 +1872,10 @@ async function renderServicesPage(){
       openModal('🗑 Xóa dịch vụ',
         '<div style="text-align:center;padding:8px;">'
         +'<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'
-        +'<div style="font-size:0.9rem;margin-bottom:12px;">Xóa dịch vụ <b>'+name+'</b>?</div>'
+        +'<div style="font-size:0.9rem;margin-bottom:12px;">Xóa dịch vụ <b>'+esc(name)+'</b>?</div>'
         +'<div style="display:flex;gap:10px;">'
         +'<button id="del-svc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button>'
-        +'<button id="del-svc-yes" data-sid="'+sid+'" data-name="'+name+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
+        +'<button id="del-svc-yes" data-sid="'+sid+'" data-name="'+esc(name)+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
         +'</div></div>');
       setTimeout(function(){
         var no=document.getElementById('del-svc-no');
@@ -1636,15 +1901,17 @@ renderServicesPage();
 }
 
 async function renderAllBookings(filter){
-  var bks=filterDeletedBks(await api('/bookings')||[]);
+  var bks0=await api('/bookings');
+  if(!Array.isArray(bks0)){document.getElementById('all-bookings').innerHTML='<div class="empty-state"><div class="empty-text">Không tải được dữ liệu, vui lòng thử lại</div></div>';return;}
+  var bks=filterDeletedBks(bks0);
   var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};var html='';
   bks.filter(function(b){return filter==='all'||b.status===filter;}).forEach(function(b){
     var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div>'
+    html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div>'
       +'<select data-bid="'+b.id+'" style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;background:var(--card-bg);color:var(--text);">'
       +['pending','confirmed','done','cancelled'].map(function(st){return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>';}).join('')+'</select></div>'
-      +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+b.time+' · 👤 '+(b.staff_names||'')+' · <b>'+fmt(b.actual_paid||b.amount)+' VND</b></div>'
-      +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+b.review.comment+'</span>':'')+'</div>':'')
+      +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+' · <b>'+fmt(bkPaid(b))+' VND</b></div>'
+      +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+starStr(b.review.stars)+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+esc(b.review.comment)+'</span>':'')+'</div>':'')
       +'</div>';
   });
   document.getElementById('all-bookings').innerHTML=html||'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Không có dữ liệu</div></div>';
@@ -1652,6 +1919,7 @@ async function renderAllBookings(filter){
   sel.addEventListener('change',async function(){
     var bid=parseInt(this.getAttribute('data-bid'));var newStatus=this.value;
     if(newStatus==='cancelled'){mgrCancelBooking(bid,function(){renderAllBookings(filter);});}
+    else if(newStatus==='done'){var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderAllBookings(filter);}
     else{await api('/bookings/'+bid,'PUT',{status:newStatus});showToast('✓ Đã cập nhật');}
   });
 });
@@ -1675,7 +1943,8 @@ async function bulkDeleteBookings(status){
     if(cancelBtn)cancelBtn.addEventListener('click',closeModal);
     if(confirmBtn)confirmBtn.addEventListener('click',async function(){
   showLoading(true);
-  var bks=await api('/bookings')||[];
+  var bks=await api('/bookings');
+  if(!Array.isArray(bks)){showLoading(false);showToast('✗ Không tải được danh sách lịch, chưa xoá gì');return;}
   var targets=bks.filter(function(b){return b.status===status;});
   var done=0;
   var delIds=getDeletedBkIds();
@@ -1708,24 +1977,24 @@ async function renderAccountsPage(){
     // Show gender as "Tên (nam/nữ)" inline — if missing, show warning + edit button
     var gShort=getGenderShort(s.gender);
     var gColor=(s.gender==='male'||s.gender==='nam')?'#1d4ed8':'#be185d';
-    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;min-width:0;"><div style="font-size:0.9rem;font-weight:500;">'+(s.icon||'👤')+' '+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'<span style="font-size:0.72rem;color:#f59e0b;"> ⚠ chưa có giới tính</span>')+'</div>'
-      +'<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">ID: '+(s.login_id||'-')+'</div></div>'
+    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:8px;display:flex;align-items:center;justify-content:space-between;"><div style="flex:1;min-width:0;"><div style="font-size:0.9rem;font-weight:500;">'+esc(s.icon||'👤')+' '+esc(s.name)+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'<span style="font-size:0.72rem;color:#f59e0b;"> ⚠ chưa có giới tính</span>')+'</div>'
+      +'<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">ID: '+esc(s.login_id||'-')+'</div></div>'
       +'<div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">'
-      +'<button data-edit-gender="'+s.id+'" data-cur-gender="'+(s.gender||'')+'" title="Sửa giới tính" style="background:none;border:1px solid var(--border);border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:var(--muted);">⚥</button>'
+      +'<button data-edit-gender="'+s.id+'" data-cur-gender="'+esc(s.gender)+'" title="Sửa giới tính" style="background:none;border:1px solid var(--border);border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:var(--muted);">⚥</button>'
       +'<button data-reset-staff="'+s.id+'" style="background:none;border:1px solid var(--border);border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:var(--muted);">🔑</button>'
       +'<button data-del-staff="'+s.id+'" style="background:none;border:1px solid #fca5a5;border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:#dc2626;">🗑</button>'
       +'</div></div>';
   });
   html+='<div style="font-size:0.78rem;font-weight:600;color:var(--accent);margin:12px 0 8px;">🛍 Khách hàng ('+allCustomers.length+')</div>';
   allCustomers.filter(function(c){if(!q)return true;return c.name.toLowerCase().indexOf(q)>-1||c.phone.indexOf(q)>-1;}).forEach(function(c){
-    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:0.88rem;font-weight:500;">'+c.name+'</div><div style="font-size:0.75rem;color:var(--muted);">📱 '+c.phone+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span style="background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:100px;font-size:0.7rem;">Khách</span><button data-reset-cust="'+c.id+'" style="background:none;border:1px solid var(--border);border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:var(--muted);">🔑</button><button data-del-cust="'+c.id+'" style="background:none;border:1px solid #fca5a5;border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:#dc2626;">🗑</button></div></div>';
+    html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:10px 14px;margin-bottom:6px;display:flex;align-items:center;justify-content:space-between;"><div><div style="font-size:0.88rem;font-weight:500;">'+esc(c.name)+'</div><div style="font-size:0.75rem;color:var(--muted);">📱 '+esc(c.phone)+'</div></div><div style="display:flex;align-items:center;gap:6px;"><span style="background:var(--bg3);color:var(--muted);padding:3px 8px;border-radius:100px;font-size:0.7rem;">Khách</span><button data-reset-cust="'+c.id+'" style="background:none;border:1px solid var(--border);border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:var(--muted);">🔑</button><button data-del-cust="'+c.id+'" style="background:none;border:1px solid #fca5a5;border-radius:100px;padding:3px 8px;font-size:0.7rem;cursor:pointer;color:#dc2626;">🗑</button></div></div>';
   });
   var el=document.getElementById('accounts-list');if(el)el.innerHTML=html;
   document.querySelectorAll('[data-reset-staff]').forEach(function(btn){btn.addEventListener('click',function(){resetStaffPwd(parseInt(this.getAttribute('data-reset-staff')));});});
   document.querySelectorAll('[data-del-staff]').forEach(function(btn){btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-del-staff'));if(!confirm('Xóa nhân viên này?'))return;await api('/staff/'+sid,'DELETE');showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});});
   document.querySelectorAll('[data-edit-gender]').forEach(function(btn){btn.addEventListener('click',function(){openEditGender(parseInt(this.getAttribute('data-edit-gender')),this.getAttribute('data-cur-gender'));});});
   document.querySelectorAll('[data-reset-cust]').forEach(function(btn){btn.addEventListener('click',function(){var cid=parseInt(this.getAttribute('data-reset-cust'));openModal('Đặt lại MK KH','<div class="fg"><label>Mật khẩu mới</label><input type="password" id="rcp1" class="mgr-inp"></div><div class="fg"><label>Nhập lại</label><input type="password" id="rcp2" class="mgr-inp"></div><div style="display:flex;gap:8px;"><button id="rcp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="rcp-ok" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button></div>');setTimeout(function(){var c2=document.getElementById('rcp-cancel');var ok=document.getElementById('rcp-ok');if(c2)c2.addEventListener('click',closeModal);if(ok)ok.addEventListener('click',async function(){var p1=document.getElementById('rcp1').value;var p2=document.getElementById('rcp2').value;if(!p1||p1.length<4){showToast('✗ Ít nhất 4 ký tự');return;}if(p1!==p2){showToast('✗ Không khớp');return;}showLoading(true);await api('/customers/'+parseInt(this.getAttribute('data-cid')),'PUT',{pass:p1});showLoading(false);closeModal();showToast('✓ Đã đặt lại mật khẩu');});},50);});});
-  document.querySelectorAll('[data-del-cust]').forEach(function(btn){btn.addEventListener('click',async function(){var cid=parseInt(this.getAttribute('data-del-cust'));var cust=allCustomers.find(function(c){return c.id===cid;});if(!cust)return;openModal('Xóa tài khoản','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⚠️</div><div style="font-size:0.9rem;margin-bottom:4px;">Xóa: <b>'+cust.name+'</b></div><div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Nhập mật khẩu admin để xác nhận.</div><input type="password" id="del-pwd" class="mgr-inp" placeholder="Mật khẩu admin" style="margin-bottom:12px;"><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="del-confirm" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;">Xóa</button></div></div>');setTimeout(function(){var cancel=document.getElementById('del-cancel');var conf=document.getElementById('del-confirm');if(cancel)cancel.addEventListener('click',closeModal);if(conf)conf.addEventListener('click',async function(){var pwd=document.getElementById('del-pwd').value;showLoading(true);var res=await api('/customers/'+parseInt(this.getAttribute('data-cid')),'DELETE',{admin_pass:pwd});showLoading(false);if(res&&res.error){showToast('✗ '+res.error);return;}closeModal();showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});},50);});});
+  document.querySelectorAll('[data-del-cust]').forEach(function(btn){btn.addEventListener('click',async function(){var cid=parseInt(this.getAttribute('data-del-cust'));var cust=allCustomers.find(function(c){return c.id===cid;});if(!cust)return;openModal('Xóa tài khoản','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⚠️</div><div style="font-size:0.9rem;margin-bottom:4px;">Xóa: <b>'+esc(cust.name)+'</b></div><div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Nhập mật khẩu admin để xác nhận.</div><input type="password" id="del-pwd" class="mgr-inp" placeholder="Mật khẩu admin" style="margin-bottom:12px;"><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="del-confirm" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;">Xóa</button></div></div>');setTimeout(function(){var cancel=document.getElementById('del-cancel');var conf=document.getElementById('del-confirm');if(cancel)cancel.addEventListener('click',closeModal);if(conf)conf.addEventListener('click',async function(){var pwd=document.getElementById('del-pwd').value;showLoading(true);var res=await api('/customers/'+parseInt(this.getAttribute('data-cid')),'DELETE',{admin_pass:pwd});showLoading(false);if(res&&res.error){showToast('✗ '+res.error);return;}closeModal();showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});},50);});});
 }
 
 function switchAccTab(tab){
@@ -1760,17 +2029,17 @@ async function renderStaffOffMgr(){
     var gColor=(s.gender==='male'||s.gender==='nam')?'#1d4ed8':'#be185d';
     html+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;">';
     html+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">';
-    html+='<div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">'+(s.icon||'👤')+'</div>';
-    html+='<div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">'+s.name+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+ gShort+')</span>':'')+' </div>';
-    html+='<div style="font-size:0.72rem;color:var(--muted);">ID: '+(s.login_id||'-')+'</div></div>';
+    html+='<div style="width:40px;height:40px;border-radius:50%;background:var(--g100);display:flex;align-items:center;justify-content:center;font-size:1.1rem;">'+esc(s.icon||'👤')+'</div>';
+    html+='<div style="flex:1;"><div style="font-size:0.9rem;font-weight:600;">'+esc(s.name)+(gShort?' <span style="font-size:0.78rem;font-weight:400;color:'+gColor+';">('+ gShort+')</span>':'')+' </div>';
+    html+='<div style="font-size:0.72rem;color:var(--muted);">ID: '+esc(s.login_id||'-')+'</div></div>';
     html+='<span style="font-size:0.72rem;background:'+(off.length>0?'var(--g50)':'var(--bg3)')+';color:'+(off.length>0?'var(--g800)':'var(--muted)')+';padding:3px 10px;border-radius:100px;font-weight:600;">'+off.length+' ngày nghỉ</span>';
     html+='</div>';
     if(off.length>0){
       html+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">';
       off.forEach(function(d){
         html+='<div style="display:inline-flex;align-items:center;gap:4px;background:var(--bg3);border:1px solid var(--border);border-radius:100px;padding:4px 10px;font-size:0.78rem;">';
-        html+='📅 '+d;
-        html+='<button data-rmv-sid="'+s.id+'" data-rmv-day="'+d+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.85rem;padding:0 0 0 4px;line-height:1;">✕</button>';
+        html+='📅 '+esc(d);
+        html+='<button data-rmv-sid="'+s.id+'" data-rmv-day="'+esc(d)+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:0.85rem;padding:0 0 0 4px;line-height:1;">✕</button>';
         html+='</div>';
       });
       html+='</div>';
@@ -1817,7 +2086,7 @@ async function renderStaffOffMgr(){
       var sid=this.getAttribute('data-clr-sid');
       var s=allStaff.find(function(x){return String(x.id)===String(sid);});
       if(!s)return;
-      openModal('🗑 Xoá lịch nghỉ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">🗑</div><div style="font-size:0.9rem;margin-bottom:12px;">Xoá tất cả ngày nghỉ của <b>'+s.name+'</b>?</div><div style="display:flex;gap:10px;"><button id="clr-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="clr-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xoá tất cả</button></div></div>');
+      openModal('🗑 Xoá lịch nghỉ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">🗑</div><div style="font-size:0.9rem;margin-bottom:12px;">Xoá tất cả ngày nghỉ của <b>'+esc(s.name)+'</b>?</div><div style="display:flex;gap:10px;"><button id="clr-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="clr-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xoá tất cả</button></div></div>');
       setTimeout(function(){
         var no=document.getElementById('clr-no');var yes=document.getElementById('clr-yes');
         if(no)no.addEventListener('click',closeModal);
@@ -1951,8 +2220,8 @@ function openImportServices(){
     rows.forEach(function(r,i){
       var bg=i%2===0?'var(--card-bg)':'var(--bg3)';
       tbl+='<tr style="background:'+bg+';">'
-        +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);">'+r.icon+' '+r.name+'</td>'
-        +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--accent);">'+r.cat+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);">'+esc(r.icon)+' '+esc(r.name)+'</td>'
+        +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);color:var(--accent);">'+esc(r.cat)+'</td>'
         +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:500;">'+r.price.toLocaleString('vi-VN')+'</td>'
         +'<td style="padding:7px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--muted);">'+r.duration+'</td>'
         +'</tr>';
@@ -2026,8 +2295,8 @@ function openAddService(){
 }
 function editService(id){
   var s=allServices.find(function(x){return x.id===id;});if(!s)return;
-  openModal('Sửa: '+s.name,'<div class="fg"><label>Tên</label><input type="text" id="es-name" class="mgr-inp" value="'+s.name+'"></div><div class="fg"><label>Giá</label><input type="number" id="es-price" class="mgr-inp" value="'+s.price+'"></div><div class="fg"><label>Thời gian</label><input type="number" id="es-dur" class="mgr-inp" value="'+s.duration+'"></div><button class="btn-green" id="btn-save-es" data-id="'+id+'">Lưu</button>');
-  setTimeout(function(){var btn=document.getElementById('btn-save-es');if(btn)btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-id'));showLoading(true);await api('/services/'+sid,'PUT',{name:document.getElementById('es-name').value,price:parseInt(document.getElementById('es-price').value),duration:parseInt(document.getElementById('es-dur').value)});await loadServices();showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderServicesPage();});},50);
+  openModal('Sửa: '+s.name,'<div class="fg"><label>Tên</label><input type="text" id="es-name" class="mgr-inp" value="'+esc(s.name)+'"></div><div class="fg"><label>Giá</label><input type="number" id="es-price" class="mgr-inp" value="'+s.price+'"></div><div class="fg"><label>Thời gian</label><input type="number" id="es-dur" class="mgr-inp" value="'+s.duration+'"></div><button class="btn-green" id="btn-save-es" data-id="'+id+'">Lưu</button>');
+  setTimeout(function(){var btn=document.getElementById('btn-save-es');if(btn)btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-id'));var nm=(document.getElementById('es-name').value||'').trim();var pr=parseInt(document.getElementById('es-price').value);var du=parseInt(document.getElementById('es-dur').value);if(!nm||isNaN(pr)||pr<0||!(du>0)){showToast('✗ Điền đầy đủ tên, giá và thời gian');return;}showLoading(true);await api('/services/'+sid,'PUT',{name:nm,price:pr,duration:du});await loadServices();showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderServicesPage();});},50);
 }
 
 // CHANGE 2: openAddAccount — when role=staff, gender selection is passed to staff API
@@ -2093,8 +2362,10 @@ function openChangeAdminPwd(){
 async function renderStaffView(stf){
   document.getElementById('staff-view-name').textContent=stf.name;
   showLoading(true);
-  var bks=await api('/bookings')||[];
-  var posts=await api('/posts')||[];
+  var bksRaw=await api('/bookings');
+  var bksFailed=!Array.isArray(bksRaw);
+  var bks=bksFailed?[]:bksRaw;
+  var posts=await api('/posts');if(!Array.isArray(posts))posts=[];
   var staffFresh=await api('/staff')||[];
 if(staffFresh.length>0){
   mergeStaffCache(staffFresh);
@@ -2110,9 +2381,9 @@ stf=allStaff.find(function(s){return s.id===stf.id;})||stf;
     }
   }catch(e){}
 // Also load customers for display
-if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[];}
+if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.isArray(custs)?custs:[];}
   showLoading(false);
-  var myBks=bks.filter(function(b){return (b.staff_ids||[]).indexOf(stf.id)>-1||(b.staff_names||'').toLowerCase().indexOf((stf.name||'').toLowerCase())>-1;});
+  var myBks=bks.filter(function(b){return bookingBelongsToStaff(b,stf);});
   var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
   var activeTab='bookings';
 
@@ -2137,20 +2408,20 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[
   function buildBookingsHtml(){
     var gShort=getGenderShort(stf.gender);
     var gColor=stf.gender==='male'||stf.gender==='nam'?'#1d4ed8':'#be185d';
-    var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch của '+stf.name+(gShort?' <span style="font-size:0.85rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</div>';
-    if(!myBks.length)return h+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch được phân công</div></div>';
+    var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch của '+esc(stf.name)+(gShort?' <span style="font-size:0.85rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</div>';
+    if(!myBks.length)return h+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">'+(bksFailed?'Không tải được lịch, vui lòng tải lại trang':'Chưa có lịch được phân công')+'</div></div>';
     myBks.slice(0,20).forEach(function(b){
       var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
       h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">'
-        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+(cust?cust.phone:'')+'</div></div>'
-        +'<span class="st-bdg st-'+b.status+'">'+(stLbl[b.status]||b.status)+'</span></div>'
-        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+b.service+'</div>'
-        +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+b.addon_voucher+'</div>':'')
-        +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+b.time+'</div>'
-        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span><span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(b.actual_paid||b.amount)+' VND</span></div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+esc(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+esc(cust?cust.phone:'')+'</div></div>'
+        +'<span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
+        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+'</div>'
+        +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+esc(b.addon_voucher)+'</div>':'')
+        +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div>'
+        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span><span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(bkPaid(b))+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
           ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
-        +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+'★'.repeat(b.review.stars||0)+'☆'.repeat(5-(b.review.stars||0))+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+b.review.comment+'</div>':'')+'</div>':'')
+        +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+starStr(b.review.stars)+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+esc(b.review.comment)+'</div>':'')+'</div>':'')
         +'</div>';
     });
     return h;
@@ -2162,13 +2433,13 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[
     if(!posts.length)return h+'<div class="empty-state"><div class="empty-icon">📰</div><div class="empty-text">Chưa có bài viết</div></div>';
     posts.forEach(function(p){
       var hasVideo=p.video_id&&p.video_type;
-      var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-      h+='<div class="staff-news-item" data-video-id="'+(p.video_id||'')+'" data-video-type="'+(p.video_type||'')+'" data-has-video="'+(hasVideo?'1':'0')+'" data-url="'+(p.url||'')+'" data-title="'+p.title.replace(/"/g,'&quot;')+'" data-desc="'+(p.description||'').replace(/"/g,'&quot;')+'" data-thumb="'+(p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':''))+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
-        +(thumb?'<div style="position:relative;"><img src="'+thumb+'" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display=\'none\'">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.3rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
-        +'<div style="padding:12px;">'+(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+(catLabel[p.category]||p.category)+'</span>':'')
-        +'<div style="font-size:0.9rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+p.title+'</div>'
-        +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+p.description+'</div>':'')
-        +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+(p.created_at||'').split('T')[0]:'')+'</div></div></div>';
+      var thumb=postThumb(p);
+      h+='<div class="staff-news-item" data-video-id="'+esc(p.video_id)+'" data-video-type="'+esc(p.video_type)+'" data-has-video="'+(hasVideo?'1':'0')+'" data-url="'+esc(safeUrl(p.url))+'" data-title="'+esc(p.title)+'" data-desc="'+esc(p.description)+'" data-thumb="'+esc(postThumb(p))+'" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);margin-bottom:12px;overflow:hidden;cursor:pointer;">'
+        +(thumb?'<div style="position:relative;"><img src="'+esc(thumb)+'" style="width:100%;height:160px;object-fit:cover;" onerror="this.style.display=\'none\'">'+(hasVideo?'<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;"><div style="width:48px;height:48px;border-radius:50%;background:rgba(0,0,0,0.65);display:flex;align-items:center;justify-content:center;"><span style="color:#fff;font-size:1.3rem;margin-left:4px;">▶</span></div></div>':'')+'</div>':'')
+        +'<div style="padding:12px;">'+(p.category?'<span style="font-size:0.68rem;background:var(--accent-light);color:var(--accent);padding:2px 8px;border-radius:100px;font-weight:500;">'+esc(catLabel[p.category]||p.category)+'</span>':'')
+        +'<div style="font-size:0.9rem;font-weight:600;margin:6px 0 4px;color:var(--text);">'+esc(p.title)+'</div>'
+        +(p.description?'<div style="font-size:0.78rem;color:var(--muted);line-height:1.5;">'+esc(p.description)+'</div>':'')
+        +'<div style="font-size:0.72rem;color:var(--muted);margin-top:6px;">'+(hasVideo?'🎬 Video':'📄 Bài viết')+(p.created_at?' · '+esc(String(p.created_at).split('T')[0]):'')+'</div></div></div>';
     });
     return h;
   }
@@ -2180,18 +2451,18 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[
     var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">⚙️ Cài đặt</div>';
     h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;">'
       +'<div style="font-size:0.88rem;font-weight:600;margin-bottom:8px;">👤 Thông tin nhân viên</div>'
-      +'<div style="font-size:0.85rem;color:var(--muted);">Tên: <b style="color:var(--text);">'+stf.name+(gShort?' <span style="font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</b></div>'
+      +'<div style="font-size:0.85rem;color:var(--muted);">Tên: <b style="color:var(--text);">'+esc(stf.name)+(gShort?' <span style="font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</b></div>'
       +'</div>';
     h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:12px;">'
       +'<div style="font-size:0.88rem;font-weight:600;margin-bottom:10px;">📅 Đăng ký ngày nghỉ</div>'
-      +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">Ngày nghỉ hiện tại: <b>'+(off.length?off.join(', '):'Chưa có')+'</b></div>'
+      +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">Ngày nghỉ hiện tại: <b>'+(off.length?esc(off.join(', ')):'Chưa có')+'</b></div>'
       +'<div class="fg"><label>Chọn ngày nghỉ</label><input type="date" id="staff-off-date" class="mgr-inp" min="'+today()+'"></div>'
       +'<div style="display:flex;gap:8px;margin-top:4px;">'
       +'<button id="btn-add-off" style="flex:1;padding:10px;border-radius:100px;border:none;background:var(--accent);color:#fff;font-size:0.85rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">➕ Thêm ngày nghỉ</button>'
       +'<button id="btn-clear-off" style="flex:1;padding:10px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.85rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">🗑 Xoá tất cả</button>'
       +'</div>'
       +'<div id="off-list" style="margin-top:12px;">'
-      +off.map(function(d){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:0.82rem;"><span>📅 '+d+'</span><button data-remove-off="'+d+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;">✕</button></div>';}).join('')
+      +off.map(function(d){return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 10px;background:var(--bg3);border-radius:8px;margin-bottom:6px;font-size:0.82rem;"><span>📅 '+esc(d)+'</span><button data-remove-off="'+esc(d)+'" style="background:none;border:none;color:#dc2626;cursor:pointer;font-size:1rem;">✕</button></div>';}).join('')
       +'</div>'
       +'</div>';
     return h;
@@ -2250,7 +2521,7 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=custs||[
     });
   }
   function bindBookingBtns(){
-    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderStaffView(stf);});});
+    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderStaffView(stf);});});
     document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
   }
 
@@ -2325,7 +2596,8 @@ async function bgPoll(){
   try{
     if(currentRole==='admin'){
       var bks=await apiBg('/bookings');
-      if(bks&&!bks.error){
+      if(Array.isArray(bks)){
+        if(bks.some(function(b){return !allCustomers.some(function(c){return c.id===b.cust_id;});})){var csNew=await apiBg('/customers');if(Array.isArray(csNew))allCustomers=csNew;}
         _bgBks=bks;updateNotifBadge(bks);
         var ap=document.querySelector('.mgr-page.active');
         if(ap){
@@ -2365,7 +2637,7 @@ function refreshHomeSilent(c){
 // Render dashboard silently with pre-fetched bks
 function renderDashboardWith(bks){
   var totalRev=0,doneBks=0;
-  bks.forEach(function(b){if(b.status==='done'){totalRev+=b.actual_paid||b.amount||0;doneBks++;}});
+  bks.forEach(function(b){if(b.status==='done'){totalRev+=bkPaid(b);doneBks++;}});
   var pending=bks.filter(function(b){return b.status==='pending';}).length;
   var confirmed=bks.filter(function(b){return b.status==='confirmed';}).length;
   var statsEl=document.getElementById('mgr-stats');
@@ -2373,12 +2645,12 @@ function renderDashboardWith(bks){
   var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
   var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
   var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
-  active.forEach(function(b){var cust=allCustomers.find(function(c){return c.id===b.cust_id;});bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+(cust?cust.name:'KH')+' – '+b.service+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+b.status+'">'+stLbl[b.status]+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+b.time+' · 👤 '+(b.staff_names||'')+'</div></div>';});
+  active.forEach(function(b){var cust=allCustomers.find(function(c){return c.id===b.cust_id;});bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+'</div></div>';});
   if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
   var tbEl=document.getElementById('today-bookings');if(tbEl)tbEl.innerHTML=bkHtml;
-  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));await api('/bookings/'+bid,'PUT',{status:'done'});showToast('✓ Hoàn thành');renderDashboard();});});
+  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderDashboard();});});
   document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
-  var days=[];for(var d=6;d>=0;d--){var dt=new Date();dt.setDate(dt.getDate()-d);var ds=dt.toISOString().split('T')[0];var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=b.actual_paid||b.amount||0;});days.push({label:(dt.getDate())+'/'+(dt.getMonth()+1),rev:rev});}
+  var days=[];for(var d=6;d>=0;d--){var ds=vnDateOffset(-d);var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=bkPaid(b);});days.push({label:parseInt(ds.slice(8,10),10)+'/'+parseInt(ds.slice(5,7),10),rev:rev});}
   var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
   var barHtml='<div style="display:flex;align-items:flex-end;gap:6px;height:80px;">';
   days.forEach(function(d){var h=Math.max(4,Math.round((d.rev/maxRev)*100));var revK=d.rev>=1000000?(d.rev/1000000).toFixed(1)+'M':d.rev>=1000?Math.round(d.rev/1000)+'K':'';barHtml+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;"><div style="font-size:0.55rem;color:var(--accent);font-weight:600;min-height:12px;">'+revK+'</div><div style="flex:1;width:100%;background:var(--bg3);border-radius:4px;display:flex;flex-direction:column;justify-content:flex-end;"><div style="background:var(--accent);border-radius:4px;height:'+h+'%;min-height:'+(d.rev>0?4:0)+'px;"></div></div><span style="font-size:0.62rem;color:var(--muted);">'+d.label+'</span></div>';});
@@ -2411,7 +2683,7 @@ function showBookingToastPopup(bk,total){
     +'<div style="font-size:1.1rem;">📅</div>'
     +'<div style="flex:1;">'
     +'<div style="font-size:0.8rem;font-weight:600;color:#fff;">'+total+' lịch chờ xác nhận</div>'
-    +'<div style="font-size:0.72rem;color:rgba(255,255,255,0.75);margin-top:1px;">'+(cust?cust.name:'Khách')+' · '+bk.service+'</div>'
+    +'<div style="font-size:0.72rem;color:rgba(255,255,255,0.75);margin-top:1px;">'+esc(cust?cust.name:'Khách')+' · '+esc(bk.service)+'</div>'
     +'</div>'
     +'<button onclick="closeBookingToastPopup();showMgrPage(\'mgr-bookings\',\'mnav-bk\');" style="background:rgba(255,255,255,0.25);border:none;color:#fff;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;white-space:nowrap;">Xem →</button>'
     +'<button onclick="closeBookingToastPopup();" style="background:none;border:none;color:rgba(255,255,255,0.6);cursor:pointer;font-size:1rem;padding:2px 4px;">✕</button>'
@@ -2440,9 +2712,9 @@ function openNotifPanel(){
       var isPending=b.status==='pending';
       html+='<div style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeModal();showMgrPage(\'mgr-bookings\',\'mnav-bk\');">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
-        +'<div><div style="font-size:0.9rem;font-weight:500;">'+(cust?cust.name:'Khách')+'</div>'
-        +'<div style="font-size:0.8rem;color:var(--muted);margin-top:1px;">'+b.service+'</div>'
-        +'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">⏰ '+fmtDate(b.date)+' '+b.time+'</div></div>'
+        +'<div><div style="font-size:0.9rem;font-weight:500;">'+esc(cust?cust.name:'Khách')+'</div>'
+        +'<div style="font-size:0.8rem;color:var(--muted);margin-top:1px;">'+esc(b.service)+'</div>'
+        +'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div></div>'
         +'<span style="flex-shrink:0;padding:3px 9px;border-radius:100px;font-size:0.68rem;font-weight:500;'+(isPending?'background:#fff8e1;color:#c07000;':'background:var(--g50);color:var(--g800);')+'">'+(isPending?'⏳ Chờ':'✓ XN')+'</span>'
         +'</div></div>';
     });
@@ -2480,11 +2752,11 @@ async function openCustNotif(){
   }else{
     posts.slice(0,10).forEach(function(p){
       var hasVideo=!!(p.video_id&&p.video_type);
-      var thumb=p.thumbnail||(p.video_id&&p.video_type==='youtube'?'https://img.youtube.com/vi/'+p.video_id+'/hqdefault.jpg':'');
-      html+='<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" class="cust-notif-item" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+(p.video_id||'')+'" data-video-type="'+(p.video_type||'')+'" data-title="'+p.title.replace(/"/g,'&quot;')+'" data-desc="'+(p.description||'').replace(/"/g,'&quot;')+'" data-thumb="'+thumb+'" data-url="'+(p.url||'')+'">'
-        +(thumb?'<img src="'+thumb+'" style="width:52px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'<div style="width:52px;height:40px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;">'+(hasVideo?'▶':'📰')+'</div>')
-        +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+p.title+'</div>'
-        +'<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">'+(p.category?catLabel[p.category]||p.category:'')+(hasVideo?' · 🎬 Video':' · 📄 Bài viết')+'</div></div>'
+      var thumb=postThumb(p);
+      html+='<div style="display:flex;gap:10px;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);cursor:pointer;" class="cust-notif-item" data-has-video="'+(hasVideo?'1':'0')+'" data-video-id="'+esc(p.video_id)+'" data-video-type="'+esc(p.video_type)+'" data-title="'+esc(p.title)+'" data-desc="'+esc(p.description)+'" data-thumb="'+esc(thumb)+'" data-url="'+esc(safeUrl(p.url))+'">'
+        +(thumb?'<img src="'+esc(thumb)+'" style="width:52px;height:40px;object-fit:cover;border-radius:8px;flex-shrink:0;" onerror="this.style.display=\'none\'">':'<div style="width:52px;height:40px;background:var(--bg3);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:1.2rem;">'+(hasVideo?'▶':'📰')+'</div>')
+        +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+esc(p.title)+'</div>'
+        +'<div style="font-size:0.7rem;color:var(--muted);margin-top:2px;">'+(p.category?esc(catLabel[p.category]||p.category):'')+(hasVideo?' · 🎬 Video':' · 📄 Bài viết')+'</div></div>'
         +'</div>';
     });
     html+='<div style="padding-top:10px;text-align:center;"><button id="notif-see-all" style="font-size:0.82rem;color:var(--accent);background:none;border:none;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Xem tất cả →</button></div>';
@@ -2540,7 +2812,7 @@ async function openCustNotif(){
   document.getElementById('fh-redeem').addEventListener('click',function(){setActiveFilter(this);renderHistory('redeem');});
   document.getElementById('menu-edit').addEventListener('click',function(){
     if(!currentUser)return;var c=currentUser;
-    openModal('Chỉnh sửa thông tin','<div class="fg"><label>Họ và tên</label><input type="text" id="ep-name" class="mgr-inp" value="'+c.name+'"></div><div class="fg"><label>Ngày sinh</label><input type="date" id="ep-dob" class="mgr-inp" value="'+(c.dob||'')+'"></div><button class="btn-green" id="btn-save-prof">Lưu</button>');
+    openModal('Chỉnh sửa thông tin','<div class="fg"><label>Họ và tên</label><input type="text" id="ep-name" class="mgr-inp" value="'+esc(c.name)+'"></div><div class="fg"><label>Ngày sinh</label><input type="date" id="ep-dob" class="mgr-inp" value="'+esc(c.dob)+'"></div><button class="btn-green" id="btn-save-prof">Lưu</button>');
     setTimeout(function(){var btn=document.getElementById('btn-save-prof');if(btn)btn.addEventListener('click',async function(){showLoading(true);await api('/customers/'+currentUser.id,'PUT',{name:document.getElementById('ep-name').value,dob:document.getElementById('ep-dob').value});await reloadUser();showLoading(false);closeModal();showToast('✓ Đã lưu');refreshProfile();});},50);
   });
   document.getElementById('menu-change-pwd').addEventListener('click',function(){

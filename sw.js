@@ -24,7 +24,7 @@ self.addEventListener('fetch', function(event) {
   event.respondWith(
     caches.match(event.request).then(function(cached) {
       return cached || fetch(event.request).catch(function() {
-        return caches.match('/greenlife-spa/index.html');
+        return caches.match('/index.html');
       });
     })
   );
