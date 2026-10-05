@@ -582,10 +582,13 @@ function authHeaders(){
   return h;
 }
 // Máy chủ báo thẻ hết hạn / thiếu thẻ: đưa người dùng về màn hình đăng nhập (chỉ khi đang đăng nhập)
+var _expiredAt=0;
 function sessionExpired(){
   if(!currentRole)return;
   currentUser=null;currentRole=null;currentStaff=null;
   clearSession();stopPolling();clearTimeout(idleTimer);
+  _expiredAt=Date.now();
+  closeModal();
   goScreen('splash');showToast('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
 }
 async function api(path,method,body){
@@ -595,7 +598,7 @@ async function api(path,method,body){
     var res=await fetch(API_URL+path,opts);
     if(res.status===204||(res.status===201&&res.headers.get('content-length')==='0')){return{ok:true};}
     var text=await res.text();
-    if(!text||!text.trim())return{ok:true};
+    if(!text||!text.trim())return res.ok?{ok:true}:{error:'Lỗi máy chủ ('+res.status+'), vui lòng thử lại'};
     var data=JSON.parse(text);
     if(data&&data.code==='auth_required')sessionExpired();
     return data;
@@ -622,7 +625,7 @@ function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'
 // Chỉ nhận đường dẫn http(s); còn lại (javascript:, data:...) bị bỏ
 function safeUrl(u){u=String(u==null?'':u).trim();var l=u.toLowerCase();return(l.indexOf('http://')===0||l.indexOf('https://')===0)?u:'';}
 function fmtDate(d){if(!d)return'';d=String(d);var p=d.split('-');if(p.length!==3)return esc(d);return esc(p[2])+'/'+esc(p[1])+'/'+esc(p[0]);}
-function showToast(msg){var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2500);}
+function showToast(msg){if(_expiredAt&&Date.now()-_expiredAt<2500&&String(msg).indexOf('hết hạn')<0)return;var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2500);}
 function goScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
 function openModal(title,html){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal').classList.add('open');}
 function closeModal(){document.getElementById('modal').classList.remove('open');}
@@ -1376,11 +1379,15 @@ async function confirmBooking(){
       return;
     }
     if(r&&r.code==='insufficient_balance'){showShortBalance(r.balance,r.need);return;}
-    if(!r||r.error==='Lỗi kết nối mạng'||!r.code){showToast('⚠ Chưa nhận được phản hồi từ máy chủ — vui lòng kiểm tra mục Lịch sử trước khi đặt lại');return;}
+    if(!r||!r.code||r.code==='upstream'){
+      showToast('⚠ '+((r&&r.code==='upstream')?r.error+' — c':'C')+'hưa rõ lịch đã được đặt chưa, vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
+      await reloadUser();
+      return;
+    }
     showToast('✗ '+apiMsg(r,'Lỗi đặt lịch, thử lại'));
   }catch(e){
     showLoading(false);resetBtn();
-    showToast('⚠ Có lỗi khi đặt lịch — vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
+    showToast('⚠ Có lỗi khi đặt lịch — chưa rõ lịch đã được đặt chưa, vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
   }
 }
 
@@ -1627,8 +1634,8 @@ async function renderMgrPosts(){
   });
   var el=document.getElementById('mgr-posts-list');if(el)el.innerHTML=html;
   document.querySelectorAll('[data-edit-post]').forEach(function(btn){btn.addEventListener('click',function(){var pid=parseInt(this.getAttribute('data-edit-post'));var p=posts.find(function(x){return x.id===pid;});if(p)openEditPost(p);});});
-  document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xóa bài viết này?'))return;showLoading(true);await api('/posts/'+pid,'DELETE');showLoading(false);showToast('✓ Đã xóa');renderMgrPosts();});});
-  document.querySelectorAll('[data-pin-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-pin-post'));var isPinned=this.getAttribute('data-pinned')==='1';showLoading(true);await api('/posts/'+pid,'PUT',{pinned:!isPinned});showLoading(false);showToast(isPinned?'✓ Đã bỏ ghim':'📌 Đã ghim nổi bật');renderMgrPosts();});});
+  document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xóa bài viết này?'))return;showLoading(true);var dr=await api('/posts/'+pid,'DELETE');showLoading(false);if(dr&&dr.error){showToast('✗ '+dr.error);return;}showToast('✓ Đã xóa');renderMgrPosts();});});
+  document.querySelectorAll('[data-pin-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-pin-post'));var isPinned=this.getAttribute('data-pinned')==='1';showLoading(true);var pn=await api('/posts/'+pid,'PUT',{pinned:!isPinned});showLoading(false);if(!pn||pn.error){showToast('✗ Chưa ghim được bài viết (tính năng ghim chưa được bật trong cơ sở dữ liệu)');return;}showToast(isPinned?'✓ Đã bỏ ghim':'📌 Đã ghim nổi bật');renderMgrPosts();});});
 }
 function openAddPost(){
   openModal('➕ Thêm bài viết','<div class="fg"><label>Tiêu đề</label><input type="text" id="post-title" class="mgr-inp"></div><div class="fg"><label>Mô tả ngắn</label><textarea id="post-desc" class="mgr-inp" rows="2"></textarea></div><div class="fg"><label>Link URL</label><input type="text" id="post-url" class="mgr-inp" placeholder="https://youtube.com/..."></div><div class="fg"><label>Thumbnail URL (để trống nếu dùng YouTube)</label><input type="text" id="post-thumb" class="mgr-inp" placeholder="https://..."></div><div class="fg"><label>Danh mục</label><select id="post-cat" class="mgr-inp"><option value="suckhoe">💚 Sức khoẻ</option><option value="lamdep">✨ Làm đẹp</option><option value="giaitri">🎬 Giải trí</option><option value="tintuc">📰 Tin tức</option></select></div><div style="display:flex;gap:8px;"><button id="post-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="post-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đăng</button></div>');
@@ -1644,8 +1651,10 @@ function openAddPost(){
       if(!title){showToast('✗ Nhập tiêu đề');return;}
       var vi=getVideoInfo(url);
       if(!thumb&&vi.type==='youtube'&&vi.id)thumb='https://img.youtube.com/vi/'+vi.id+'/hqdefault.jpg';
-      showLoading(true);await api('/posts','POST',{title:title,description:desc,url:url,thumbnail:thumb,video_id:vi.id,video_type:vi.type,category:cat,active:true});
-      showLoading(false);closeModal();showToast('✓ Đã đăng bài');renderMgrPosts();
+      showLoading(true);var pr=await api('/posts','POST',{title:title,description:desc,url:url,thumbnail:thumb,video_id:vi.id,video_type:vi.type,category:cat,active:true});
+      showLoading(false);
+      if(!pr||pr.error||!pr.id){showToast('✗ '+((pr&&pr.error)||'Chưa đăng được bài, vui lòng thử lại'));return;}
+      closeModal();showToast('✓ Đã đăng bài');renderMgrPosts();
     });
   },50);
 }
@@ -1661,8 +1670,10 @@ function openEditPost(p){
       var thumb2=document.getElementById('ep-thumb').value||'';
       if(!thumb2&&vi2.type==='youtube'&&vi2.id)thumb2='https://img.youtube.com/vi/'+vi2.id+'/hqdefault.jpg';
       showLoading(true);
-      await api('/posts/'+pid,'PUT',{title:document.getElementById('ep-title').value,description:document.getElementById('ep-desc').value,url:url,thumbnail:thumb2,video_id:vi2.id,video_type:vi2.type,category:document.getElementById('ep-cat').value});
-      showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderMgrPosts();
+      var er=await api('/posts/'+pid,'PUT',{title:document.getElementById('ep-title').value,description:document.getElementById('ep-desc').value,url:url,thumbnail:thumb2,video_id:vi2.id,video_type:vi2.type,category:document.getElementById('ep-cat').value});
+      showLoading(false);
+      if(!er||er.error){showToast('✗ '+((er&&er.error)||'Chưa cập nhật được, vui lòng thử lại'));return;}
+      closeModal();showToast('✓ Đã cập nhật');renderMgrPosts();
     });
   },50);
 }
@@ -1774,6 +1785,10 @@ async function adjustPoints(){
     var r=await api('/customers/'+custId+'/adjust','POST',{kind:kind,amount:amount,note:note});
     if(!r||r.ok!==true){
       var msg;
+      if(!r||!r.code||r.code==='upstream'){
+        await reloadCustomers();await renderPtsPage();
+        showToast('⚠ '+((r&&r.error)||'Lỗi kết nối mạng')+' — chưa rõ kết quả, vui lòng xem lại số dư / lịch sử của khách trước khi nhập lại');return;
+      }
       if(r&&r.code==='insufficient_balance')msg='Số dư không đủ (hiện: '+fmt(r.balance||0)+' VND)';
       else if(r&&r.code==='insufficient_points')msg='Không đủ điểm';
       else msg=apiMsg(r,'Chưa cập nhật được, số liệu của khách không đổi. Vui lòng thử lại.');
@@ -2506,17 +2521,17 @@ async function restoreSession(){
     authToken=sess.tok||null;
     if(sess.role==='admin'){
       currentRole='admin';goScreen('mgr');
-      await loadAllData();renderDashboard();startPolling();setupIdleTracking();
+      await loadAllData();if(!currentRole)return false;renderDashboard();startPolling();setupIdleTracking();
       return true;
     }
     if(sess.role==='staff'&&sess.staff){
       currentRole='staff';currentStaff=sess.staff;
-      goScreen('staff-view');await renderStaffView(sess.staff);setupIdleTracking();
+      goScreen('staff-view');await renderStaffView(sess.staff);if(!currentRole)return false;setupIdleTracking();
       return true;
     }
     if(sess.role==='customer'&&sess.user){
       currentRole='customer';currentUser=sess.user;
-      await loginAs(sess.user);startPolling();setupIdleTracking();
+      await loginAs(sess.user);if(!currentRole)return false;startPolling();setupIdleTracking();
       return true;
     }
   }catch(e){}
