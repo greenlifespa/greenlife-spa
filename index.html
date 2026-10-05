@@ -231,7 +231,7 @@ async function initPush(){
     const reg=await navigator.serviceWorker.ready;
     const token=await messaging.getToken({vapidKey:VAPID_KEY,serviceWorkerRegistration:reg});
     if(token){
-      await fetch(API_URL+'/fcm-tokens',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token})});
+      await fetch(API_URL+'/fcm-tokens',{method:'POST',headers:authHeaders(),body:JSON.stringify({token})});
     }
   }catch(e){console.error('Push error:',e&&e.message);}
 }
@@ -574,15 +574,31 @@ function mergeStaffCache(staffArr){
 // API & CORE
 // ============================================================
 function showLoading(v){document.getElementById('loading-ov').style.display=v?'flex':'none';}
+// Thẻ đăng nhập do máy chủ cấp khi đăng nhập / đăng ký (có hạn: 12 giờ quản lý + nhân viên, 24 giờ khách). Gửi kèm mọi yêu cầu.
+var authToken=null;
+function authHeaders(){
+  var h={'Content-Type':'application/json'};
+  if(authToken)h['Authorization']='Bearer '+authToken;
+  return h;
+}
+// Máy chủ báo thẻ hết hạn / thiếu thẻ: đưa người dùng về màn hình đăng nhập (chỉ khi đang đăng nhập)
+function sessionExpired(){
+  if(!currentRole)return;
+  currentUser=null;currentRole=null;currentStaff=null;
+  clearSession();stopPolling();clearTimeout(idleTimer);
+  goScreen('splash');showToast('Phiên đăng nhập đã hết hạn, vui lòng đăng nhập lại');
+}
 async function api(path,method,body){
   try{
-    var opts={method:method||'GET',headers:{'Content-Type':'application/json'}};
+    var opts={method:method||'GET',headers:authHeaders()};
     if(body)opts.body=JSON.stringify(body);
     var res=await fetch(API_URL+path,opts);
     if(res.status===204||(res.status===201&&res.headers.get('content-length')==='0')){return{ok:true};}
     var text=await res.text();
     if(!text||!text.trim())return{ok:true};
-    return JSON.parse(text);
+    var data=JSON.parse(text);
+    if(data&&data.code==='auth_required')sessionExpired();
+    return data;
   }catch(e){return{error:'Lỗi kết nối mạng'};}
 }
 var TIERS=[
@@ -682,11 +698,6 @@ function checkBookingTime(date,time,dur,intervals){
 // GHI DỮ LIỆU AN TOÀN: đọc số liệu mới nhất trước khi ghi, ghi xong đọc lại để xác minh
 // ============================================================
 async function reloadCustomers(){var r=await api('/customers');if(Array.isArray(r))allCustomers=r;}
-async function getBookingById(id,custId){
-  var list=await api(custId?'/bookings?cust_id='+custId:'/bookings');
-  if(!Array.isArray(list))return null;
-  return list.find(function(b){return String(b.id)===String(id);})||null;
-}
 var CUST_NUM_FIELDS=['balance','visits','total_spend','rank_points','reward_points'];
 // So sánh ví voucher không phụ thuộc thứ tự khoá (jsonb có thể đổi thứ tự)
 function stableStr(v){
@@ -713,71 +724,28 @@ async function putCustomerVerified(id,patch,orig){
 // Số tiền khách thực trả cho một lịch. actual_paid = 0 là hợp lệ (voucher trả hết) nên không được rơi về "amount";
 // chỉ lịch cũ chưa có actual_paid (null) mới dùng amount.
 function bkPaid(b){var v=(b.actual_paid!==null&&b.actual_paid!==undefined)?b.actual_paid:b.amount;return Number(v)||0;}
-// Hoàn lại voucher đã dùng cho lịch bị huỷ (lịch chỉ lưu tên/giá trị voucher, nên khớp theo tên/giá trị + ngày dùng)
-function restoreVouchers(wallet,bk){
-  var w=(wallet||[]).slice();
-  function restoreOne(pred){
-    for(var i=0;i<w.length;i++){
-      var v=w[i];
-      if(v&&v.used&&v.usedDate===bk.date&&pred(v)){var nv=Object.assign({},v);nv.used=false;delete nv.usedDate;w[i]=nv;return;}
-    }
-  }
-  if(bk.addon_voucher)restoreOne(function(v){return v.isAddon&&v.name===bk.addon_voucher;});
-  if((bk.voucher_discount||0)>0)restoreOne(function(v){return !v.isAddon&&Number(v.value)===Number(bk.voucher_discount);});
-  return w;
-}
-// Huỷ lịch + hoàn tiền (+ voucher) về đúng khách của lịch, dù ai bấm huỷ (khách / nhân viên / quản lý)
+// Huỷ lịch + hoàn tiền (+ voucher, lần đến, chi tiêu) về đúng khách của lịch, dù ai bấm huỷ (khách / nhân viên / quản lý).
+// Toàn bộ chạy trong MỘT bước ở máy chủ (cơ sở dữ liệu): hoặc xong hết, hoặc không đổi gì; bấm lặp không hoàn tiền lần 2.
 // Chỉ huỷ được lịch đang chờ / đã xác nhận; lịch đã hoàn thành (dịch vụ đã thực hiện) thì không huỷ được.
-// Lúc đặt lịch hệ thống đã cộng "số lần đến" +1 và "tổng chi tiêu" +số đã trả, nên khi huỷ phải trừ lại (không xuống dưới 0).
+function apiMsg(r,fallback){return(r&&(r.msg||r.error))||fallback;}
 async function cancelBookingAndRefund(bkId,custId){
-  var bk=await getBookingById(bkId,custId);
-  if(!bk)return{ok:false,msg:'Không tải được lịch đặt, vui lòng thử lại'};
-  if(bk.status==='cancelled')return{ok:false,msg:'Lịch này đã được huỷ trước đó'};
-  if(bk.status==='done')return{ok:false,msg:'Lịch đã hoàn thành (dịch vụ đã thực hiện) nên không thể huỷ'};
-  if(bk.status!=='pending'&&bk.status!=='confirmed')return{ok:false,msg:'Chỉ huỷ được lịch đang chờ hoặc đã xác nhận'};
-  var paid=bkPaid(bk);
-  await api('/bookings/'+bkId,'PUT',{status:'cancelled'});
-  var chk=await getBookingById(bkId,custId);
-  if(!chk)return{ok:false,msg:'Chưa xác nhận được kết quả huỷ, vui lòng kiểm tra lại danh sách lịch trước khi thao tác tiếp'};
-  if(chk.status!=='cancelled')return{ok:false,msg:'Không huỷ được lịch, vui lòng thử lại'};
-  var c=await api('/customers/'+bk.cust_id);
-  if(!c||c.error||!c.id)return{ok:true,paid:paid,warn:'Đã huỷ lịch nhưng chưa cập nhật được tài khoản khách (không tải được tài khoản). Vui lòng báo quản lý hoàn thủ công '+fmt(paid)+' VND và trừ lại 1 lần đến, '+fmt(paid)+' VND chi tiêu.'};
-  var patch={visits:Math.max(0,(Number(c.visits)||0)-1),total_spend:Math.max(0,(Number(c.total_spend)||0)-paid)};
-  if(paid>0)patch.balance=(c.balance||0)+paid;
-  var wallet=restoreVouchers(c.voucher_wallet,bk);
-  if(JSON.stringify(wallet)!==JSON.stringify(c.voucher_wallet||[]))patch.voucher_wallet=wallet;
-  var st=await putCustomerVerified(c.id,patch,c);
-  if(st==='unchanged')st=await putCustomerVerified(c.id,patch,c);
-  if(st==='unchanged'||st==='unknown')return{ok:true,paid:paid,warn:'Đã huỷ lịch nhưng chưa xác nhận được việc hoàn '+fmt(paid)+' VND và trừ lại số lần đến / tổng chi tiêu. Vui lòng báo quản lý kiểm tra tài khoản của khách.'};
-  if(paid>0){
-    var tx=await api('/transactions','POST',{cust_id:c.id,type:'topup',amount:paid,reward:0,note:'Hoàn tiền huỷ lịch: '+bk.service,date:today()});
-    if(!tx||tx.error||!tx.id)return{ok:true,paid:paid,warn:'Đã hoàn tiền nhưng chưa ghi được lịch sử giao dịch. Vui lòng báo quản lý.'};
-  }
-  return{ok:true,paid:paid};
+  var r=await api('/bookings/'+bkId+'/cancel','POST',custId?{cust_id:custId}:{});
+  if(r&&r.ok===true)return{ok:true,paid:Number(r.paid)||0};
+  return{ok:false,msg:apiMsg(r,'Không huỷ được lịch, vui lòng thử lại')};
 }
-// Đánh dấu hoàn thành — chặn bấm lặp (tránh cộng điểm RP hai lần)
+// Đánh dấu hoàn thành — máy chủ chặn bấm lặp (không cộng điểm RP hai lần)
 async function markBookingDone(bkId){
-  var bk=await getBookingById(bkId,null);
-  if(!bk)return{ok:false,msg:'Không tải được lịch đặt, vui lòng thử lại'};
-  if(bk.status==='done')return{ok:false,msg:'Lịch này đã hoàn thành trước đó'};
-  if(bk.status==='cancelled')return{ok:false,msg:'Lịch này đã bị huỷ'};
-  var r=await api('/bookings/'+bkId,'PUT',{status:'done'});
-  if(r&&r.error)return{ok:false,msg:'Không cập nhật được, vui lòng thử lại'};
-  return{ok:true};
+  var r=await api('/bookings/'+bkId+'/complete','POST',{});
+  if(r&&r.ok===true)return{ok:true};
+  return{ok:false,msg:apiMsg(r,'Không cập nhật được, vui lòng thử lại')};
 }
 // Đổi qua lại giữa "Chờ" và "Xác nhận" (không ảnh hưởng tiền / điểm).
-// "Hoàn thành" và "Huỷ" là trạng thái cuối: đọc lại trạng thái thật trước khi ghi, nếu lịch đã ở trạng thái cuối thì từ chối.
+// "Hoàn thành" và "Huỷ" là trạng thái cuối: máy chủ từ chối nếu lịch đã ở trạng thái cuối.
 async function setBookingActiveStatus(bkId,newStatus){
   if(newStatus!=='pending'&&newStatus!=='confirmed')return{ok:false,msg:'Trạng thái không hợp lệ'};
-  var bk=await getBookingById(bkId,null);
-  if(!bk)return{ok:false,msg:'Không tải được lịch đặt, vui lòng thử lại'};
-  if(bk.status==='done')return{ok:false,msg:'Lịch đã hoàn thành là trạng thái cuối, không thể đổi'};
-  if(bk.status==='cancelled')return{ok:false,msg:'Lịch đã huỷ là trạng thái cuối, không thể đổi'};
-  if(bk.status===newStatus)return{ok:true,same:true};
-  await api('/bookings/'+bkId,'PUT',{status:newStatus});
-  var chk=await getBookingById(bkId,null);
-  if(!chk||chk.status!==newStatus)return{ok:false,msg:'Chưa xác nhận được việc cập nhật, vui lòng kiểm tra lại danh sách'};
-  return{ok:true};
+  var r=await api('/bookings/'+bkId+'/status','POST',{status:newStatus});
+  if(r&&r.ok===true)return r.same?{ok:true,same:true}:{ok:true};
+  return{ok:false,msg:apiMsg(r,'Chưa cập nhật được, vui lòng kiểm tra lại danh sách')};
 }
 // Lịch có thuộc nhân viên này không: so theo id; lịch cũ không lưu id thì so đúng tên (bỏ hậu tố "(nam)/(nữ)")
 function bookingBelongsToStaff(b,stf){
@@ -827,6 +795,7 @@ async function doLogin(){
   if(!phone||!pass){showToast('✗ Vui lòng điền đầy đủ');return;}
   showLoading(true);var res=await api('/login','POST',{phone:phone,pass:pass});showLoading(false);
   if(res.error){showToast('✗ '+res.error);return;}
+  authToken=res.token||null;
   if(res.role==='admin'){
     if(phone==='admin'){currentRole='admin';goScreen('mgr');await loadAllData();renderDashboard();saveSession();startPolling();setupIdleTracking();tryInitPush();return;}
     else{showToast('✗ Sai thông tin đăng nhập');return;}
@@ -842,6 +811,7 @@ async function doRegister(){
   if(!name||!phone||!pass){showToast('✗ Vui lòng điền đầy đủ');return;}
   showLoading(true);var res=await api('/register','POST',{name:name,phone:phone,pass:pass,dob:dob});showLoading(false);
   if(res.error){showToast('✗ '+res.error);return;}
+  authToken=res.token||null;
   showToast('✓ Đăng ký thành công!');currentRole='customer';currentUser=res.user;loginAs(res.user);
 }
 async function loginAs(user){
@@ -850,6 +820,7 @@ async function loginAs(user){
   document.getElementById('topbar-name').textContent=parts[parts.length-1];
   document.getElementById('topbar-av').textContent=user.name.slice(-2);
   await loadServices();await loadStaff();
+  if(!currentRole)return; // phiên đã hết hạn trong lúc tải dữ liệu: đã đưa về màn hình đăng nhập, không mở màn hình chính
   saveSession();
   goScreen('app');showPage('home');
   setTimeout(checkPendingReview,600);
@@ -1340,6 +1311,9 @@ function renderConfirm(){
   },50);
 }
 
+function showShortBalance(balance,need){
+  openModal('Số dư không đủ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💰</div><div style="font-size:0.9rem;color:#dc2626;margin-bottom:12px;">Số dư <b>'+fmt(balance||0)+'đ</b>, cần <b>'+fmt(need||0)+'đ</b></div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
+}
 async function confirmBooking(){
   if(!currentUser||!bkState.svcIds.length||!bkState.time){showToast('✗ Thiếu thông tin');return;}
   var btn=document.getElementById('btn-confirm-bk');
@@ -1348,13 +1322,11 @@ async function confirmBooking(){
   function resetBtn(){if(btn){btn.disabled=false;btn.textContent='Xác nhận đặt lịch';}}
   function stop(msg){showLoading(false);resetBtn();showToast(msg);}
   showLoading(true);
-  var createdBkId=null;
   try{
     // 1) Số liệu khách mới nhất (không dùng số dư đã lưu tạm trên máy)
     var c=await api('/customers/'+currentUser.id);
     if(!c||c.error||!c.id){stop('✗ Không tải được tài khoản, vui lòng thử lại');return;}
     currentUser=c;
-    var tier=getTier(c.rank_points||0);
     var totalPrice=0,svcNames=[];
     bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;svcNames.push(s.name);}});});
     if(svcNames.length!==bkState.svcIds.length){stop('✗ Có dịch vụ không còn tồn tại, vui lòng chọn lại');return;}
@@ -1370,66 +1342,45 @@ async function confirmBooking(){
       if(offs.indexOf(bkDate)>-1){stop('✗ Nhân viên đã đăng ký nghỉ ngày này, vui lòng chọn lại');return;}
     }
 
-    // 3) Voucher (theo ví mới nhất) và số dư
+    // 3) Kiểm tra nhanh trên máy (để báo lỗi sớm): voucher theo ví mới nhất, số dư. Máy chủ kiểm tra lại và là bên quyết định.
     var wallet=(c.voucher_wallet||[]).slice();
-    var disc=0,addonName=null;
+    var disc=0,voucherId,addonId;
     var wi=bkState.voucherWalletIdx,ai=bkState.addonWalletIdx;
     if(wi>=0){
       var vv=wallet[wi];
-      if(!vv||vv.used||vv.isAddon){stop('✗ Voucher giảm giá không còn hiệu lực');return;}
+      if(!vv||vv.used||vv.isAddon||!vv.id){stop('✗ Voucher giảm giá không còn hiệu lực');return;}
       if(vv.minBill>0&&totalPrice<vv.minBill){stop('✗ Hoá đơn chưa đủ điều kiện dùng voucher');return;}
-      disc=parseInt(vv.value)||0;
+      disc=parseInt(vv.value)||0;voucherId=String(vv.id);
     }
     if(ai>=0){
       var av=wallet[ai];
-      if(!av||av.used||!av.isAddon){stop('✗ Voucher add-on không còn hiệu lực');return;}
-      addonName=av.name;
+      if(!av||av.used||!av.isAddon||!av.id){stop('✗ Voucher add-on không còn hiệu lực');return;}
+      addonId=String(av.id);
     }
     var paid=Math.max(0,totalPrice-disc);
-    if((c.balance||0)<paid){
-      showLoading(false);resetBtn();
-      openModal('Số dư không đủ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💰</div><div style="font-size:0.9rem;color:#dc2626;margin-bottom:12px;">Số dư <b>'+fmt(c.balance||0)+'đ</b>, cần <b>'+fmt(paid)+'đ</b></div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
-      return;
-    }
-    var earnRP=Math.floor(paid*tier.earnRate/100);
-    if(ai>=0)wallet[ai]={...wallet[ai],used:true,usedDate:bkDate};
-    if(wi>=0)wallet[wi]={...wallet[wi],used:true,usedDate:bkDate};
-    // Save staff names with gender: "Tên (nam/nữ)"
+    if((c.balance||0)<paid){showLoading(false);resetBtn();showShortBalance(c.balance,paid);return;}
+    // Tên nhân viên kèm giới tính: "Tên (nam/nữ)"
     var staffNames=bkState.staffIds.map(function(sid){
       var f=allStaff.find(function(s){return s.id===sid;});
       if(!f)return '?';
       return nameWithGender(f.name,f.gender);
     });
 
-    // 4) Tạo lịch
-    var bkRes=await api('/bookings','POST',{cust_id:c.id,service:svcNames.join(' + '),staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,amount:totalPrice,actual_paid:paid,voucher_discount:disc,addon_voucher:addonName,status:'confirmed',reward_earned:earnRP,reviewed:false});
-    if(!bkRes||bkRes.error||!bkRes.id){stop('✗ Lỗi đặt lịch, thử lại');return;}
-    createdBkId=bkRes.id;
-
-    // 5) Trừ tiền — đọc lại để xác minh; nếu không ghi được thì gỡ lịch vừa tạo để không bị mất tiền/mất lịch
-    var patch={total_spend:(c.total_spend||0)+paid,visits:(c.visits||0)+1,balance:(c.balance||0)-paid,voucher_wallet:wallet};
-    var st=await putCustomerVerified(c.id,patch,c);
-    if(st==='unchanged')st=await putCustomerVerified(c.id,patch,c);
-    if(st==='unchanged'){
-      await api('/bookings/'+createdBkId,'DELETE');
-      var still=await getBookingById(createdBkId,c.id);
-      if(still)await api('/bookings/'+createdBkId,'PUT',{status:'cancelled'});
-      createdBkId=null;
-      stop('✗ Không trừ được tiền nên lịch chưa được đặt. Tài khoản của bạn không bị trừ, vui lòng thử lại.');
+    // 4) Đặt lịch TRỌN GÓI ở máy chủ: tính giá theo bảng dịch vụ, kiểm tra voucher + số dư, trừ tiền, ghi lịch, lịch sử, thông báo — hoặc xong hết, hoặc không đổi gì
+    var r=await api('/book','POST',{cust_id:c.id,service_ids:bkState.svcIds,staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,voucher_id:voucherId,addon_id:addonId});
+    showLoading(false);resetBtn();
+    if(r&&r.ok===true){
+      showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
+      await reloadUser();
+      showPage('home');
       return;
     }
-
-    // 6) Ghi lịch sử giao dịch
-    var tx=await api('/transactions','POST',{cust_id:c.id,type:'earn',amount:-paid,reward:0,note:svcNames.join(' + ')+' – '+bkState.time+' (chờ hoàn thành)',date:bkDate});
-    var txOk=!!(tx&&!tx.error&&tx.id);
-    showLoading(false);resetBtn();
-    if(st==='unknown'||!txOk)showToast('⚠ Đã đặt lịch nhưng chưa xác nhận được việc ghi nhận đầy đủ — vui lòng kiểm tra mục Lịch sử hoặc báo quản lý');
-    else showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
-    await reloadUser();
-    showPage('home');
+    if(r&&r.code==='insufficient_balance'){showShortBalance(r.balance,r.need);return;}
+    if(!r||r.error==='Lỗi kết nối mạng'||!r.code){showToast('⚠ Chưa nhận được phản hồi từ máy chủ — vui lòng kiểm tra mục Lịch sử trước khi đặt lại');return;}
+    showToast('✗ '+apiMsg(r,'Lỗi đặt lịch, thử lại'));
   }catch(e){
     showLoading(false);resetBtn();
-    showToast(createdBkId?'⚠ Có lỗi sau khi tạo lịch — vui lòng kiểm tra mục Lịch sử hoặc báo quản lý':'✗ Lỗi đặt lịch, thử lại');
+    showToast('⚠ Có lỗi khi đặt lịch — vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
   }
 }
 
@@ -1813,43 +1764,30 @@ async function adjustPoints(){
     var custId=parseInt(document.getElementById('pts-cust').value);
     var type=document.getElementById('pts-type').value;
     var amount=parseInt(document.getElementById('pts-amount').value);
-    var note=document.getElementById('pts-note').value||'Điều chỉnh thủ công';
+    var note=(document.getElementById('pts-note').value||'Điều chỉnh thủ công').slice(0,300);
     if(!amount||amount<=0){showToast('✗ Nhập số hợp lệ');return;}
     if(amount>1000000000){showToast('✗ Số quá lớn');return;}
     if(!custId){showToast('✗ Chọn khách hàng');return;}
     showLoading(true);
-    // Đọc số liệu mới nhất của khách (danh sách trên máy có thể đã cũ)
-    var c=await api('/customers/'+custId);
-    if(!c||c.error||!c.id){showToast('✗ Không tải được khách hàng, vui lòng thử lại');return;}
-    var patch,txn,okMsg;
-    if(type==='topup'){
-      var rk=Math.round(amount/1000);
-      patch={balance:(c.balance||0)+amount,rank_points:(c.rank_points||0)+rk};
-      txn={cust_id:custId,type:'topup',amount:amount,reward:0,note:note,date:today()};
-      okMsg='✓ Nạp '+fmt(amount)+' VND cho '+c.name;
-    }else if(type==='deduct'){
-      if((c.balance||0)<amount){showToast('✗ Số dư không đủ (hiện: '+fmt(c.balance||0)+' VND)');return;}
-      patch={balance:(c.balance||0)-amount};
-      txn={cust_id:custId,type:'earn',amount:-amount,reward:0,note:note,date:today()};
-      okMsg='✓ Trừ '+fmt(amount)+' VND của '+c.name;
-    }else if(type==='add'){
-      patch={rank_points:(c.rank_points||0)+amount};
-      txn={cust_id:custId,type:'earn',amount:0,reward:0,note:note,date:today()};
-      okMsg='✓ Cộng +'+fmt(amount)+' điểm cho '+c.name;
-    }else{
-      if((c.rank_points||0)<amount){showToast('✗ Không đủ điểm');return;}
-      patch={rank_points:(c.rank_points||0)-amount};
-      txn={cust_id:custId,type:'redeem',amount:0,reward:0,note:note,date:today()};
-      okMsg='✓ Trừ '+fmt(amount)+' điểm của '+c.name;
+    // Máy chủ đọc số liệu mới nhất của khách, kiểm tra, cập nhật và ghi lịch sử trong MỘT bước (không phụ thuộc danh sách đã cũ trên máy)
+    var kind=type==='topup'?'topup':type==='deduct'?'deduct':type==='add'?'rank_add':'rank_sub';
+    var r=await api('/customers/'+custId+'/adjust','POST',{kind:kind,amount:amount,note:note});
+    if(!r||r.ok!==true){
+      var msg;
+      if(r&&r.code==='insufficient_balance')msg='Số dư không đủ (hiện: '+fmt(r.balance||0)+' VND)';
+      else if(r&&r.code==='insufficient_points')msg='Không đủ điểm';
+      else msg=apiMsg(r,'Chưa cập nhật được, số liệu của khách không đổi. Vui lòng thử lại.');
+      showToast('✗ '+msg);return;
     }
-    var st=await putCustomerVerified(custId,patch,c);
-    if(st==='unchanged'){showToast('✗ Chưa cập nhật được, số liệu của khách không đổi. Vui lòng thử lại.');return;}
-    var tx=await api('/transactions','POST',txn);
-    var txOk=!!(tx&&!tx.error&&tx.id);
+    var cname=(r.customer&&r.customer.name)||'';
+    var okMsg=kind==='topup'?'✓ Nạp '+fmt(amount)+' VND cho '+cname
+      :kind==='deduct'?'✓ Trừ '+fmt(amount)+' VND của '+cname
+      :kind==='rank_add'?'✓ Cộng +'+fmt(amount)+' điểm cho '+cname
+      :'✓ Trừ '+fmt(amount)+' điểm của '+cname;
     await reloadCustomers();
     document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
     var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
-    showToast(st==='unknown'||!txOk?'⚠ Đã cập nhật nhưng chưa xác nhận được việc ghi nhận đầy đủ, vui lòng kiểm tra lại':okMsg);
+    showToast(okMsg);
     await renderPtsPage();
   }finally{
     showLoading(false);
@@ -2555,9 +2493,9 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
 // SESSION PERSISTENCE
 // ============================================================
 function saveSession(){
-  try{localStorage.setItem('gl_session',JSON.stringify({role:currentRole,user:currentUser,staff:currentStaff,ts:Date.now()}));}catch(e){}
+  try{localStorage.setItem('gl_session',JSON.stringify({role:currentRole,user:currentUser,staff:currentStaff,tok:authToken,ts:Date.now()}));}catch(e){}
 }
-function clearSession(){try{localStorage.removeItem('gl_session');}catch(e){}}
+function clearSession(){authToken=null;try{localStorage.removeItem('gl_session');}catch(e){}}
 async function restoreSession(){
   try{
     var raw=localStorage.getItem('gl_session');
@@ -2565,6 +2503,7 @@ async function restoreSession(){
     var sess=JSON.parse(raw);
     if(!sess||!sess.role)return false;
     if(Date.now()-sess.ts>24*3600*1000){clearSession();return false;}
+    authToken=sess.tok||null;
     if(sess.role==='admin'){
       currentRole='admin';goScreen('mgr');
       await loadAllData();renderDashboard();startPolling();setupIdleTracking();
@@ -2607,8 +2546,25 @@ function setupIdleTracking(){
 // BACKGROUND POLLING — silent real-time refresh every 30s
 // ============================================================
 var pollingInterval=null;var pollingBusy=false;var _bgBks=null;
+// Tải báo cáo CSV (cần thẻ đăng nhập quản lý nên không mở thẳng đường dẫn được): lấy về rồi lưu thành tệp
+async function downloadCsv(path,filename){
+  showLoading(true);
+  try{
+    var res=await fetch(API_URL+path,{method:'GET',headers:authHeaders()});
+    if(!res.ok){
+      var m='';try{var j=await res.json();m=(j&&j.error)||'';if(j&&j.code==='auth_required')sessionExpired();}catch(e){}
+      showToast('✗ '+(m||'Không tải được báo cáo, vui lòng thử lại'));return;
+    }
+    var blob=await res.blob();
+    var a=document.createElement('a');
+    a.href=URL.createObjectURL(blob);a.download=filename;a.style.display='none';
+    document.body.appendChild(a);a.click();
+    setTimeout(function(){document.body.removeChild(a);URL.revokeObjectURL(a.href);},4000);
+  }catch(e){showToast('✗ Lỗi kết nối mạng');}
+  finally{showLoading(false);}
+}
 async function apiBg(path){
-  try{var r=await fetch(API_URL+path,{method:'GET',headers:{'Content-Type':'application/json'}});return await r.json();}
+  try{var r=await fetch(API_URL+path,{method:'GET',headers:authHeaders()});var d=await r.json();if(d&&d.code==='auth_required')sessionExpired();return d;}
   catch(e){return null;}
 }
 async function bgPoll(){
@@ -2802,8 +2758,8 @@ async function openCustNotif(){
   // Try restoring previous session on page reload
   await restoreSession();
 
-  document.getElementById('btn-export-bookings').addEventListener('click',function(){var from=document.getElementById('export-from').value;var to=document.getElementById('export-to').value;var url=API_URL+'/export/bookings';if(from)url+='?from='+from;if(to)url+=(from?'&':'?')+'to='+to;window.open(url,'_blank');});
-  document.getElementById('btn-export-customers').addEventListener('click',function(){window.open(API_URL+'/export/customers','_blank');});
+  document.getElementById('btn-export-bookings').addEventListener('click',function(){var from=document.getElementById('export-from').value;var to=document.getElementById('export-to').value;var q='/export/bookings';if(from)q+='?from='+from;if(to)q+=(from?'&':'?')+'to='+to;downloadCsv(q,'greenlifespa-baocao.csv');});
+  document.getElementById('btn-export-customers').addEventListener('click',function(){downloadCsv('/export/customers','greenlifespa-khachhang.csv');});
   document.getElementById('btn-to-auth').addEventListener('click',function(){goScreen('auth');});
   document.getElementById('auth-back').addEventListener('click',function(){goScreen('splash');});
   document.getElementById('tab-login').addEventListener('click',function(){this.classList.add('active');document.getElementById('tab-reg').classList.remove('active');document.getElementById('login-form').style.display='block';document.getElementById('reg-form').style.display='none';});
