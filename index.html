@@ -155,6 +155,10 @@ html.dark .contact-addr{color:#cbd5e1;}
 .st-confirmed{background:var(--g50);color:var(--g800);}
 .st-done{background:#e8f5e9;color:#2e7d32;}
 .st-cancelled{background:#ffebee;color:#c62828;}
+.pay-tag{display:inline-block;padding:2px 8px;border-radius:100px;font-size:0.68rem;font-weight:500;line-height:1.4;}
+.pay-unpaid{background:#fff3e0;color:#b45309;border:1px solid #fde68a;}
+.pay-cash{background:#e0f2f1;color:#0f766e;}
+.pay-none{background:var(--bg3);color:var(--muted);}
 .bk-meta{font-size:0.78rem;color:var(--muted);}
 .modal-ov{position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:200;display:flex;align-items:flex-end;opacity:0;pointer-events:none;}
 .modal-ov.open{opacity:1;pointer-events:all;}
@@ -321,7 +325,7 @@ function tryInitPush(){
     </div>
     <div id="low-balance-warn" style="display:none;background:#fff8e1;border:1px solid #fde68a;border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;gap:10px;align-items:flex-start;">
       <span style="font-size:1.2rem;flex-shrink:0;">⚠️</span>
-      <div><div style="font-size:0.85rem;font-weight:600;color:#c07000;margin-bottom:2px;">Số dư tài khoản thấp</div><div style="font-size:0.78rem;color:#a05c00;">Số dư hiện tại: <b id="low-bal-amt"></b>. Vui lòng nạp thêm tiền để sử dụng dịch vụ.</div></div>
+      <div><div style="font-size:0.85rem;font-weight:600;color:#c07000;margin-bottom:2px;">Số dư tài khoản thấp</div><div style="font-size:0.78rem;color:#a05c00;">Số dư hiện tại: <b id="low-bal-amt"></b>. Bạn vẫn đặt lịch được và thanh toán tiền mặt tại spa; nạp thêm để trừ thẳng số dư và tích điểm RP (tiền mặt không tích RP).</div></div>
     </div>
     <div class="contact-card">
       <div class="contact-card-title">📍 Thông tin liên hệ</div>
@@ -627,8 +631,10 @@ function safeUrl(u){u=String(u==null?'':u).trim();var l=u.toLowerCase();return(l
 function fmtDate(d){if(!d)return'';d=String(d);var p=d.split('-');if(p.length!==3)return esc(d);return esc(p[2])+'/'+esc(p[1])+'/'+esc(p[0]);}
 function showToast(msg){if(_expiredAt&&Date.now()-_expiredAt<2500&&String(msg).indexOf('hết hạn')<0)return;var t=document.getElementById('toast');t.textContent=msg;t.className='toast show';setTimeout(function(){t.className='toast';},2500);}
 function goScreen(id){document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});document.getElementById(id).classList.add('active');window.scrollTo(0,0);}
-function openModal(title,html){document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal').classList.add('open');}
-function closeModal(){document.getElementById('modal').classList.remove('open');}
+// Hộp thoại dùng chung. modalOnClose: việc cần làm khi hộp bị đóng / bị thay bằng hộp khác (vd. hộp xác nhận thu tiền mặt chờ câu trả lời)
+var modalOnClose=null;
+function openModal(title,html){var h=modalOnClose;modalOnClose=null;if(h)h();document.getElementById('modal-title').textContent=title;document.getElementById('modal-body').innerHTML=html;document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');var h=modalOnClose;modalOnClose=null;if(h)h();}
 function setActiveFilter(btn){btn.parentNode.querySelectorAll('.ftab').forEach(function(t){t.classList.remove('active');});btn.classList.add('active');}
 function toggleTheme(){var isDark=document.documentElement.classList.toggle('dark');localStorage.setItem('gl_theme',isDark?'dark':'light');document.querySelectorAll('#theme-toggle,#mgr-theme-toggle').forEach(function(b){b.textContent=isDark?'☀️':'🌙';});}
 // ============================================================
@@ -727,6 +733,14 @@ async function putCustomerVerified(id,patch,orig){
 // Số tiền khách thực trả cho một lịch. actual_paid = 0 là hợp lệ (voucher trả hết) nên không được rơi về "amount";
 // chỉ lịch cũ chưa có actual_paid (null) mới dùng amount.
 function bkPaid(b){var v=(b.actual_paid!==null&&b.actual_paid!==undefined)?b.actual_paid:b.amount;return Number(v)||0;}
+// Thanh toán của lịch: lịch cũ / lịch đã trừ số dư = "paid" + "balance"; lịch đặt khi thiếu số dư = "unpaid" (thu tiền mặt tại spa); thu tiền mặt xong = "paid" + "cash" (không tích RP).
+function bkIsUnpaid(b){return !!b&&b.pay_status==='unpaid';}
+function bkIsCash(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='cash';}
+function bkPayTag(b){
+  if(bkIsUnpaid(b))return b.status==='cancelled'?'<span class="pay-tag pay-none">Chưa thanh toán · đã huỷ</span>':'<span class="pay-tag pay-unpaid">💵 Chưa thanh toán</span>';
+  if(bkIsCash(b))return '<span class="pay-tag pay-cash">💵 Đã thu tiền mặt</span>';
+  return '';
+}
 // Huỷ lịch + hoàn tiền (+ voucher, lần đến, chi tiêu) về đúng khách của lịch, dù ai bấm huỷ (khách / nhân viên / quản lý).
 // Toàn bộ chạy trong MỘT bước ở máy chủ (cơ sở dữ liệu): hoặc xong hết, hoặc không đổi gì; bấm lặp không hoàn tiền lần 2.
 // Chỉ huỷ được lịch đang chờ / đã xác nhận; lịch đã hoàn thành (dịch vụ đã thực hiện) thì không huỷ được.
@@ -737,10 +751,33 @@ async function cancelBookingAndRefund(bkId,custId){
   return{ok:false,msg:apiMsg(r,'Không huỷ được lịch, vui lòng thử lại')};
 }
 // Đánh dấu hoàn thành — máy chủ chặn bấm lặp (không cộng điểm RP hai lần)
+// Lịch CHƯA THANH TOÁN chỉ hoàn thành khi nhân viên / quản lý xác nhận đã thu tiền mặt (máy chủ trả mã 'unpaid' kèm số tiền cần thu → hỏi lại rồi gửi cash_confirmed).
+function askCashConfirm(due){
+  return new Promise(function(resolve){
+    openModal('Xác nhận thu tiền mặt','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.9rem;margin-bottom:10px;">Lịch này <b>chưa thanh toán</b>. Khách đã trả <b>'+fmt(due)+' VND</b> tiền mặt chưa?</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:16px;color:#92400e;text-align:left;">Chỉ bấm "Đã thu" khi đã nhận đủ tiền. Thanh toán tiền mặt <b>không được cộng điểm RP</b>.</div><div style="display:flex;gap:10px;"><button id="cash-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Chưa thu</button><button id="cash-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Đã thu '+fmt(due)+'đ</button></div></div>');
+    var settled=false;
+    function done(v){if(settled)return;settled=true;resolve(v);}
+    modalOnClose=function(){done(false);};
+    var no=document.getElementById('cash-no'),yes=document.getElementById('cash-yes');
+    if(no)no.addEventListener('click',function(){closeModal();});
+    if(yes)yes.addEventListener('click',function(){modalOnClose=null;closeModal();done(true);});
+  });
+}
 async function markBookingDone(bkId){
   var r=await api('/bookings/'+bkId+'/complete','POST',{});
   if(r&&r.ok===true)return{ok:true};
+  if(r&&r.code==='unpaid'){
+    var yes=await askCashConfirm(Number(r.due)||0);
+    if(!yes)return{ok:false,declined:true,msg:'Chưa hoàn thành – chưa xác nhận thu tiền mặt'};
+    r=await api('/bookings/'+bkId+'/complete','POST',{cash_confirmed:true});
+    if(r&&r.ok===true)return{ok:true,cash:true,collected:Number(r.collected)||0};
+  }
   return{ok:false,msg:apiMsg(r,'Không cập nhật được, vui lòng thử lại')};
+}
+function doneToast(dr){
+  if(dr.ok)showToast(dr.cash?'✓ Hoàn thành – đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':'✓ Hoàn thành');
+  else if(dr.declined)showToast('Chưa hoàn thành lịch – chưa xác nhận thu tiền');
+  else showToast('✗ '+dr.msg);
 }
 // Đổi qua lại giữa "Chờ" và "Xác nhận" (không ảnh hưởng tiền / điểm).
 // "Hoàn thành" và "Huỷ" là trạng thái cuối: máy chủ từ chối nếu lịch đã ở trạng thái cuối.
@@ -1298,14 +1335,18 @@ function renderConfirm(){
     +'<div id="cfm-calc"></div>';
   function recalc(){
     var disc=bkState.voucherDiscount||0;var paid=Math.max(0,totalPrice-disc);
-    var earnRP=Math.floor(paid*tier.earnRate/100);
+    // Đủ số dư → trừ thẳng số dư (tích RP khi hoàn thành). Không đủ → vẫn đặt được, CHƯA THANH TOÁN: trả tiền mặt tại spa, không tích RP. (Gợi ý theo số dư đang hiển thị; máy chủ quyết định khi đặt.)
+    var bal=c?(Number(c.balance)||0):0;var enough=bal>=paid;
+    var earnRP=enough?Math.floor(paid*tier.earnRate/100):0;
     var el=document.getElementById('cfm-calc');if(!el)return;
     el.innerHTML=(disc>0?'<div class="sum-row" style="color:#c07000;"><span>🎟 Giảm</span><span>-'+fmt(disc)+'đ</span></div>':'')
       +'<div style="border-top:1.5px solid var(--border);margin:6px 0;"></div>'
       +'<div class="sum-row sum-total"><span>Thực trả</span><span style="color:var(--g800);font-size:1.05rem;">'+fmt(paid)+'đ</span></div>'
       +'<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-top:8px;font-size:0.82rem;">'
-      +'<div class="sum-row" style="color:#a07830;"><span>🎁 RP nhận ('+tier.earnRate+'%)</span><span>+'+fmt(earnRP)+' RP</span></div>'
-      +'<div class="sum-row" style="color:var(--muted);"><span>💳 Số dư TK</span><span>'+fmt(c?c.balance:0)+'đ</span></div></div>';
+      +(enough?'<div class="sum-row" style="color:#a07830;"><span>🎁 RP nhận ('+tier.earnRate+'%)</span><span>+'+fmt(earnRP)+' RP</span></div>':'<div class="sum-row" style="color:var(--muted);"><span>🎁 RP nhận</span><span>0 RP (tiền mặt không tích RP)</span></div>')
+      +'<div class="sum-row" style="color:var(--muted);"><span>💳 Số dư TK</span><span>'+fmt(bal)+'đ</span></div></div>'
+      +(enough?(paid>0?'<div style="margin-top:8px;font-size:0.78rem;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;">✅ Sẽ trừ <b>'+fmt(paid)+'đ</b> từ số dư tài khoản khi đặt lịch.</div>':'')
+        :'<div style="margin-top:8px;font-size:0.78rem;color:#92400e;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;">💵 Số dư chưa đủ — lịch vẫn được đặt ở trạng thái <b>Chưa thanh toán</b>. Bạn thanh toán <b>tiền mặt</b> tại spa (không tích RP). Mỗi lần chỉ giữ 1 lịch chưa thanh toán, hãy chọn đủ dịch vụ trong cùng một lịch.</div>');
   }
   setTimeout(function(){
     var vs=document.getElementById('voucher-sel');if(vs)vs.addEventListener('change',function(){var idx=parseInt(this.value);if(isNaN(idx)||idx<0){bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;}else{bkState.voucherWalletIdx=idx;bkState.voucherDiscount=parseInt(this.options[this.selectedIndex].getAttribute('data-val'))||0;}recalc();});
@@ -1314,8 +1355,9 @@ function renderConfirm(){
   },50);
 }
 
-function showShortBalance(balance,need){
-  openModal('Số dư không đủ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💰</div><div style="font-size:0.9rem;color:#dc2626;margin-bottom:12px;">Số dư <b>'+fmt(balance||0)+'đ</b>, cần <b>'+fmt(need||0)+'đ</b></div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
+// Mỗi khách chỉ giữ 1 lịch chưa thanh toán (chờ / đã xác nhận) tại một thời điểm — tránh đặt lịch tràn lan
+function showUnpaidLimit(msg){
+  openModal('Chưa đặt được lịch','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.88rem;color:#92400e;margin-bottom:12px;line-height:1.5;">'+esc(msg)+'</div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
 }
 async function confirmBooking(){
   if(!currentUser||!bkState.svcIds.length||!bkState.time){showToast('✗ Thiếu thông tin');return;}
@@ -1345,7 +1387,7 @@ async function confirmBooking(){
       if(offs.indexOf(bkDate)>-1){stop('✗ Nhân viên đã đăng ký nghỉ ngày này, vui lòng chọn lại');return;}
     }
 
-    // 3) Kiểm tra nhanh trên máy (để báo lỗi sớm): voucher theo ví mới nhất, số dư. Máy chủ kiểm tra lại và là bên quyết định.
+    // 3) Kiểm tra nhanh trên máy (để báo lỗi sớm): voucher theo ví mới nhất. Số dư KHÔNG còn chặn: đủ số dư → trừ thẳng; thiếu → lịch "chưa thanh toán" (thu tiền mặt). Máy chủ kiểm tra lại và là bên quyết định.
     var wallet=(c.voucher_wallet||[]).slice();
     var disc=0,voucherId,addonId;
     var wi=bkState.voucherWalletIdx,ai=bkState.addonWalletIdx;
@@ -1360,8 +1402,6 @@ async function confirmBooking(){
       if(!av||av.used||!av.isAddon||!av.id){stop('✗ Voucher add-on không còn hiệu lực');return;}
       addonId=String(av.id);
     }
-    var paid=Math.max(0,totalPrice-disc);
-    if((c.balance||0)<paid){showLoading(false);resetBtn();showShortBalance(c.balance,paid);return;}
     // Tên nhân viên kèm giới tính: "Tên (nam/nữ)"
     var staffNames=bkState.staffIds.map(function(sid){
       var f=allStaff.find(function(s){return s.id===sid;});
@@ -1373,12 +1413,12 @@ async function confirmBooking(){
     var r=await api('/book','POST',{cust_id:c.id,service_ids:bkState.svcIds,staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,voucher_id:voucherId,addon_id:addonId});
     showLoading(false);resetBtn();
     if(r&&r.ok===true){
-      showToast('✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
+      showToast(r.pay_status==='unpaid'?'✓ Đặt lịch xong! Thanh toán tiền mặt tại spa (không tích RP)':'✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
       await reloadUser();
       showPage('home');
       return;
     }
-    if(r&&r.code==='insufficient_balance'){showShortBalance(r.balance,r.need);return;}
+    if(r&&r.code==='unpaid_limit'){showUnpaidLimit(apiMsg(r,'Bạn đang có 1 lịch chưa thanh toán. Vui lòng hoàn thành hoặc huỷ lịch đó trước khi đặt thêm.'));return;}
     if(!r||!r.code||r.code==='upstream'){
       showToast('⚠ '+((r&&r.code==='upstream')?r.error+' — c':'C')+'hưa rõ lịch đã được đặt chưa, vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
       await reloadUser();
@@ -1458,8 +1498,11 @@ async function renderHistory(filter){
     var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};
     var html='';
     bks.forEach(function(b){
-      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;"><div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>'+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
+      // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
+      var amtHtml=(bkIsUnpaid(b)||bkIsCash(b))?'<div style="font-size:0.9rem;font-weight:700;color:'+(b.status==='cancelled'?'var(--muted)':bkIsUnpaid(b)?'#b45309':'var(--text)')+';">'+fmt(bkPaid(b))+' VND</div>':'<div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>';
+      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;">'+amtHtml+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
         +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
+        +(bkPayTag(b)?'<div style="margin-top:6px;">'+bkPayTag(b)+(bkIsUnpaid(b)&&b.status!=='cancelled'?' <span style="font-size:0.72rem;color:var(--muted);">trả tiền mặt tại spa (không tích RP)</span>':bkIsCash(b)?' <span style="font-size:0.72rem;color:var(--muted);">không tích RP</span>':'')+'</div>':'')
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
         +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
         +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
@@ -1492,8 +1535,8 @@ function customerCancelBooking(bk,onDone){
   var byCustomer=(currentRole==='customer');
   var hrs=hoursUntilBooking(bk);
   if(hrs<1){openModal('Không thể huỷ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⛔</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;color:#dc2626;">Không thể huỷ lịch</div><div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Chỉ được huỷ trước giờ hẹn ít nhất <b>1 giờ</b>.</div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đã hiểu</button></div>');return;}
-  var paid=bkPaid(bk);
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">'+(byCustomer?'Bạn có chắc muốn huỷ lịch?':'Bạn có chắc muốn huỷ lịch này?')+'</div><div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản'+(byCustomer?'':' của khách')+'.</div><div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
+  var paid=bkPaid(bk);var unpaidBk=bkIsUnpaid(bk);
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">'+(byCustomer?'Bạn có chắc muốn huỷ lịch?':'Bạn có chắc muốn huỷ lịch này?')+'</div>'+(unpaidBk?'<div style="font-size:0.82rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:16px;color:var(--muted);">💵 Lịch chưa thanh toán nên không có khoản hoàn tiền.</div>':'<div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản'+(byCustomer?'':' của khách')+'.</div>')+'<div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('cc-no');var yes=document.getElementById('cc-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
@@ -1507,6 +1550,7 @@ function customerCancelBooking(bk,onDone){
         closeModal();
         if(!res.ok)showToast('✗ '+res.msg);
         else if(res.warn)showToast('⚠ '+res.warn);
+        else if(unpaidBk||!(res.paid>0))showToast('✓ Đã huỷ lịch'+(unpaidBk?' (chưa thanh toán nên không hoàn tiền)':''));
         else showToast('✓ Đã huỷ – Hoàn '+fmt(res.paid)+' VND '+(byCustomer?'về TK':'cho khách'));
       }finally{showLoading(false);}
       if(onDone)onDone();
@@ -1519,10 +1563,10 @@ async function mgrCancelBooking(bkId,onDone){
   if(bk.status==='cancelled'){showToast('✗ Lịch này đã được huỷ trước đó');if(onDone)onDone();return;}
   if(bk.status==='done'){showToast('✗ Lịch đã hoàn thành (dịch vụ đã thực hiện) nên không thể huỷ');if(onDone)onDone();return;}
   var cust=allCustomers.find(function(c){return c.id===bk.cust_id;});
-  var paid=bkPaid(bk);var custName=cust?cust.name:'Khách hàng';
+  var paid=bkPaid(bk);var custName=cust?cust.name:'Khách hàng';var unpaidBk=bkIsUnpaid(bk);
   var hrs=hoursUntilBooking(bk);
   var timeNote=hrs>=1?'<div style="font-size:0.78rem;color:#16a34a;margin-bottom:8px;">⏱ Còn '+hrs.toFixed(1)+' giờ</div>':'<div style="font-size:0.78rem;color:#f59e0b;margin-bottom:8px;">⚠️ Đã qua thời hạn – Admin vẫn có quyền huỷ.</div>';
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+esc(custName)+' – '+esc(bk.service)+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+fmtDate(bk.date)+' '+esc(bk.time)+'</div>'+timeNote+'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+esc(custName)+'.</div><div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.92rem;font-weight:600;margin-bottom:2px;">'+esc(custName)+' – '+esc(bk.service)+'</div><div style="font-size:0.8rem;color:var(--muted);margin-bottom:10px;">⏰ '+fmtDate(bk.date)+' '+esc(bk.time)+'</div>'+timeNote+(unpaidBk?'<div style="padding:12px;border-radius:10px;background:var(--bg3);border:1px solid var(--border);font-size:0.83rem;margin-bottom:16px;text-align:left;color:var(--muted);">💵 Lịch chưa thanh toán ('+fmt(paid)+' VND) — không có khoản hoàn tiền.</div>':'<div style="padding:12px;border-radius:10px;background:#f0fdf4;border:1px solid #bbf7d0;font-size:0.83rem;margin-bottom:16px;text-align:left;">✅ Sẽ hoàn <b style="color:#16a34a;">'+fmt(paid)+' VND</b> về TK '+esc(custName)+'.</div>')+'<div style="display:flex;gap:10px;"><button id="mgr-cancel-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không huỷ</button><button id="mgr-cancel-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xác nhận huỷ</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('mgr-cancel-no');var yes=document.getElementById('mgr-cancel-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
@@ -1535,6 +1579,7 @@ async function mgrCancelBooking(bkId,onDone){
         closeModal();
         if(!res.ok)showToast('✗ '+res.msg);
         else if(res.warn)showToast('⚠ '+res.warn);
+        else if(unpaidBk||!(res.paid>0))showToast('✓ Đã huỷ lịch của '+custName+(unpaidBk?' (chưa thanh toán nên không hoàn tiền)':''));
         else showToast('✓ Đã huỷ – Hoàn '+fmt(res.paid)+' VND cho '+custName);
       }finally{showLoading(false);}
       if(onDone)onDone();
@@ -1881,7 +1926,7 @@ async function renderAllBookings(filter){
     html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div>'
       +'<select data-bid="'+b.id+'" data-st="'+esc(b.status)+'"'+((b.status==='done'||b.status==='cancelled')?' disabled title="Trạng thái cuối, không thể đổi"':'')+' style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;background:var(--card-bg);color:var(--text);">'
       +['pending','confirmed','done','cancelled'].map(function(st){return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>';}).join('')+'</select></div>'
-      +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+' · <b>'+fmt(bkPaid(b))+' VND</b></div>'
+      +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+' · <b>'+fmt(bkPaid(b))+' VND</b>'+(bkPayTag(b)?' '+bkPayTag(b):'')+'</div>'
       +(b.review?'<div style="margin-top:4px;font-size:0.75rem;background:var(--bg3);padding:6px 10px;border-radius:6px;"><span style="color:#c07000;">'+starStr(b.review.stars)+'</span>'+(b.review.comment?' <span style="color:var(--muted);">'+esc(b.review.comment)+'</span>':'')+'</div>':'')
       +'</div>';
   });
@@ -1892,7 +1937,7 @@ async function renderAllBookings(filter){
     // Hoàn thành / Huỷ là trạng thái cuối: không đổi sang bất kỳ trạng thái nào khác
     if(prev==='done'||prev==='cancelled'){this.value=prev;showToast('✗ Lịch đã '+(prev==='done'?'hoàn thành':'huỷ')+' là trạng thái cuối, không thể đổi');return;}
     if(newStatus==='cancelled'){mgrCancelBooking(bid,function(){renderAllBookings(filter);});}
-    else if(newStatus==='done'){var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderAllBookings(filter);}
+    else if(newStatus==='done'){var dr=await markBookingDone(bid);doneToast(dr);renderAllBookings(filter);}
     else{var sr=await setBookingActiveStatus(bid,newStatus);showToast(sr.ok?'✓ Đã cập nhật':'✗ '+sr.msg);renderAllBookings(filter);}
   });
 });
@@ -2388,10 +2433,10 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
       h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+esc(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+esc(cust?cust.phone:'')+'</div></div>'
         +'<span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
-        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+'</div>'
+        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+(bkPayTag(b)?' '+bkPayTag(b):'')+'</div>'
         +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+esc(b.addon_voucher)+'</div>':'')
         +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div>'
-        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">Thanh toán:</span><span style="font-weight:700;font-size:1rem;color:var(--accent);">'+fmt(bkPaid(b))+' VND</span></div>'
+        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?'Đã thu tiền mặt:':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
           ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
         +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+starStr(b.review.stars)+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+esc(b.review.comment)+'</div>':'')+'</div>':'')
@@ -2494,7 +2539,7 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
     });
   }
   function bindBookingBtns(){
-    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderStaffView(stf);});});
+    document.querySelectorAll('.staff-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);doneToast(dr);renderStaffView(stf);});});
     document.querySelectorAll('.staff-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=myBks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderStaffView(stf);});});});
   }
 
@@ -2635,11 +2680,15 @@ function renderDashboardWith(bks){
   if(statsEl)statsEl.innerHTML='<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">'+allCustomers.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">'+bks.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Hoàn thành</div><div class="stat-card-val">'+doneBks+'</div></div><div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val" style="font-size:1.1rem;">'+fmt(totalRev)+'</div></div>';
   var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
   var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
+  // Chưa thu: lịch chưa thanh toán còn hiệu lực (chờ / đã xác nhận) — thu tiền mặt khi hoàn thành
+  var unpaidAct=bks.filter(function(b){return bkIsUnpaid(b)&&(b.status==='pending'||b.status==='confirmed');});
+  var unpaidSum=0;unpaidAct.forEach(function(b){unpaidSum+=bkPaid(b);});
   var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
-  active.forEach(function(b){var cust=allCustomers.find(function(c){return c.id===b.cust_id;});bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+'</div></div>';});
+  if(unpaidAct.length)bkHtml+='<div style="display:flex;justify-content:space-between;align-items:center;background:#fff8e1;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.8rem;color:#92400e;"><span>💵 Chưa thu tiền mặt: <b>'+unpaidAct.length+' lịch</b></span><b>'+fmt(unpaidSum)+' VND</b></div>';
+  active.forEach(function(b){var cust=allCustomers.find(function(c){return c.id===b.cust_id;});bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+(bkPayTag(b)?' '+bkPayTag(b)+' <b>'+fmt(bkPaid(b))+'đ</b>':'')+'</div></div>';});
   if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
   var tbEl=document.getElementById('today-bookings');if(tbEl)tbEl.innerHTML=bkHtml;
-  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);showToast(dr.ok?'✓ Hoàn thành':'✗ '+dr.msg);renderDashboard();});});
+  document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);doneToast(dr);renderDashboard();});});
   document.querySelectorAll('.mgr-cancel-btn').forEach(function(btn){btn.addEventListener('click',function(){mgrCancelBooking(parseInt(this.getAttribute('data-bid')),function(){renderDashboard();});});});
   var days=[];for(var d=6;d>=0;d--){var ds=vnDateOffset(-d);var rev=0;bks.forEach(function(b){if(b.date===ds&&b.status==='done')rev+=bkPaid(b);});days.push({label:parseInt(ds.slice(8,10),10)+'/'+parseInt(ds.slice(5,7),10),rev:rev});}
   var maxRev=100000;days.forEach(function(d){if(d.rev>maxRev)maxRev=d.rev;});
