@@ -872,6 +872,8 @@ function normSvcCat(s){if(s&&typeof s.cat==='string')s.cat=s.cat.replace(/\s+/g,
 function isAddonSvc(s){return !!s&&String(s.cat||'').replace(/\s+/g,' ').trim().toLowerCase()==='dịch vụ thêm';}
 var ADDON_ONLY_MSG='Dịch vụ thêm chỉ chọn kèm dịch vụ khác, vui lòng chọn thêm một dịch vụ chính';
 function bkOnlyAddons(){var n=0,a=0;bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});if(s){n++;if(isAddonSvc(s))a++;}});return n>0&&a===n;}
+// Số nhân viên cần chọn = số dịch vụ CHÍNH (dịch vụ thêm là bổ sung, không cần thêm nhân viên); luôn ít nhất 1
+function bkStaffCount(){var n=0;bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});if(!isAddonSvc(s))n++;});return Math.max(1,n);}
 async function loadServices(){
   var raw=await api('/services');
   if(Array.isArray(raw))allServices=raw.map(normSvcCat);
@@ -1071,7 +1073,8 @@ async function pickRandomStaff(gender,date,time){
 
 // CHANGE 5: Staff selection — limit to exact count n, prevent adding beyond limit
 async function renderStaffStep(){
-  var n=bkState.svcIds.length;
+  var n=bkStaffCount();
+  var extraSvc=bkState.svcIds.length-n;   // số dịch vụ thêm đi kèm (không tính nhân viên)
   // Reset staffIds to empty when re-entering this step
   bkState.staffIds=[];
   var date=bkState.date||today();
@@ -1092,7 +1095,7 @@ async function renderStaffStep(){
 
   function buildStaffHtml(){
     var html='<div style="background:var(--accent-light);border:1px solid var(--g200);border-radius:8px;padding:8px 12px;font-size:0.82rem;color:var(--g800);margin-bottom:10px;">'
-      +'Chọn <b>'+n+' nhân viên</b> cho '+n+' dịch vụ đã chọn</div>';
+      +'Chọn <b>'+n+' nhân viên</b> cho '+n+' dịch vụ'+(extraSvc>0?' chính (dịch vụ thêm không cần thêm nhân viên)':' đã chọn')+'</div>';
 
     // Random buttons
     html+='<div style="display:flex;gap:8px;margin-bottom:12px;">'
