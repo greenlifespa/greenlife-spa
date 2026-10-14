@@ -455,8 +455,8 @@ function tryInitPush(){
     <div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;">
       <span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tất cả đặt lịch</span>
       <div style="display:flex;gap:6px;">
-        <button id="btn-del-done" style="background:none;border:1px solid #6ee7b7;color:#065f46;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Hoàn thành</button>
-        <button id="btn-del-cancelled" style="background:none;border:1px solid #fca5a5;color:#991b1b;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xóa Đã hủy</button>
+        <button id="btn-del-done" style="background:none;border:1px solid #6ee7b7;color:#065f46;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xoá Hoàn thành</button>
+        <button id="btn-del-cancelled" style="background:none;border:1px solid #fca5a5;color:#991b1b;padding:5px 10px;border-radius:100px;font-size:0.72rem;cursor:pointer;font-family:'DM Sans',sans-serif;">🗑 Xoá Đã huỷ</button>
       </div>
     </div>
     <div class="filter-tabs"><button class="ftab active" id="fb-all" data-filter="all">Tất cả</button><button class="ftab" id="fb-pending" data-filter="pending">Chờ</button><button class="ftab" id="fb-confirmed" data-filter="confirmed">Xác nhận</button><button class="ftab" id="fb-done" data-filter="done">Hoàn thành</button></div>
@@ -567,7 +567,7 @@ function mergeStaffCache(staffArr){
       // Gender: cache ưu tiên — API không lưu bền
       if(!s.gender&&c.gender)s.gender=c.gender;
       // off_days: CHỈ khôi phục cache khi server không gửi field (null/undefined)
-      // KHÔNG khôi phục khi server gửi [] (admin/NV đã xóa hết — phải tôn trọng)
+      // KHÔNG khôi phục khi server gửi [] (admin/NV đã xoá hết — phải tôn trọng)
       if((_rawOff===null||_rawOff===undefined)&&c.off_days&&c.off_days.length)
         s.off_days=c.off_days.slice();
     });
@@ -866,9 +866,11 @@ async function loginAs(user){
   setTimeout(checkPendingReview,600);
 }
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
+// Tên nhóm dịch vụ: bỏ khoảng trắng thừa đầu/cuối/giữa để không sinh thêm tab nhóm trùng (vd "Gội Đầu" và "Gội Đầu "). KHÔNG đổi tên dịch vụ: bookingDuration so khớp đúng với tên đã lưu trong lịch.
+function normSvcCat(s){if(s&&typeof s.cat==='string')s.cat=s.cat.replace(/\s+/g,' ').trim();return s;}
 async function loadServices(){
   var raw=await api('/services');
-  if(Array.isArray(raw))allServices=raw;
+  if(Array.isArray(raw))allServices=raw.map(normSvcCat);
 }
 // Preserve gender edits made in memory — API may not return updated gender field
 async function loadStaff(){
@@ -881,7 +883,7 @@ async function loadStaff(){
 }
 async function loadAllData(){
   var r=await Promise.all([api('/services'),api('/staff'),api('/customers')]);
-  if(Array.isArray(r[0]))allServices=r[0];
+  if(Array.isArray(r[0]))allServices=r[0].map(normSvcCat);
   var fresh=Array.isArray(r[1])?r[1]:allStaff;
   mergeStaffCache(fresh);
   allStaff=fresh;
@@ -1448,7 +1450,7 @@ async function refreshRewards(){
 }
 async function redeemReward(vid,rp,name,val,minBill,isAddon){
   var c=currentUser;if((c.reward_points||0)<rp){showToast('✗ Không đủ RP');return;}
-  openModal('Đổi điểm Reward','<div style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">'+(isAddon?'✨':'🎁')+'</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;">'+esc(name)+'</div><div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;"><div>⭐ Tốn: <b>'+fmt(rp)+' RP</b></div>'+(minBill>0?'<div style="color:#e65c00;margin-top:4px;">HĐ tối thiểu: '+fmt(minBill)+'đ</div>':'')+'</div><div style="display:flex;gap:10px;"><button id="rdm-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Hủy</button><button id="rdm-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;cursor:pointer;font-weight:500;">Đổi ngay</button></div></div>');
+  openModal('Đổi điểm Reward','<div style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">'+(isAddon?'✨':'🎁')+'</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;">'+esc(name)+'</div><div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;"><div>⭐ Tốn: <b>'+fmt(rp)+' RP</b></div>'+(minBill>0?'<div style="color:#e65c00;margin-top:4px;">HĐ tối thiểu: '+fmt(minBill)+'đ</div>':'')+'</div><div style="display:flex;gap:10px;"><button id="rdm-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="rdm-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;cursor:pointer;font-weight:500;">Đổi ngay</button></div></div>');
   setTimeout(function(){
     var c2=document.getElementById('rdm-cancel');var ok=document.getElementById('rdm-ok');
     if(c2)c2.addEventListener('click',closeModal);
@@ -1495,7 +1497,7 @@ async function renderHistory(filter){
   var list=document.getElementById('history-list');
   if(filter==='booking'){
     if(!bks.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch đặt</div></div>';return;}
-    var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};
+    var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};
     var html='';
     bks.forEach(function(b){
       // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
@@ -1506,7 +1508,7 @@ async function renderHistory(filter){
         +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
         +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
         +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
-        +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Hủy lịch</button></div>':'')
+        +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Huỷ lịch</button></div>':'')
         +'</div>';
     });
     list.innerHTML=html;
@@ -1679,7 +1681,7 @@ async function renderMgrPosts(){
   });
   var el=document.getElementById('mgr-posts-list');if(el)el.innerHTML=html;
   document.querySelectorAll('[data-edit-post]').forEach(function(btn){btn.addEventListener('click',function(){var pid=parseInt(this.getAttribute('data-edit-post'));var p=posts.find(function(x){return x.id===pid;});if(p)openEditPost(p);});});
-  document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xóa bài viết này?'))return;showLoading(true);var dr=await api('/posts/'+pid,'DELETE');showLoading(false);if(dr&&dr.error){showToast('✗ '+dr.error);return;}showToast('✓ Đã xóa');renderMgrPosts();});});
+  document.querySelectorAll('[data-del-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-del-post'));if(!confirm('Xoá bài viết này?'))return;showLoading(true);var dr=await api('/posts/'+pid,'DELETE');showLoading(false);if(dr&&dr.error){showToast('✗ '+dr.error);return;}showToast('✓ Đã xoá');renderMgrPosts();});});
   document.querySelectorAll('[data-pin-post]').forEach(function(btn){btn.addEventListener('click',async function(){var pid=parseInt(this.getAttribute('data-pin-post'));var isPinned=this.getAttribute('data-pinned')==='1';showLoading(true);var pn=await api('/posts/'+pid,'PUT',{pinned:!isPinned});showLoading(false);if(!pn||pn.error){showToast('✗ '+(isPinned?'Chưa bỏ ghim được: ':'Chưa ghim được: ')+((pn&&pn.error)?pn.error:'lỗi kết nối, vui lòng thử lại'));return;}showToast(isPinned?'✓ Đã bỏ ghim':'📌 Đã ghim nổi bật');renderMgrPosts();});});
 }
 function openAddPost(){
@@ -1870,7 +1872,7 @@ async function renderServicesPage(){
       +'<div style="font-size:0.95rem;font-weight:500;color:var(--g600);">'+fmt(s.price)+'đ</div>'
       +'<div style="display:flex;gap:6px;">'
       +'<button class="btn-sm-out edit-svc-btn" data-sid="'+s.id+'">Sửa</button>'
-      +'<button class="del-svc-btn" data-sid="'+s.id+'" data-name="'+esc(s.name)+'" style="background:none;border:1px solid #fca5a5;color:#dc2626;padding:7px 14px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
+      +'<button class="del-svc-btn" data-sid="'+s.id+'" data-name="'+esc(s.name)+'" style="background:none;border:1px solid #fca5a5;color:#dc2626;padding:7px 14px;border-radius:100px;font-size:0.78rem;cursor:pointer;font-family:\'DM Sans\',sans-serif;">Xoá</button>'
       +'</div></div></div>';
   });
   document.getElementById('mgr-svc-list').innerHTML=shtml||'<div class="empty-state" style="padding:2rem;"><div class="empty-icon">✨</div><div class="empty-text">Chưa có dịch vụ</div></div>';
@@ -1885,13 +1887,13 @@ async function renderServicesPage(){
     btn.addEventListener('click',function(){
       var sid=parseInt(this.getAttribute('data-sid'));
       var name=this.getAttribute('data-name');
-      openModal('🗑 Xóa dịch vụ',
+      openModal('🗑 Xoá dịch vụ',
         '<div style="text-align:center;padding:8px;">'
         +'<div style="font-size:2rem;margin-bottom:8px;">⚠️</div>'
-        +'<div style="font-size:0.9rem;margin-bottom:12px;">Xóa dịch vụ <b>'+esc(name)+'</b>?</div>'
+        +'<div style="font-size:0.9rem;margin-bottom:12px;">Xoá dịch vụ <b>'+esc(name)+'</b>?</div>'
         +'<div style="display:flex;gap:10px;">'
         +'<button id="del-svc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button>'
-        +'<button id="del-svc-yes" data-sid="'+sid+'" data-name="'+esc(name)+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa</button>'
+        +'<button id="del-svc-yes" data-sid="'+sid+'" data-name="'+esc(name)+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xoá</button>'
         +'</div></div>');
       setTimeout(function(){
         var no=document.getElementById('del-svc-no');
@@ -1908,7 +1910,7 @@ var delIds=getDeletedSvcIds();
 if(delIds.indexOf(id)<0){delIds.push(id);saveDeletedSvcIds(delIds);}
 showLoading(false);
 closeModal();
-showToast('✓ Đã xóa: '+n);
+showToast('✓ Đã xoá: '+n);
 renderServicesPage();
 });
       },50);
@@ -1920,7 +1922,7 @@ async function renderAllBookings(filter){
   var bks0=await api('/bookings');
   if(!Array.isArray(bks0)){document.getElementById('all-bookings').innerHTML='<div class="empty-state"><div class="empty-text">Không tải được dữ liệu, vui lòng thử lại</div></div>';return;}
   var bks=filterDeletedBks(bks0);
-  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Hủy'};var html='';
+  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};var html='';
   bks.filter(function(b){return filter==='all'||b.status===filter;}).forEach(function(b){
     var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
     html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div>'
@@ -1944,16 +1946,16 @@ async function renderAllBookings(filter){
 }
 
 async function bulkDeleteBookings(status){
-  var stLblMap={done:'Hoàn thành',cancelled:'Đã hủy'};
+  var stLblMap={done:'Hoàn thành',cancelled:'Đã huỷ'};
   var label=stLblMap[status]||status;
-  openModal('🗑 Xóa lịch '+label,
+  openModal('🗑 Xoá lịch '+label,
     '<div style="text-align:center;padding:8px;">'
     +'<div style="font-size:2.5rem;margin-bottom:12px;">🗑</div>'
-    +'<div style="font-size:0.9rem;margin-bottom:6px;">Xóa tất cả lịch đặt có trạng thái <b>'+label+'</b>?</div>'
+    +'<div style="font-size:0.9rem;margin-bottom:6px;">Xoá tất cả lịch đặt có trạng thái <b>'+label+'</b>?</div>'
     +'<div style="font-size:0.78rem;color:var(--muted);margin-bottom:16px;">Hành động này không thể hoàn tác.</div>'
     +'<div style="display:flex;gap:10px;">'
     +'<button id="bulk-cancel-btn" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button>'
-    +'<button id="bulk-confirm-btn" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xóa tất cả</button>'
+    +'<button id="bulk-confirm-btn" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Xoá tất cả</button>'
     +'</div></div>');
   setTimeout(function(){
     var cancelBtn=document.getElementById('bulk-cancel-btn');
@@ -1974,7 +1976,7 @@ for(var i=0;i<targets.length;i++){
 saveDeletedBkIds(delIds);
 showLoading(false);
 closeModal();
-showToast('✓ Đã xóa '+done+' lịch '+label);
+showToast('✓ Đã xoá '+done+' lịch '+label);
   var activeFilter=document.querySelector('#mgr-bookings .ftab.active');
   renderAllBookings(activeFilter?activeFilter.getAttribute('data-filter')||'all':'all');
 });
@@ -2009,10 +2011,10 @@ async function renderAccountsPage(){
   });
   var el=document.getElementById('accounts-list');if(el)el.innerHTML=html;
   document.querySelectorAll('[data-reset-staff]').forEach(function(btn){btn.addEventListener('click',function(){resetStaffPwd(parseInt(this.getAttribute('data-reset-staff')));});});
-  document.querySelectorAll('[data-del-staff]').forEach(function(btn){btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-del-staff'));if(!confirm('Xóa nhân viên này?'))return;await api('/staff/'+sid,'DELETE');showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});});
+  document.querySelectorAll('[data-del-staff]').forEach(function(btn){btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-del-staff'));if(!confirm('Xoá nhân viên này?'))return;await api('/staff/'+sid,'DELETE');showToast('✓ Đã xoá');await loadAllData();renderAccountsPage();});});
   document.querySelectorAll('[data-edit-gender]').forEach(function(btn){btn.addEventListener('click',function(){openEditGender(parseInt(this.getAttribute('data-edit-gender')),this.getAttribute('data-cur-gender'));});});
   document.querySelectorAll('[data-reset-cust]').forEach(function(btn){btn.addEventListener('click',function(){var cid=parseInt(this.getAttribute('data-reset-cust'));openModal('Đặt lại MK KH','<div class="fg"><label>Mật khẩu mới</label><input type="password" id="rcp1" class="mgr-inp"></div><div class="fg"><label>Nhập lại</label><input type="password" id="rcp2" class="mgr-inp"></div><div style="display:flex;gap:8px;"><button id="rcp-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="rcp-ok" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Xác nhận</button></div>');setTimeout(function(){var c2=document.getElementById('rcp-cancel');var ok=document.getElementById('rcp-ok');if(c2)c2.addEventListener('click',closeModal);if(ok)ok.addEventListener('click',async function(){var p1=document.getElementById('rcp1').value;var p2=document.getElementById('rcp2').value;if(!p1||p1.length<4){showToast('✗ Ít nhất 4 ký tự');return;}if(p1!==p2){showToast('✗ Không khớp');return;}showLoading(true);await api('/customers/'+parseInt(this.getAttribute('data-cid')),'PUT',{pass:p1});showLoading(false);closeModal();showToast('✓ Đã đặt lại mật khẩu');});},50);});});
-  document.querySelectorAll('[data-del-cust]').forEach(function(btn){btn.addEventListener('click',async function(){var cid=parseInt(this.getAttribute('data-del-cust'));var cust=allCustomers.find(function(c){return c.id===cid;});if(!cust)return;openModal('Xóa tài khoản','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⚠️</div><div style="font-size:0.9rem;margin-bottom:4px;">Xóa: <b>'+esc(cust.name)+'</b></div><div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Nhập mật khẩu admin để xác nhận.</div><input type="password" id="del-pwd" class="mgr-inp" placeholder="Mật khẩu admin" style="margin-bottom:12px;"><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="del-confirm" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;">Xóa</button></div></div>');setTimeout(function(){var cancel=document.getElementById('del-cancel');var conf=document.getElementById('del-confirm');if(cancel)cancel.addEventListener('click',closeModal);if(conf)conf.addEventListener('click',async function(){var pwd=document.getElementById('del-pwd').value;showLoading(true);var res=await api('/customers/'+parseInt(this.getAttribute('data-cid')),'DELETE',{admin_pass:pwd});showLoading(false);if(res&&res.error){showToast('✗ '+res.error);return;}closeModal();showToast('✓ Đã xóa');await loadAllData();renderAccountsPage();});},50);});});
+  document.querySelectorAll('[data-del-cust]').forEach(function(btn){btn.addEventListener('click',async function(){var cid=parseInt(this.getAttribute('data-del-cust'));var cust=allCustomers.find(function(c){return c.id===cid;});if(!cust)return;openModal('Xoá tài khoản','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⚠️</div><div style="font-size:0.9rem;margin-bottom:4px;">Xoá: <b>'+esc(cust.name)+'</b></div><div style="font-size:0.78rem;color:var(--muted);margin-bottom:12px;">Nhập mật khẩu admin để xác nhận.</div><input type="password" id="del-pwd" class="mgr-inp" placeholder="Mật khẩu admin" style="margin-bottom:12px;"><div style="display:flex;gap:10px;"><button id="del-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;">Huỷ</button><button id="del-confirm" data-cid="'+cid+'" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;">Xoá</button></div></div>');setTimeout(function(){var cancel=document.getElementById('del-cancel');var conf=document.getElementById('del-confirm');if(cancel)cancel.addEventListener('click',closeModal);if(conf)conf.addEventListener('click',async function(){var pwd=document.getElementById('del-pwd').value;showLoading(true);var res=await api('/customers/'+parseInt(this.getAttribute('data-cid')),'DELETE',{admin_pass:pwd});showLoading(false);if(res&&res.error){showToast('✗ '+res.error);return;}closeModal();showToast('✓ Đã xoá');await loadAllData();renderAccountsPage();});},50);});});
 }
 
 function switchAccTab(tab){
@@ -2155,16 +2157,8 @@ function openEditGender(sid, curGender){
 // IMPORT EXCEL — auto-categorize services by name keywords
 // ============================================================
 var IMPORT_CATEGORIES = [
-  {name:'Massage', icon:'💆', keywords:['massage','trị liệu','thư giãn','bấm huyệt','đá nóng','stone','thái','đầu mặt','bàn chân','chân tay','foot','head','swedish','deep tissue']},
-  {name:'Chăm sóc da mặt', icon:'✨', keywords:['facial','mặt','da mặt','trị mụn','trắng da','nâng cơ','chống lão','dưỡng da mặt','tế bào chết mặt','peel','serum']},
-  {name:'Nail & Móng', icon:'💅', keywords:['nail','móng','sơn gel','sơn bột','vẽ móng','đắp móng','acrylic','tay chân nước','làm móng','cắt móng','gel']},
-  {name:'Tóc', icon:'💇', keywords:['tóc','gội','cắt','uốn','nhuộm','tẩy','hấp dầu','phục hồi tóc','duỗi','ép','keratin','wax tóc','tạo kiểu']},
-  {name:'Body & Tắm', icon:'🛁', keywords:['tắm','body','tẩy da chết','scrub','bọc','wrap','tắm trắng','dưỡng thể','rong biển','muối','sữa','mật ong','body mask']},
-  {name:'Lông mày & Mi', icon:'👁️', keywords:['lông mày','lông mi','mày','mi','phun xăm','điêu khắc','nối mi','uốn mi','tạo hình mày','xăm mày','xăm mi']},
-  {name:'Xông hơi', icon:'🌿', keywords:['xông hơi','xông','sauna','steam','đá muối','thông mũi','thanh lọc','thảo dược','xông lá']},
-  {name:'Giảm béo & Tạo dáng', icon:'🏋️', keywords:['giảm béo','tan mỡ','tạo dáng','săn chắc','slimming','eo','bụng','đùi','cellulite','sóng cao tần','rf','cavitation']},
-  {name:'Cưới & Sự kiện', icon:'👰', keywords:['cưới','bridal','cô dâu','dâu','sự kiện','trang điểm','makeup','make up','toàn thân cô dâu']},
-  {name:'Trẻ em', icon:'🧒', keywords:['trẻ em','bé','baby','kid','thiếu nhi']},
+  {name:'Gội Đầu', icon:'🚿', keywords:['gội','green touch','relax','royal']},
+  {name:'Massage', icon:'💆', keywords:['massage','xoa bóp','bấm huyệt','giác hơi','đá nóng','galaxy','fast','vip','thư giãn','xông hơi','xông']},
 ];
 
 function autoCategory(name){
@@ -2309,7 +2303,7 @@ function openImportServices(){
 
 function openAddService(){
   openModal('Thêm dịch vụ','<div class="fg"><label>Tên</label><input type="text" id="ns-name" class="mgr-inp"></div><div class="fg"><label>Danh mục</label><input type="text" id="ns-cat" class="mgr-inp"></div><div class="fg"><label>Giá (VNĐ)</label><input type="number" id="ns-price" class="mgr-inp"></div><div class="fg"><label>Thời gian (phút)</label><input type="number" id="ns-dur" class="mgr-inp"></div><button class="btn-green" id="btn-save-svc">Lưu</button>');
-  setTimeout(function(){var btn=document.getElementById('btn-save-svc');if(btn)btn.addEventListener('click',async function(){var name=document.getElementById('ns-name').value;var cat=document.getElementById('ns-cat').value;var price=parseInt(document.getElementById('ns-price').value);var dur=parseInt(document.getElementById('ns-dur').value);if(!name||!price||!dur){showToast('✗ Điền đầy đủ');return;}showLoading(true);await api('/services','POST',{name:name,cat:cat,price:price,duration:dur,icon:'💆'});await loadServices();showLoading(false);closeModal();showToast('✓ Đã thêm');renderServicesPage();});},50);
+  setTimeout(function(){var btn=document.getElementById('btn-save-svc');if(btn)btn.addEventListener('click',async function(){var name=document.getElementById('ns-name').value.replace(/\s+/g,' ').trim();var cat=document.getElementById('ns-cat').value.replace(/\s+/g,' ').trim();var price=parseInt(document.getElementById('ns-price').value);var dur=parseInt(document.getElementById('ns-dur').value);if(!name||!price||!dur){showToast('✗ Điền đầy đủ');return;}showLoading(true);await api('/services','POST',{name:name,cat:cat,price:price,duration:dur,icon:'💆'});await loadServices();showLoading(false);closeModal();showToast('✓ Đã thêm');renderServicesPage();});},50);
 }
 function editService(id){
   var s=allServices.find(function(x){return x.id===id;});if(!s)return;
@@ -2402,7 +2396,7 @@ stf=allStaff.find(function(s){return s.id===stf.id;})||stf;
 if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.isArray(custs)?custs:[];}
   showLoading(false);
   var myBks=bks.filter(function(b){return bookingBelongsToStaff(b,stf);});
-  var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Hủy'};
+  var stLbl={pending:'⏳ Chờ',confirmed:'✓ Xác nhận',done:'✅ Hoàn thành',cancelled:'✗ Huỷ'};
   var activeTab='bookings';
 
   function renderStaffTabs(){
@@ -2438,7 +2432,7 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
         +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div>'
         +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?'Đã thu tiền mặt:':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
-          ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Hủy</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
+          ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Huỷ</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
         +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+starStr(b.review.stars)+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+esc(b.review.comment)+'</div>':'')+'</div>':'')
         +'</div>';
     });
@@ -2505,13 +2499,13 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
       window.switchStaffTab('settings');
     });
     if(clearBtn)clearBtn.addEventListener('click',async function(){
-      if(!confirm('Xóa tất cả ngày nghỉ?'))return;
+      if(!confirm('Xoá tất cả ngày nghỉ?'))return;
       showLoading(true);await api('/staff/'+stf.id,'PUT',{off_days:[]});
       stf.off_days=[];
       var ms=allStaff.find(function(s){return s.id===stf.id;});if(ms)ms.off_days=[];
       saveStaffCache();
       showLoading(false);
-      showToast('✓ Đã xóa tất cả ngày nghỉ');window.switchStaffTab('settings');
+      showToast('✓ Đã xoá tất cả ngày nghỉ');window.switchStaffTab('settings');
     });
     document.querySelectorAll('[data-remove-off]').forEach(function(btn){
       btn.addEventListener('click',async function(){
@@ -2522,7 +2516,7 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
         var ms=allStaff.find(function(s){return s.id===stf.id;});if(ms)ms.off_days=off;
         saveStaffCache();
         showLoading(false);
-        showToast('✓ Đã xóa: '+d);window.switchStaffTab('settings');
+        showToast('✓ Đã xoá: '+d);window.switchStaffTab('settings');
       });
     });
   }
@@ -2679,7 +2673,7 @@ function renderDashboardWith(bks){
   var statsEl=document.getElementById('mgr-stats');
   if(statsEl)statsEl.innerHTML='<div class="stat-card"><div class="stat-card-lbl">Khách hàng</div><div class="stat-card-val">'+allCustomers.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Tổng đặt lịch</div><div class="stat-card-val">'+bks.length+'</div></div><div class="stat-card"><div class="stat-card-lbl">Hoàn thành</div><div class="stat-card-val">'+doneBks+'</div></div><div class="stat-card"><div class="stat-card-lbl">Doanh thu</div><div class="stat-card-val" style="font-size:1.1rem;">'+fmt(totalRev)+'</div></div>';
   var active=bks.filter(function(b){return b.status==='pending'||b.status==='confirmed';}).slice(0,10);
-  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Hủy'};
+  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Xong',cancelled:'Huỷ'};
   // Chưa thu: lịch chưa thanh toán còn hiệu lực (chờ / đã xác nhận) — thu tiền mặt khi hoàn thành
   var unpaidAct=bks.filter(function(b){return bkIsUnpaid(b)&&(b.status==='pending'||b.status==='confirmed');});
   var unpaidSum=0;unpaidAct.forEach(function(b){unpaidSum+=bkPaid(b);});
