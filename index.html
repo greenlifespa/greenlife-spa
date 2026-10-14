@@ -329,7 +329,7 @@ function tryInitPush(){
     </div>
     <div class="contact-card">
       <div class="contact-card-title">📍 Thông tin liên hệ</div>
-      <div class="contact-row"><span style="font-size:1rem;">📞</span><span class="contact-phone"><a href="tel:0902708788">0902.708.788</a></span></div>
+      <div class="contact-row"><span style="font-size:1rem;">📞</span><span class="contact-phone"><a href="tel:0985009674">0985.009.674</a></span></div>
       <div class="contact-row"><span style="font-size:1rem;">💚</span><span><a href="https://zalo.me/0917948706" target="_blank" style="color:#1a7a40;font-weight:600;text-decoration:none;">Zalo: Green Life Spa</a></span></div>
       <div class="contact-row"><span style="font-size:1rem;">💬</span><span><a href="https://m.me/greenlifespatanphu" target="_blank" style="color:#1a7a40;font-weight:500;text-decoration:none;">Messenger: Green Life Spa</a></span></div>
       <div class="contact-row"><span style="font-size:1rem;">🏠</span><span class="contact-addr">246 Độc Lập, Phú Thọ Hoà, HCM<br><span class="contact-addr-sub">(246 Độc Lập, Tân Thành, Tân Phú, HCM)</span></span></div>
@@ -868,6 +868,10 @@ async function loginAs(user){
 function doLogout(){currentUser=null;currentRole=null;currentStaff=null;clearSession();stopPolling();clearTimeout(idleTimer);goScreen('splash');showToast('Đã đăng xuất');}
 // Tên nhóm dịch vụ: bỏ khoảng trắng thừa đầu/cuối/giữa để không sinh thêm tab nhóm trùng (vd "Gội Đầu" và "Gội Đầu "). KHÔNG đổi tên dịch vụ: bookingDuration so khớp đúng với tên đã lưu trong lịch.
 function normSvcCat(s){if(s&&typeof s.cat==='string')s.cat=s.cat.replace(/\s+/g,' ').trim();return s;}
+// Dịch vụ thêm = dịch vụ thuộc nhóm "Dịch Vụ Thêm" (vd đắp mặt nạ): chỉ chọn kèm dịch vụ khác, không đặt riêng. Máy chủ (app_book) cũng chặn.
+function isAddonSvc(s){return !!s&&String(s.cat||'').replace(/\s+/g,' ').trim().toLowerCase()==='dịch vụ thêm';}
+var ADDON_ONLY_MSG='Dịch vụ thêm chỉ chọn kèm dịch vụ khác, vui lòng chọn thêm một dịch vụ chính';
+function bkOnlyAddons(){var n=0,a=0;bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});if(s){n++;if(isAddonSvc(s))a++;}});return n>0&&a===n;}
 async function loadServices(){
   var raw=await api('/services');
   if(Array.isArray(raw))allServices=raw.map(normSvcCat);
@@ -990,7 +994,7 @@ function initBooking(){
     +'<button id="btn-svc-next" class="btn-green">Tiếp tục →</button>';
   renderSvcGrid('all');
   document.querySelectorAll('#svc-cats .ftab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#svc-cats .ftab').forEach(function(b){b.classList.remove('active');});this.classList.add('active');renderSvcGrid(this.getAttribute('data-cat'));});});
-  document.getElementById('btn-svc-next').addEventListener('click',function(){if(bkState.svcIds.length===0){showToast('✗ Vui lòng chọn ít nhất 1 dịch vụ');return;}showStep('staff');renderStaffStep();});
+  document.getElementById('btn-svc-next').addEventListener('click',function(){if(bkState.svcIds.length===0){showToast('✗ Vui lòng chọn ít nhất 1 dịch vụ');return;}if(bkOnlyAddons()){showToast('✗ '+ADDON_ONLY_MSG);return;}showStep('staff');renderStaffStep();});
 }
 function renderSvcGrid(fc){
   var html='';
@@ -1002,7 +1006,7 @@ function renderSvcGrid(fc){
       +'<div style="display:flex;align-items:center;gap:10px;padding:12px;">'
       +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+esc(s.icon||'💆')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+esc(s.name)+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
-      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ · '+s.duration+'ph</div></div>'
+      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ · '+s.duration+'ph'+(isAddonSvc(s)?' · chỉ chọn kèm dịch vụ khác':'')+'</div></div>'
       +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
       +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(isSel?'none':'1px solid var(--border)')+';background:'+(isSel?'var(--accent)':'var(--bg3)')+';color:'+(isSel?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
       +(isSel?'<button class="svc-minus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>':'')
@@ -1029,7 +1033,7 @@ function updateSvcSummary(){
   if(bkState.svcIds.length===0){sum.style.display='none';return;}
   var total=0,names={},order=[];
   bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){total+=s.price;if(!names[s.name]){names[s.name]=0;order.push(s.name);}names[s.name]++;}});});
-  sum.style.display='block';sum.innerHTML='<b>Đã chọn ('+bkState.svcIds.length+'):</b> '+order.map(function(n){return names[n]>1?esc(n)+' ×'+names[n]:esc(n);}).join(', ')+'<br><b style="color:var(--accent);">Tổng: '+fmt(total)+'đ</b>';
+  sum.style.display='block';sum.innerHTML='<b>Đã chọn ('+bkState.svcIds.length+'):</b> '+order.map(function(n){return names[n]>1?esc(n)+' ×'+names[n]:esc(n);}).join(', ')+'<br><b style="color:var(--accent);">Tổng: '+fmt(total)+'đ</b>'+(bkOnlyAddons()?'<br><span style="color:#b45309;">⚠ '+ADDON_ONLY_MSG+'</span>':'');
 }
 
 async function getBusyStaffIds(date,time){
@@ -1377,6 +1381,7 @@ async function confirmBooking(){
     var totalPrice=0,svcNames=[];
     bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;svcNames.push(s.name);}});});
     if(svcNames.length!==bkState.svcIds.length){stop('✗ Có dịch vụ không còn tồn tại, vui lòng chọn lại');return;}
+    if(bkOnlyAddons()){stop('✗ '+ADDON_ONLY_MSG);return;}
     var bkDate=bkState.date||today();
 
     // 2) Kiểm tra lại giờ, ngày nghỉ và trùng lịch bằng dữ liệu mới nhất
