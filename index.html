@@ -660,7 +660,7 @@ function hoursUntilBooking(bk){
 var BK_OPEN_MIN=8*60,BK_LAST_START_MIN=20*60+30;
 function bkTotalDuration(){
   var t=0;
-  bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});t+=(s&&s.duration)?s.duration:60;});
+  bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});t+=svcDur(s);});
   return t||60;
 }
 // Thời lượng của một lịch đã đặt: suy ra từ tên dịch vụ (lịch cũ không lưu service_id). Không tìm thấy → 60 phút.
@@ -671,7 +671,7 @@ function bookingDuration(b){
   while(str.length&&guard++<50){
     var hit=null;
     for(var i=0;i<svcs.length;i++){var n=String(svcs[i].name);if(str===n||str.indexOf(n+' + ')===0){hit=svcs[i];break;}}
-    if(hit){tot+=hit.duration||60;str=(str===String(hit.name))?'':str.slice(String(hit.name).length+3);}
+    if(hit){tot+=svcDur(hit);str=(str===String(hit.name))?'':str.slice(String(hit.name).length+3);}
     else{var k=str.indexOf(' + ');tot+=60;str=k<0?'':str.slice(k+3);}
   }
   return tot||60;
@@ -872,6 +872,8 @@ function normSvcCat(s){if(s&&typeof s.cat==='string')s.cat=s.cat.replace(/\s+/g,
 function isAddonSvc(s){return !!s&&String(s.cat||'').replace(/\s+/g,' ').trim().toLowerCase()==='dịch vụ thêm';}
 var ADDON_ONLY_MSG='Dịch vụ thêm chỉ chọn kèm dịch vụ khác, vui lòng chọn thêm một dịch vụ chính';
 function bkOnlyAddons(){var n=0,a=0;bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});if(s){n++;if(isAddonSvc(s))a++;}});return n>0&&a===n;}
+// Thời gian một dịch vụ chiếm (phút): có thời gian thì dùng; không có (0/trống) → dịch vụ thêm tính 0 phút, dịch vụ chính tính mặc định 60
+function svcDur(s){if(!s)return 60;var d=Number(s.duration);if(d>0)return d;return isAddonSvc(s)?0:60;}
 // Số nhân viên cần chọn = số dịch vụ CHÍNH (dịch vụ thêm là bổ sung, không cần thêm nhân viên); luôn ít nhất 1
 function bkStaffCount(){var n=0;bkState.svcIds.forEach(function(sid){var s=allServices.find(function(x){return x.id===sid;});if(!isAddonSvc(s))n++;});return Math.max(1,n);}
 async function loadServices(){
@@ -1008,7 +1010,7 @@ function renderSvcGrid(fc){
       +'<div style="display:flex;align-items:center;gap:10px;padding:12px;">'
       +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+esc(s.icon||'💆')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+esc(s.name)+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
-      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ · '+s.duration+'ph'+(isAddonSvc(s)?' · chỉ chọn kèm dịch vụ khác':'')+'</div></div>'
+      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ'+(s.duration>0?' · '+s.duration+'ph':'')+(isAddonSvc(s)?' · chỉ chọn kèm dịch vụ khác':'')+'</div></div>'
       +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
       +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(isSel?'none':'1px solid var(--border)')+';background:'+(isSel?'var(--accent)':'var(--bg3)')+';color:'+(isSel?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
       +(isSel?'<button class="svc-minus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>':'')
@@ -1317,7 +1319,7 @@ async function renderTimeSlots(){
 function renderConfirm(){
   var c=currentUser;var tier=c?getTier(c.rank_points||0):TIERS[0];
   var totalPrice=0,svcLines='',totalDur=0;
-  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=s.duration;svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+esc(s.icon||'💆')+' '+esc(s.name)+'</span><span>'+fmt(s.price)+'đ</span></div>';}});});
+  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=svcDur(s);svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+esc(s.icon||'💆')+' '+esc(s.name)+'</span><span>'+fmt(s.price)+'đ</span></div>';}});});
 
   // Show gender in confirm screen as "Tên (nam/nữ)"
   var staffNames=bkState.staffIds.map(function(sid){
@@ -1875,7 +1877,7 @@ async function renderServicesPage(){
   }).forEach(function(s){
     shtml+='<div class="svc-mgr-item">'
       +'<div><div style="font-size:0.9rem;font-weight:500;">'+esc(s.icon||'💆')+' '+esc(s.name)+'</div>'
-      +'<div style="font-size:0.75rem;color:var(--muted);">'+esc(s.cat)+' · '+s.duration+'ph</div></div>'
+      +'<div style="font-size:0.75rem;color:var(--muted);">'+esc(s.cat)+(s.duration>0?' · '+s.duration+'ph':'')+'</div></div>'
       +'<div style="text-align:right;display:flex;flex-direction:column;gap:4px;align-items:flex-end;">'
       +'<div style="font-size:0.95rem;font-weight:500;color:var(--g600);">'+fmt(s.price)+'đ</div>'
       +'<div style="display:flex;gap:6px;">'
@@ -2310,13 +2312,13 @@ function openImportServices(){
 }
 
 function openAddService(){
-  openModal('Thêm dịch vụ','<div class="fg"><label>Tên</label><input type="text" id="ns-name" class="mgr-inp"></div><div class="fg"><label>Danh mục</label><input type="text" id="ns-cat" class="mgr-inp"></div><div class="fg"><label>Giá (VNĐ)</label><input type="number" id="ns-price" class="mgr-inp"></div><div class="fg"><label>Thời gian (phút)</label><input type="number" id="ns-dur" class="mgr-inp"></div><button class="btn-green" id="btn-save-svc">Lưu</button>');
-  setTimeout(function(){var btn=document.getElementById('btn-save-svc');if(btn)btn.addEventListener('click',async function(){var name=document.getElementById('ns-name').value.replace(/\s+/g,' ').trim();var cat=document.getElementById('ns-cat').value.replace(/\s+/g,' ').trim();var price=parseInt(document.getElementById('ns-price').value);var dur=parseInt(document.getElementById('ns-dur').value);if(!name||!price||!dur){showToast('✗ Điền đầy đủ');return;}showLoading(true);await api('/services','POST',{name:name,cat:cat,price:price,duration:dur,icon:'💆'});await loadServices();showLoading(false);closeModal();showToast('✓ Đã thêm');renderServicesPage();});},50);
+  openModal('Thêm dịch vụ','<div class="fg"><label>Tên</label><input type="text" id="ns-name" class="mgr-inp"></div><div class="fg"><label>Danh mục</label><input type="text" id="ns-cat" class="mgr-inp"></div><div class="fg"><label>Giá (VNĐ)</label><input type="number" id="ns-price" class="mgr-inp"></div><div class="fg"><label>Thời gian (phút) — dịch vụ thêm có thể để trống</label><input type="number" id="ns-dur" class="mgr-inp"></div><button class="btn-green" id="btn-save-svc">Lưu</button>');
+  setTimeout(function(){var btn=document.getElementById('btn-save-svc');if(btn)btn.addEventListener('click',async function(){var name=document.getElementById('ns-name').value.replace(/\s+/g,' ').trim();var cat=document.getElementById('ns-cat').value.replace(/\s+/g,' ').trim();var price=parseInt(document.getElementById('ns-price').value);var dur=parseInt(document.getElementById('ns-dur').value);if(isNaN(dur)&&isAddonSvc({cat:cat}))dur=0;if(!name||!price||isNaN(dur)||dur<0||(dur===0&&!isAddonSvc({cat:cat}))){showToast('✗ Điền đầy đủ (thời gian chỉ được để trống với dịch vụ thêm)');return;}showLoading(true);await api('/services','POST',{name:name,cat:cat,price:price,duration:dur,icon:'💆'});await loadServices();showLoading(false);closeModal();showToast('✓ Đã thêm');renderServicesPage();});},50);
 }
 function editService(id){
   var s=allServices.find(function(x){return x.id===id;});if(!s)return;
-  openModal('Sửa: '+s.name,'<div class="fg"><label>Tên</label><input type="text" id="es-name" class="mgr-inp" value="'+esc(s.name)+'"></div><div class="fg"><label>Giá</label><input type="number" id="es-price" class="mgr-inp" value="'+s.price+'"></div><div class="fg"><label>Thời gian</label><input type="number" id="es-dur" class="mgr-inp" value="'+s.duration+'"></div><button class="btn-green" id="btn-save-es" data-id="'+id+'">Lưu</button>');
-  setTimeout(function(){var btn=document.getElementById('btn-save-es');if(btn)btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-id'));var nm=(document.getElementById('es-name').value||'').trim();var pr=parseInt(document.getElementById('es-price').value);var du=parseInt(document.getElementById('es-dur').value);if(!nm||isNaN(pr)||pr<0||!(du>0)){showToast('✗ Điền đầy đủ tên, giá và thời gian');return;}showLoading(true);await api('/services/'+sid,'PUT',{name:nm,price:pr,duration:du});await loadServices();showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderServicesPage();});},50);
+  openModal('Sửa: '+s.name,'<div class="fg"><label>Tên</label><input type="text" id="es-name" class="mgr-inp" value="'+esc(s.name)+'"></div><div class="fg"><label>Giá</label><input type="number" id="es-price" class="mgr-inp" value="'+s.price+'"></div><div class="fg"><label>Thời gian'+(isAddonSvc(s)?' (dịch vụ thêm: để trống hoặc 0 nếu không có)':'')+'</label><input type="number" id="es-dur" class="mgr-inp" value="'+(s.duration>0?s.duration:'')+'"></div><button class="btn-green" id="btn-save-es" data-id="'+id+'">Lưu</button>');
+  setTimeout(function(){var btn=document.getElementById('btn-save-es');if(btn)btn.addEventListener('click',async function(){var sid=parseInt(this.getAttribute('data-id'));var nm=(document.getElementById('es-name').value||'').trim();var pr=parseInt(document.getElementById('es-price').value);var du=parseInt(document.getElementById('es-dur').value);if(isNaN(du)&&isAddonSvc(s))du=0;if(!nm||isNaN(pr)||pr<0||isNaN(du)||du<0||(du===0&&!isAddonSvc(s))){showToast('✗ Điền đầy đủ tên, giá và thời gian (thời gian chỉ được để trống với dịch vụ thêm)');return;}showLoading(true);await api('/services/'+sid,'PUT',{name:nm,price:pr,duration:du});await loadServices();showLoading(false);closeModal();showToast('✓ Đã cập nhật');renderServicesPage();});},50);
 }
 
 // CHANGE 2: openAddAccount — when role=staff, gender selection is passed to staff API
