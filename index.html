@@ -1493,11 +1493,34 @@ async function redeemReward(vid,rp,name,val,minBill,isAddon){
 // ============================================================
 // HISTORY
 // ============================================================
+var _histSeq=0;
+// Thẻ một lịch đặt trong Lịch sử (dùng cho mục "Đặt lịch" và cho lịch chưa thanh toán ở mục "Tất cả")
+function histBookingHtml(b){
+  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};
+  // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
+  var amtHtml=(bkIsUnpaid(b)||bkIsCash(b))?'<div style="font-size:0.9rem;font-weight:700;color:'+(b.status==='cancelled'?'var(--muted)':bkIsUnpaid(b)?'#b45309':'var(--text)')+';">'+fmt(bkPaid(b))+' VND</div>':'<div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>';
+  return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;">'+amtHtml+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
+    +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
+    +(bkPayTag(b)?'<div style="margin-top:6px;">'+bkPayTag(b)+(bkIsUnpaid(b)&&b.status!=='cancelled'?' <span style="font-size:0.72rem;color:var(--muted);">trả tiền mặt tại spa (không tích RP)</span>':bkIsCash(b)?' <span style="font-size:0.72rem;color:var(--muted);">không tích RP</span>':'')+'</div>':'')
+    +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
+    +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
+    +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
+    +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Huỷ lịch</button></div>':'')
+    +'</div>';
+}
+function bindHistoryBookingBtns(bks,filter){
+  document.querySelectorAll('#history-list .review-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)showReviewPopup(bkObj);});});
+  document.querySelectorAll('#history-list .cancel-bk-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderHistory(filter);});});});
+}
 async function renderHistory(filter){
   if(!currentUser)return;
+  // Nút lọc đang sáng luôn khớp với danh sách được vẽ (trước đây mở lại Lịch sử vẫn sáng nút cũ, danh sách lại là "Tất cả")
+  var chip=document.getElementById('fh-'+filter);if(chip)setActiveFilter(chip);
+  var seq=++_histSeq;
   showLoading(true);
   var bks=await api('/bookings?cust_id='+currentUser.id)||[];
   var txs=await api('/transactions?cust_id='+currentUser.id)||[];
+  if(seq!==_histSeq)return;   // đã có lần vẽ mới hơn (khách bấm nút lọc khác) — bỏ kết quả cũ để không đè lên
   showLoading(false);
   var totalSpent=0,totalBks=0,totalEarnRP=0;
   bks.forEach(function(b){if(b.status==='done'){totalSpent+=bkPaid(b);totalBks++;}});
@@ -1507,28 +1530,15 @@ async function renderHistory(filter){
   var list=document.getElementById('history-list');
   if(filter==='booking'){
     if(!bks.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch đặt</div></div>';return;}
-    var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};
-    var html='';
-    bks.forEach(function(b){
-      // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
-      var amtHtml=(bkIsUnpaid(b)||bkIsCash(b))?'<div style="font-size:0.9rem;font-weight:700;color:'+(b.status==='cancelled'?'var(--muted)':bkIsUnpaid(b)?'#b45309':'var(--text)')+';">'+fmt(bkPaid(b))+' VND</div>':'<div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>';
-      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;">'+amtHtml+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
-        +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
-        +(bkPayTag(b)?'<div style="margin-top:6px;">'+bkPayTag(b)+(bkIsUnpaid(b)&&b.status!=='cancelled'?' <span style="font-size:0.72rem;color:var(--muted);">trả tiền mặt tại spa (không tích RP)</span>':bkIsCash(b)?' <span style="font-size:0.72rem;color:var(--muted);">không tích RP</span>':'')+'</div>':'')
-        +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
-        +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
-        +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
-        +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Huỷ lịch</button></div>':'')
-        +'</div>';
-    });
-    list.innerHTML=html;
-    document.querySelectorAll('.review-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)showReviewPopup(bkObj);});});
-    document.querySelectorAll('.cancel-bk-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderHistory('booking');});});});
+    list.innerHTML=bks.map(histBookingHtml).join('');
+    bindHistoryBookingBtns(bks,filter);
     return;
   }
   var filtered=txs.filter(function(t){if(filter==='topup')return t.type==='topup';if(filter==='earn')return t.type==='earn';if(filter==='redeem')return t.type==='redeem';return true;});
-  if(!filtered.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>';return;}
-  var tHtml='';
+  // Lịch đặt khi thiếu số dư (chưa thanh toán, trả tiền mặt tại spa) không tạo giao dịch số dư nên phải hiện riêng ở "Tất cả", nếu không khách đặt xong sẽ không thấy lịch ở đâu cả
+  var pend=filter==='all'?bks.filter(function(b){return bkIsUnpaid(b)&&b.status!=='cancelled';}):[];
+  if(!filtered.length&&!pend.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>';return;}
+  var tHtml=pend.length?'<div style="font-size:0.75rem;font-weight:600;color:#b45309;margin:2px 0 6px;">Lịch chưa thanh toán</div>'+pend.map(histBookingHtml).join('')+(filtered.length?'<div style="font-size:0.75rem;font-weight:600;color:var(--muted);margin:10px 0 6px;">Giao dịch</div>':''):'';
   filtered.forEach(function(t){
     var amtLine='';
     if(t.type==='topup')amtLine='<div style="font-size:0.95rem;font-weight:700;color:#16a34a;">+'+fmt(t.amount)+' VND</div>';
@@ -1538,6 +1548,7 @@ async function renderHistory(filter){
     tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+esc(t.note)+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+fmtDate(t.date)+'</span></div></div>';
   });
   list.innerHTML=tHtml;
+  if(pend.length)bindHistoryBookingBtns(bks,filter);
 }
 
 // ============================================================
