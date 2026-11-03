@@ -98,6 +98,21 @@ html.dark .contact-addr{color:#cbd5e1;}
 .rwd-val{font-size:1.2rem;font-weight:500;color:var(--gold2);}
 .rwd-desc{font-size:0.78rem;color:var(--muted);margin-top:2px;}
 .rwd-cost{font-size:0.75rem;color:var(--g600);margin-top:6px;}
+.tem-card{background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius);padding:14px;margin-bottom:1rem;}
+.tem-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin-bottom:12px;}
+.tem-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px 8px;max-width:380px;margin:0 auto 14px;}
+.tem-slot{position:relative;aspect-ratio:1/1;border-radius:50%;border:1.5px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:0.74rem;color:var(--muted);background:var(--bg3);}
+.tem-slot.on{border:1.5px solid var(--g600);background:var(--g100);color:var(--g800);font-size:1.15rem;}
+.tem-slot.ms{border-color:#d97706;}
+.tem-flag{position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);font-size:0.6rem;background:#d97706;color:#fff;border-radius:100px;padding:1px 6px;white-space:nowrap;line-height:1.35;font-weight:500;}
+.tem-step{display:flex;align-items:center;justify-content:center;gap:16px;margin:12px 0 8px;}
+.tem-step button{width:42px;height:42px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1.4rem;cursor:pointer;line-height:1;font-family:inherit;}
+.tem-step button:disabled{opacity:0.4;cursor:not-allowed;}
+.tem-q{min-width:70px;text-align:center;font-size:1.7rem;font-weight:500;color:var(--g800);}
+.tem-btn{width:100%;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.9rem;font-weight:500;cursor:pointer;font-family:inherit;}
+.tem-btn:disabled{background:var(--bg3);color:var(--muted);cursor:not-allowed;}
+.tem-ms{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px dashed var(--border);}
+.tem-note{font-size:0.76rem;border-radius:8px;padding:8px 10px;margin:8px 0;line-height:1.45;}
 .filter-tabs{display:flex;gap:8px;margin-bottom:1.25rem;overflow-x:auto;padding-bottom:4px;}
 .ftab{padding:7px 14px;border-radius:100px;border:1px solid var(--border);font-size:0.8rem;white-space:nowrap;cursor:pointer;background:var(--card-bg);color:var(--muted);font-family:'DM Sans',sans-serif;}
 .ftab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
@@ -322,6 +337,8 @@ function tryInitPush(){
       <div class="tier-next" id="tier-next"></div>
       <div style="margin-top:10px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;"><span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">💳 Số dư TK</span><span style="font-size:0.88rem;font-weight:500;" id="home-balance">0 VND</span></div>
       <div style="margin-top:6px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;"><span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">🎁 Điểm Reward</span><span style="font-size:0.88rem;font-weight:500;" id="home-reward-pts">0 RP</span></div>
+      <div style="margin-top:6px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;display:flex;justify-content:space-between;"><span style="font-size:0.72rem;color:rgba(255,255,255,0.7);">🎫 Thẻ tem</span><span style="font-size:0.88rem;font-weight:500;" id="home-tem">0/20 tem</span></div>
+      <div id="home-combo-box" style="display:none;margin-top:6px;background:rgba(255,255,255,0.12);border-radius:8px;padding:8px 12px;"><div style="font-size:0.72rem;color:rgba(255,255,255,0.7);margin-bottom:4px;">🎫 Combo còn lại</div><div id="home-combo-list" style="font-size:0.84rem;font-weight:500;line-height:1.5;"></div></div>
     </div>
     <div id="low-balance-warn" style="display:none;background:#fff8e1;border:1px solid #fde68a;border-radius:var(--radius);padding:12px 14px;margin-bottom:1rem;gap:10px;align-items:flex-start;">
       <span style="font-size:1.2rem;flex-shrink:0;">⚠️</span>
@@ -355,7 +372,8 @@ function tryInitPush(){
   <div class="page" id="page-rewards">
     <div style="font-family:'Cormorant Garamond',serif;font-size:1.5rem;color:var(--g800);margin-bottom:1.25rem;">Đổi điểm &amp; Cấp bậc</div>
     <div class="rwd-hdr"><div id="rwd-pts"></div><div id="rwd-hdr-info"></div></div>
-    <div class="sec-title">Ưu đãi đổi điểm</div>
+    <div id="tem-box"></div>
+    <div class="sec-title" id="rwd-legacy-title" style="display:none;">Ưu đãi đổi điểm</div>
     <div class="rwd-cards" id="rwd-cards"></div>
   </div>
   <div class="page" id="page-news">
@@ -387,6 +405,7 @@ function tryInitPush(){
         <div class="stat-box"><div class="stat-num" id="ps-reward">0</div><div class="stat-lbl">Điểm Reward</div></div>
         <div class="stat-box"><div class="stat-num" id="ps-visits">0</div><div class="stat-lbl">Lần đến</div></div>
         <div class="stat-box"><div class="stat-num" id="ps-balance" style="font-size:1rem;">0 VND</div><div class="stat-lbl">Số dư TK</div></div>
+        <div class="stat-box" style="grid-column:span 2;"><div class="stat-num" id="ps-tem">0/20</div><div class="stat-lbl">Thẻ tem</div></div>
       </div>
     </div>
     <div class="menu-list">
@@ -447,7 +466,7 @@ function tryInitPush(){
     <div class="mgr-sec"><div class="mgr-sec-title">Doanh thu 7 ngày</div><div id="rev-chart" style="background:var(--card-bg);border-radius:var(--radius);border:1px solid var(--border);padding:1rem;"></div></div>
   </div>
   <div class="mgr-page" id="mgr-customers"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Khách hàng</div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="cust-search" placeholder="Tìm theo tên, SĐT..."></div><div id="customers-list"></div></div>
-  <div class="mgr-page" id="mgr-points"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div><div class="pts-form"><div style="font-size:0.88rem;font-weight:500;margin-bottom:1rem;">Nạp tiền / Điều chỉnh điểm</div><div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div><div class="fg"><label>Loại thao tác</label><select id="pts-type" class="mgr-inp"><option value="topup">💰 Nạp tiền (VND)</option><option value="deduct">💸 Trừ tiền (VND)</option><option value="add">➕ Cộng điểm</option><option value="sub">➖ Trừ điểm</option></select></div><div class="fg"><label>Số tiền / Điểm</label><input type="number" id="pts-amount" class="mgr-inp" placeholder="Nhập số tiền..."><div id="pts-preview" style="display:none;margin-top:8px;padding:10px 14px;background:var(--accent-light);border:1px solid var(--g200);border-radius:8px;font-size:0.85rem;color:var(--g800);">💡 Đối chiếu: <b id="pts-preview-val" style="font-size:1rem;color:var(--accent);"></b></div></div><div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div><button class="btn-green" id="btn-adj-pts">Thực hiện</button></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử gần đây</div><div id="pts-history"></div></div>
+  <div class="mgr-page" id="mgr-points"><div style="padding:1.25rem 0 0.5rem;font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Quản lý điểm</div><div class="pts-form"><div style="font-size:0.88rem;font-weight:500;margin-bottom:1rem;">Nạp tiền / Điều chỉnh điểm</div><div class="fg"><label>Chọn khách hàng</label><select id="pts-cust" class="mgr-inp"></select></div><div class="fg"><label>Loại thao tác</label><select id="pts-type" class="mgr-inp"><option value="topup_tm">💰 Nạp tiền – Tiền mặt (tính doanh thu)</option><option value="topup_ck">🏦 Nạp tiền – Chuyển khoản (tính doanh thu)</option><option value="credit">⭐ Nạp tín dụng (gói thưởng)</option><option value="combo_green">🎫 Mua Combo Green (10 lượt, 711.000)</option><option value="combo_pkg">🎫 Mua gói 10 tặng 2 (12 lượt)</option><option value="topup">🔧 Cộng số dư – điều chỉnh (KHÔNG tính doanh thu)</option><option value="deduct">💸 Trừ tiền (VND)</option><option value="add">➕ Cộng điểm</option><option value="sub">➖ Trừ điểm</option></select></div><div id="pts-combo-box" style="display:none;"><div class="fg" id="pts-combo-pkg-fg"><label>Gói mua combo (10 tặng 2)</label><select id="pts-combo-pkg" class="mgr-inp"></select></div><div class="fg"><label>Hình thức thanh toán</label><select id="pts-combo-pttt" class="mgr-inp"><option value="TM">💵 Tiền mặt</option><option value="CK">🏦 Chuyển khoản</option><option value="APP">💳 Trừ số dư app</option></select></div><div class="fg"><label>KTV (người bán / làm)</label><select id="pts-combo-staff" class="mgr-inp"></select></div><div id="pts-combo-have" style="font-size:0.8rem;margin-top:6px;color:var(--g800);"></div></div><div class="fg"><label id="pts-amount-lbl">Số tiền / Điểm</label><div id="pts-credit-chips" style="display:none;gap:6px;flex-wrap:wrap;margin-bottom:8px;"><button type="button" class="pts-chip" data-v="2000000" style="padding:6px 12px;border:1px solid var(--g200);border-radius:100px;background:var(--bg3);cursor:pointer;font-size:0.8rem;">2.000.000</button><button type="button" class="pts-chip" data-v="3000000" style="padding:6px 12px;border:1px solid var(--g200);border-radius:100px;background:var(--bg3);cursor:pointer;font-size:0.8rem;">3.000.000</button><button type="button" class="pts-chip" data-v="5000000" style="padding:6px 12px;border:1px solid var(--g200);border-radius:100px;background:var(--bg3);cursor:pointer;font-size:0.8rem;">5.000.000</button></div><input type="number" id="pts-amount" class="mgr-inp" placeholder="Nhập số tiền..."><div id="pts-preview" style="display:none;margin-top:8px;padding:10px 14px;background:var(--accent-light);border:1px solid var(--g200);border-radius:8px;font-size:0.85rem;color:var(--g800);">💡 Đối chiếu: <b id="pts-preview-val" style="font-size:1rem;color:var(--accent);"></b></div></div><div class="fg"><label>Ghi chú</label><input type="text" id="pts-note" class="mgr-inp" placeholder="Lý do..."></div><button class="btn-green" id="btn-adj-pts">Thực hiện</button></div><div style="font-family:'Cormorant Garamond',serif;font-size:1.2rem;color:var(--g800);margin-bottom:0.8rem;">Lịch sử gần đây</div><div id="pts-history"></div></div>
   <!-- CHANGE 1: Removed "+ Nhân viên" button from services page header, staff list section removed entirely -->
   <div class="mgr-page" id="mgr-services"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Dịch vụ</span><div style="display:flex;gap:8px;"><button class="btn-sm-out" id="btn-import-svc" style="display:flex;align-items:center;gap:5px;">📂 Import Excel</button><button class="btn-sm" id="btn-add-svc">+ Dịch vụ</button></div></div><div class="search-bar"><span style="color:var(--muted);">🔍</span><input type="text" id="svc-search" placeholder="Tìm theo tên, danh mục..."></div><div id="mgr-svc-list"></div></div>
   <div class="mgr-page" id="mgr-posts"><div style="padding:1.25rem 0 0.5rem;display:flex;align-items:center;justify-content:space-between;"><span style="font-family:'Cormorant Garamond',serif;font-size:1.4rem;color:var(--g800);">Tin tức</span><button class="btn-sm" id="btn-add-post">+ Thêm bài</button></div><div id="mgr-posts-list"></div></div>
@@ -619,7 +638,7 @@ var TIERS=[
 var ADDON_VOUCHERS=[];
 var currentUser=null,currentRole=null,currentStaff=null;
 var allServices=[],allStaff=[],allCustomers=[];
-var bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,voucherDiscount:0,addonWalletIdx:-1};
+var bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,voucherDiscount:0,addonWalletIdx:-1,comboUse:{}};
 
 
 function getTier(pts){var t=TIERS[0];for(var i=0;i<TIERS.length;i++){if(pts>=TIERS[i].min)t=TIERS[i];}return t;}
@@ -732,15 +751,29 @@ async function putCustomerVerified(id,patch,orig){
 }
 // Số tiền khách thực trả cho một lịch. actual_paid = 0 là hợp lệ (voucher trả hết) nên không được rơi về "amount";
 // chỉ lịch cũ chưa có actual_paid (null) mới dùng amount.
-function bkPaid(b){var v=(b.actual_paid!==null&&b.actual_paid!==undefined)?b.actual_paid:b.amount;return Number(v)||0;}
+function bkPaid(b){if(b&&b.pay_status==='unpaid'&&b.combo_plan&&b.combo_plan.cash!==undefined&&b.combo_plan.cash!==null)return Number(b.combo_plan.cash)||0;var v=(b.actual_paid!==null&&b.actual_paid!==undefined)?b.actual_paid:b.amount;return Number(v)||0;}
 // Thanh toán của lịch: lịch cũ / lịch đã trừ số dư = "paid" + "balance"; lịch đặt khi thiếu số dư = "unpaid" (thu tiền mặt tại spa); thu tiền mặt xong = "paid" + "cash" (không tích RP).
 function bkIsUnpaid(b){return !!b&&b.pay_status==='unpaid';}
 function bkIsCash(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='cash';}
+function bkIsCombo(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='combo';}
+function bkIsMixed(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='mixed';}
+function bkHasPlan(b){return !!b&&!!b.combo_plan&&Array.isArray(b.combo_plan.units)&&b.combo_plan.units.length>0;}
+function bkPlanNames(b){return bkHasPlan(b)?b.combo_plan.units.map(function(x){return x&&x.name;}).filter(Boolean).join(', '):'';}
+function bkIsComboBal(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='combo_balance';}
+function bkPlanTag(b){return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Giữ lượt combo ('+esc(bkPlanNames(b))+')</span>';}
 function bkPayTag(b){
-  if(bkIsUnpaid(b))return b.status==='cancelled'?'<span class="pay-tag pay-none">Chưa thanh toán · đã huỷ</span>':'<span class="pay-tag pay-unpaid">💵 Chưa thanh toán</span>';
+  var openPlan=bkHasPlan(b)&&(b.status==='pending'||b.status==='confirmed');
+  if(bkIsUnpaid(b))return (b.status==='cancelled'?'<span class="pay-tag pay-none">Chưa thanh toán · đã huỷ</span>':'<span class="pay-tag pay-unpaid">💵 Chưa thanh toán</span>')+(openPlan?' '+bkPlanTag(b):'');
+  if(bkIsMixed(b)){var cu=Array.isArray(b.combo_units)?b.combo_units.map(function(x){return x&&x.name;}).filter(Boolean).join(', '):'';return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Combo'+(cu?' ('+esc(cu)+')':'')+' + 💵 tiền mặt</span>';}
+  if(bkIsCombo(b))return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Dùng combo</span>';
+  if(bkIsComboBal(b)){var cnb=bkPlanNames(b);return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Combo'+(cnb?' ('+esc(cnb)+')':'')+' + 💳 số dư</span>';}
   if(bkIsCash(b))return '<span class="pay-tag pay-cash">💵 Đã thu tiền mặt</span>';
+  if(openPlan)return bkPlanTag(b);
   return '';
 }
+// Lịch đặt từ web chưa có hồ sơ khách (cust_id rỗng): dùng tên + SĐT khách đã nhập trên web.
+function bkWho(b){if(!b)return null;var c=b.cust_id?allCustomers.find(function(x){return x.id===b.cust_id;}):null;if(c)return c;return b.guest_name?{name:b.guest_name,phone:b.guest_phone||'',web:true}:null;}
+function bkSrcTag(b){return b&&b.source==='web'?'<span class="pay-tag" style="background:#e0f2fe;color:#0369a1;">🌐 Web'+(b.guest_phone?' · '+esc(b.guest_phone):'')+'</span>':'';}
 // Huỷ lịch + hoàn tiền (+ voucher, lần đến, chi tiêu) về đúng khách của lịch, dù ai bấm huỷ (khách / nhân viên / quản lý).
 // Toàn bộ chạy trong MỘT bước ở máy chủ (cơ sở dữ liệu): hoặc xong hết, hoặc không đổi gì; bấm lặp không hoàn tiền lần 2.
 // Chỉ huỷ được lịch đang chờ / đã xác nhận; lịch đã hoàn thành (dịch vụ đã thực hiện) thì không huỷ được.
@@ -752,6 +785,79 @@ async function cancelBookingAndRefund(bkId,custId){
 }
 // Đánh dấu hoàn thành — máy chủ chặn bấm lặp (không cộng điểm RP hai lần)
 // Lịch CHƯA THANH TOÁN chỉ hoàn thành khi nhân viên / quản lý xác nhận đã thu tiền mặt (máy chủ trả mã 'unpaid' kèm số tiền cần thu → hỏi lại rồi gửi cash_confirmed).
+function askPayChoice(due){
+  return new Promise(function(resolve){
+    openModal('Hoàn tất lịch chưa thanh toán','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.9rem;margin-bottom:10px;">Lịch này <b>chưa thanh toán</b> ('+fmt(due)+' VND). Khách thanh toán bằng cách nào?</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:14px;color:#92400e;text-align:left;"><b>Tiền mặt:</b> chỉ bấm khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê; dịch vụ thêm (nếu có) vẫn thu tiền mặt riêng. App không trừ số dư.</div><div style="display:flex;flex-direction:column;gap:8px;"><button id="pay-cash" style="padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">💵 Đã thu '+fmt(due)+'đ tiền mặt</button><button id="pay-combo" style="padding:12px;border-radius:100px;border:none;background:#5b21b6;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">🎫 Dùng combo (1 lượt)</button><button id="pay-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Chưa hoàn tất</button></div></div>');
+    var settled=false;
+    function done(v){if(settled)return;settled=true;resolve(v);}
+    modalOnClose=function(){done(false);};
+    var no=document.getElementById('pay-no'),cash=document.getElementById('pay-cash'),cb=document.getElementById('pay-combo');
+    if(no)no.addEventListener('click',function(){closeModal();});
+    if(cash)cash.addEventListener('click',function(){modalOnClose=null;closeModal();done('cash');});
+    if(cb)cb.addEventListener('click',function(){modalOnClose=null;closeModal();done('combo');});
+  });
+}
+// Hoàn tất lịch chưa thanh toán: mỗi dịch vụ chính chọn "Tiền mặt" hoặc "Dùng combo" (dịch vụ thêm luôn thu tiền mặt).
+// Trả về: false (chưa hoàn tất) | 'cash' (tất cả tiền mặt) | 'combo' (tất cả combo, không có khoản tiền mặt) | {mixed:[chỉ số dịch vụ dùng combo]}.
+function askPayPlan(po){
+  return new Promise(function(resolve){
+    var lines=po.lines||[];
+    var planIdx=Array.isArray(po.plan)?po.plan:[];
+    var pick=lines.map(function(ln,i){return !!ln.combo_ok&&planIdx.indexOf(i)>-1;});
+    function cashDue(){var s=0;lines.forEach(function(ln,i){if(!pick[i])s+=Number(ln.price)||0;(ln.addons||[]).forEach(function(a){s+=Number(a.price)||0;});});return s;}
+    function nCombo(){return pick.filter(function(x){return x;}).length;}
+    var rows=lines.map(function(ln,i){
+      var ad=(ln.addons&&ln.addons.length)?'<div style="font-size:0.74rem;color:#92400e;margin-top:6px;">+ Dịch vụ thêm: '+ln.addons.map(function(a){return esc(a.name)+' ('+fmt(a.price)+'đ)';}).join(', ')+' — luôn thu tiền mặt</div>':'';
+      var cb=ln.combo_ok?'🎫 Dùng combo'+(ln.combo?' '+esc(ln.combo):'')+((ln.combo&&po.combo_left&&po.combo_left[ln.combo]!==undefined)?' (còn '+po.combo_left[ln.combo]+')':''):'🎫 Không áp dụng combo';
+      return '<div style="border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;text-align:left;background:var(--card-bg);">'
+        +'<div style="display:flex;justify-content:space-between;gap:8px;align-items:flex-start;"><div><div style="font-weight:600;font-size:0.88rem;">'+esc(ln.name)+'</div><div style="font-size:0.75rem;color:var(--muted);">KTV: '+esc(ln.staff||'')+'</div></div><div style="font-weight:700;font-size:0.9rem;white-space:nowrap;">'+fmt(ln.price)+'đ</div></div>'
+        +'<div style="display:flex;gap:6px;margin-top:8px;"><button type="button" class="pp-btn" data-i="'+i+'" data-v="cash" style="flex:1;padding:9px 6px;border-radius:100px;border:1px solid var(--border);cursor:pointer;font-size:0.8rem;font-family:inherit;">💵 Tiền mặt</button>'
+        +'<button type="button" class="pp-btn" data-i="'+i+'" data-v="combo"'+(ln.combo_ok?'':' disabled')+' style="flex:1;padding:9px 6px;border-radius:100px;border:1px solid var(--border);cursor:'+(ln.combo_ok?'pointer':'not-allowed')+';font-size:0.8rem;font-family:inherit;'+(ln.combo_ok?'':'opacity:0.45;')+'">'+cb+'</button></div>'
+        +ad+'</div>';
+    }).join('');
+    openModal('Hoàn tất lịch chưa thanh toán','<div style="padding:4px;"><div style="font-size:0.88rem;margin-bottom:10px;text-align:center;">Lịch này <b>chưa thanh toán</b> ('+fmt(Number(po.due)||0)+' VND). Chọn cách thanh toán cho <b>từng dịch vụ</b>:</div>'+(planIdx.length?'<div style="font-size:0.78rem;color:#5b21b6;text-align:center;margin-bottom:8px;">🎫 Khách đã chọn dùng combo cho '+planIdx.length+' dịch vụ khi đặt (đã chọn sẵn, có thể đổi).</div>':'')
+      +'<div style="max-height:44vh;overflow:auto;">'+rows+'</div>'
+      +'<div id="pp-sum" style="font-size:0.84rem;text-align:center;margin:8px 0 6px;"></div>'
+      +'<div style="font-size:0.74rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:12px;color:#92400e;text-align:left;"><b>Tiền mặt:</b> chỉ xác nhận khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê (app hỏi bot trước, hết lượt thì không hoàn tất). App không trừ số dư.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;"><button id="pp-ok" style="padding:12px;border-radius:100px;border:none;color:#fff;cursor:pointer;font-weight:500;font-family:inherit;"></button><button id="pp-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:inherit;">Chưa hoàn tất</button></div></div>');
+    var settled=false;
+    function done(v){if(settled)return;settled=true;resolve(v);}
+    modalOnClose=function(){done(false);};
+    function paint(){
+      document.querySelectorAll('#modal-body .pp-btn').forEach(function(btn){
+        var i=parseInt(btn.getAttribute('data-i')),v=btn.getAttribute('data-v');
+        var sel=((v==='combo')===pick[i]);
+        btn.style.background=sel?(v==='combo'?'#5b21b6':'#16a34a'):'var(--bg3)';
+        btn.style.color=sel?'#fff':'var(--text)';
+        btn.style.fontWeight=sel?'600':'400';
+        btn.style.borderColor=sel?'transparent':'var(--border)';
+      });
+      var c=cashDue(),k=nCombo();
+      var sum=document.getElementById('pp-sum');
+      if(sum)sum.innerHTML='Thu tiền mặt: <b>'+fmt(c)+'đ</b> · Dùng combo: <b>'+k+' lượt</b>';
+      var ok=document.getElementById('pp-ok');
+      if(ok){
+        ok.style.background=(c===0)?'#5b21b6':'#16a34a';
+        ok.textContent=(k===0)?'💵 Đã thu '+fmt(c)+'đ tiền mặt':(c>0)?'✓ Đã thu '+fmt(c)+'đ + dùng combo '+k+' dịch vụ':'🎫 Dùng combo ('+k+' lượt)';
+      }
+    }
+    document.querySelectorAll('#modal-body .pp-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        if(btn.disabled)return;
+        pick[parseInt(btn.getAttribute('data-i'))]=(btn.getAttribute('data-v')==='combo');
+        paint();
+      });
+    });
+    var no=document.getElementById('pp-no'),ok2=document.getElementById('pp-ok');
+    if(no)no.addEventListener('click',function(){closeModal();});
+    if(ok2)ok2.addEventListener('click',function(){
+      var k=nCombo(),c=cashDue();
+      var res=(k===0)?'cash':(c===0&&k===lines.length)?'combo':{mixed:pick.map(function(v,i){return v?i:-1;}).filter(function(i){return i>=0;})};
+      modalOnClose=null;closeModal();done(res);
+    });
+    paint();
+  });
+}
 function askCashConfirm(due){
   return new Promise(function(resolve){
     openModal('Xác nhận thu tiền mặt','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.9rem;margin-bottom:10px;">Lịch này <b>chưa thanh toán</b>. Khách đã trả <b>'+fmt(due)+' VND</b> tiền mặt chưa?</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:16px;color:#92400e;text-align:left;">Chỉ bấm "Đã thu" khi đã nhận đủ tiền. Thanh toán tiền mặt <b>không được cộng điểm RP</b>.</div><div style="display:flex;gap:10px;"><button id="cash-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Chưa thu</button><button id="cash-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Đã thu '+fmt(due)+'đ</button></div></div>');
@@ -765,17 +871,30 @@ function askCashConfirm(due){
 }
 async function markBookingDone(bkId){
   var r=await api('/bookings/'+bkId+'/complete','POST',{});
+  if(r&&r.ok===true&&r.combo_balance)return{ok:true,comboBal:true,units:Array.isArray(r.combo_units)?r.combo_units.length:0,paid:Number(r.booking&&r.booking.actual_paid)||0};
   if(r&&r.ok===true)return{ok:true};
   if(r&&r.code==='unpaid'){
-    var yes=await askCashConfirm(Number(r.due)||0);
-    if(!yes)return{ok:false,declined:true,msg:'Chưa hoàn thành – chưa xác nhận thu tiền mặt'};
+    var due0=Number(r.due)||0;
+    var po=await api('/bookings/'+bkId+'/pay-options');
+    var choice=(po&&po.ok===true&&Array.isArray(po.lines)&&po.lines.length)?await askPayPlan(po):await askPayChoice(due0);
+    if(!choice)return{ok:false,declined:true,msg:'Chưa hoàn thành – chưa xác nhận thanh toán'};
+    if(choice&&choice.mixed){
+      r=await api('/bookings/'+bkId+'/complete','POST',{combo_units:choice.mixed,cash_confirmed:true});
+      if(r&&r.ok===true)return{ok:true,mixed:true,units:choice.mixed.length,collected:Number(r.collected)||0};
+      return{ok:false,msg:apiMsg(r,'Chưa hoàn tất được, vui lòng thử lại')};
+    }
+    if(choice==='combo'){
+      r=await api('/bookings/'+bkId+'/complete','POST',{combo:true});
+      if(r&&r.ok===true)return{ok:true,combo:true};
+      return{ok:false,msg:apiMsg(r,'Chưa dùng combo được, vui lòng thử lại')};
+    }
     r=await api('/bookings/'+bkId+'/complete','POST',{cash_confirmed:true});
     if(r&&r.ok===true)return{ok:true,cash:true,collected:Number(r.collected)||0};
   }
   return{ok:false,msg:apiMsg(r,'Không cập nhật được, vui lòng thử lại')};
 }
 function doneToast(dr){
-  if(dr.ok)showToast(dr.cash?'✓ Hoàn thành – đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':'✓ Hoàn thành');
+  if(dr.ok)showToast(dr.comboBal?'✓ Hoàn thành – đã trừ '+dr.units+' lượt combo (đã gửi tin cho bot thống kê)'+(dr.paid>0?', phần còn lại '+fmt(dr.paid)+' VND đã trả bằng số dư app':''):dr.mixed?'✓ Hoàn thành – '+dr.units+' dịch vụ dùng combo (đã gửi tin cho bot thống kê), đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':dr.combo?'✓ Hoàn thành – dùng combo (đã gửi tin cho bot thống kê, không thu tiền)':dr.cash?'✓ Hoàn thành – đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':'✓ Hoàn thành');
   else if(dr.declined)showToast('Chưa hoàn thành lịch – chưa xác nhận thu tiền');
   else showToast('✗ '+dr.msg);
 }
@@ -921,7 +1040,9 @@ async function refreshHome(){
     }
   }
   document.getElementById('home-reward-pts').textContent=fmt(c.reward_points||0)+' RP';
-  var nextTier=null;for(var i=0;i<TIERS.length;i++){if(TIERS[i].min>(c.rank_points||0)){nextTier=TIERS[i];break;}}
+  (function(){var e1=document.getElementById('home-tem');if(e1)e1.textContent=temTxt(c)+' tem';})();
+  var nextTier=null;
+  loadHomeCombos(true);for(var i=0;i<TIERS.length;i++){if(TIERS[i].min>(c.rank_points||0)){nextTier=TIERS[i];break;}}
   var pct=nextTier?Math.min(100,((c.rank_points||0)-tier.min)/(nextTier.min-tier.min)*100):100;
   document.getElementById('tier-fill').style.width=pct+'%';
   document.getElementById('tier-next').textContent=nextTier?'Còn '+fmt(nextTier.min-(c.rank_points||0))+' điểm lên '+nextTier.icon+' '+nextTier.name:'🏆 Đã đạt cấp bậc cao nhất!';
@@ -984,7 +1105,7 @@ async function checkPendingReview(){
 // CHANGE 3: Staff gender shown in all staff-related UI
 // ============================================================
 function initBooking(){
-  bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,voucherDiscount:0,addonWalletIdx:-1};
+  bkState={svcIds:[],staffIds:[],date:null,time:null,voucherWalletIdx:-1,voucherDiscount:0,addonWalletIdx:-1,comboUse:{}};
   var cfmBtn=document.getElementById('btn-confirm-bk');if(cfmBtn){cfmBtn.disabled=false;cfmBtn.textContent='Xác nhận đặt lịch';}
   showStep('svc');
   var cats=[];allServices.forEach(function(s){if(s.cat&&cats.indexOf(s.cat)<0)cats.push(s.cat);});
@@ -999,6 +1120,29 @@ function initBooking(){
   renderSvcGrid('all');
   document.querySelectorAll('#svc-cats .ftab').forEach(function(btn){btn.addEventListener('click',function(){document.querySelectorAll('#svc-cats .ftab').forEach(function(b){b.classList.remove('active');});this.classList.add('active');renderSvcGrid(this.getAttribute('data-cat'));});});
   document.getElementById('btn-svc-next').addEventListener('click',function(){if(bkState.svcIds.length===0){showToast('✗ Vui lòng chọn ít nhất 1 dịch vụ');return;}if(bkOnlyAddons()){showToast('✗ '+ADDON_ONLY_MSG);return;}showStep('staff');renderStaffStep();});
+  bkLoadCombo();
+}
+// ===== ĐẶT LỊCH DÙNG COMBO (TEST 28/10/2026) =====
+// Nhãn: Green Touch = combo 10 lượt giảm 10%; các gói còn lại = mua 10 tặng 2. Khách đã có combo thì chọn dùng ở bước xác nhận. Mua combo vẫn do quản lý bán.
+var COMBO_GREEN_ID=33,COMBO_PKG_IDS=[4,35,36,37,38,40,41,42,43,44];
+var bkCombo=null;
+async function bkLoadCombo(){
+  bkCombo=null;
+  if(!currentUser||currentRole!=='customer')return;
+  var uid=currentUser.id;
+  var r=await api('/customers/'+uid+'/combos');
+  if(!currentUser||currentUser.id!==uid)return;
+  if(r&&r.ok===true&&r.by_service&&typeof r.by_service==='object')bkCombo=r.by_service;
+  var g=document.getElementById('svc-grid');
+  if(g){var el=document.querySelector('#svc-cats .ftab.active');renderSvcGrid(el?el.getAttribute('data-cat'):'all');}
+}
+function comboCardNote(s){
+  if(isAddonSvc(s))return '';
+  var info=bkCombo&&bkCombo[s.id];
+  var have=(info&&info.avail>0)?'<div style="font-size:0.72rem;color:#5b21b6;font-weight:600;margin-top:3px;">🎫 Bạn còn '+info.avail+' lượt combo — chọn dùng ở bước xác nhận</div>':'';
+  if(s.id===COMBO_GREEN_ID)return '<div style="font-size:0.72rem;color:#5b21b6;margin-top:3px;">🎫 Combo 10 lượt giảm 10%: '+fmt(Math.round(s.price*9))+'đ · mua tại spa</div>'+have;
+  if(COMBO_PKG_IDS.indexOf(s.id)>-1)return '<div style="font-size:0.72rem;color:#5b21b6;margin-top:3px;">🎫 Combo 10 tặng 2 · mua tại spa</div>'+have;
+  return have;
 }
 function renderSvcGrid(fc){
   var html='';
@@ -1010,7 +1154,7 @@ function renderSvcGrid(fc){
       +'<div style="display:flex;align-items:center;gap:10px;padding:12px;">'
       +'<div style="width:40px;height:40px;border-radius:10px;background:var(--g50);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">'+esc(s.icon||'💆')+'</div>'
       +'<div style="flex:1;min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+esc(s.name)+(cnt>1?' <span style="background:var(--accent);color:#fff;border-radius:100px;padding:1px 6px;font-size:0.65rem;">×'+cnt+'</span>':'')+'</div>'
-      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ'+(s.duration>0?' · '+s.duration+'ph':'')+(isAddonSvc(s)?' · chỉ chọn kèm dịch vụ khác':'')+'</div></div>'
+      +'<div style="font-size:0.78rem;color:var(--muted);">'+fmt(s.price)+'đ'+(s.duration>0?' · '+s.duration+'ph':'')+(isAddonSvc(s)?' · chỉ chọn kèm dịch vụ khác':'')+'</div>'+comboCardNote(s)+'</div>'
       +'<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">'
       +'<button class="svc-plus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:'+(isSel?'none':'1px solid var(--border)')+';background:'+(isSel?'var(--accent)':'var(--bg3)')+';color:'+(isSel?'#fff':'var(--text)')+';font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>'
       +(isSel?'<button class="svc-minus-btn" data-sid="'+s.id+'" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>':'')
@@ -1319,7 +1463,11 @@ async function renderTimeSlots(){
 function renderConfirm(){
   var c=currentUser;var tier=c?getTier(c.rank_points||0):TIERS[0];
   var totalPrice=0,svcLines='',totalDur=0;
-  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=svcDur(s);svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+esc(s.icon||'💆')+' '+esc(s.name)+'</span><span>'+fmt(s.price)+'đ</span></div>';}});});
+  var comboLines=[],mainPos=0;
+  bkState.comboUse={};
+  bkState.svcIds.forEach(function(sid){allServices.forEach(function(s){if(s.id===sid){totalPrice+=s.price;totalDur+=svcDur(s);svcLines+='<div class="sum-row"><span style="color:var(--muted);">'+esc(s.icon||'💆')+' '+esc(s.name)+'</span><span>'+fmt(s.price)+'đ</span></div>';
+    if(!isAddonSvc(s)){var cpos=mainPos++;var cinfo=bkCombo&&bkCombo[s.id];if(cinfo&&cinfo.avail>0){comboLines.push({pos:cpos,sid:s.id,price:s.price,word:cinfo.word,avail:cinfo.avail});svcLines+='<div id="cb-'+cpos+'"></div>';}}
+  }});});
 
   // Show gender in confirm screen as "Tên (nam/nữ)"
   var staffNames=bkState.staffIds.map(function(sid){
@@ -1331,9 +1479,10 @@ function renderConfirm(){
   bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;bkState.addonWalletIdx=-1;
   var wallet=(c&&c.voucher_wallet)||[];
   var discOpts='<option value="-1">-- Không dùng --</option>';
-  wallet.forEach(function(v,idx){if(v.used||v.isAddon)return;if(v.minBill>0&&totalPrice<v.minBill)return;discOpts+='<option value="'+idx+'" data-val="'+esc(v.value)+'">'+esc(v.name)+' (-'+fmt(v.value)+'đ)</option>';});
+  var tdBk=today(),hiddenMin=0;
+  wallet.forEach(function(v,idx){if(v.used||v.isAddon||v.gift||vchExpired(v,tdBk))return;if(v.minBill>0&&totalPrice<v.minBill){hiddenMin++;return;}discOpts+='<option value="'+idx+'" data-val="'+esc(v.value)+'">'+esc(v.name)+(v.expires?' · HSD '+fmtDate(v.expires).slice(0,5):' (-'+fmt(v.value)+'đ)')+'</option>';});
   var addonOpts='<option value="-1">-- Không dùng --</option>';
-  wallet.forEach(function(v,idx){if(v.used||!v.isAddon)return;addonOpts+='<option value="'+idx+'">'+esc(v.name)+'</option>';});
+  wallet.forEach(function(v,idx){if(v.used||!v.isAddon||v.gift||vchExpired(v,tdBk))return;addonOpts+='<option value="'+idx+'">'+esc(v.name)+'</option>';});
   document.getElementById('bk-sum').innerHTML=
     svcLines
     +'<div class="sum-row"><span>Nhân viên</span><span style="text-align:right;">'+(esc(staffNames)||'--')+'</span></div>'
@@ -1341,32 +1490,57 @@ function renderConfirm(){
     +'<div class="sum-row"><span>Giờ</span><span>'+(bkState.time||'--')+'</span></div>'
     +'<div class="sum-row"><span>Thời gian</span><span>'+totalDur+' phút</span></div>'
     +'<div class="sum-row sum-total"><span>Tổng</span><span>'+fmt(totalPrice)+'đ</span></div>'
-    +'<div style="margin:10px 0;padding:10px 0;border-top:1px dashed var(--border);"><div style="font-size:0.8rem;font-weight:500;margin-bottom:6px;">🎟 Voucher giảm giá</div><select id="voucher-sel" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;">'+discOpts+'</select></div>'
+    +'<div style="margin:10px 0;padding:10px 0;border-top:1px dashed var(--border);"><div style="font-size:0.8rem;font-weight:500;margin-bottom:6px;">🎟 Voucher giảm giá</div><select id="voucher-sel" style="width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;">'+discOpts+'</select>'+(hiddenMin>0?'<div style="font-size:0.7rem;color:#92400e;margin-top:4px;">Còn '+hiddenMin+' voucher chưa đủ điều kiện hoá đơn tối thiểu cho lịch này.</div>':'')+'<div style="font-size:0.7rem;color:var(--muted);margin-top:4px;">Mỗi lịch dùng 1 voucher; không dùng chung với combo hoặc add-on.</div></div>'
     +'<div style="margin:0 0 10px;padding:10px 0;border-top:1px dashed var(--border);"><div style="font-size:0.8rem;font-weight:500;margin-bottom:4px;">✨ Voucher Add-on</div><select id="addon-sel" style="width:100%;padding:10px 12px;border:1px solid #c07000;border-radius:8px;background:var(--input-bg);color:var(--input-text);font-size:0.85rem;">'+addonOpts+'</select></div>'
     +'<div id="cfm-calc"></div>';
+  function paintCombo(){
+    var used={};
+    comboLines.forEach(function(L){if(bkState.comboUse[L.pos])used[L.word]=(used[L.word]||0)+1;});
+    var hasV=bkState.voucherWalletIdx>=0;
+    comboLines.forEach(function(L){
+      var el=document.getElementById('cb-'+L.pos);if(!el)return;
+      var on=!!bkState.comboUse[L.pos];
+      var canOn=on||(!hasV&&(used[L.word]||0)<L.avail);
+      var st=function(sel,col){return 'flex:1;padding:8px 6px;border-radius:100px;border:1px solid '+(sel?'transparent':'var(--border)')+';background:'+(sel?col:'var(--bg3)')+';color:'+(sel?'#fff':'var(--text)')+';font-weight:'+(sel?'600':'400')+';font-size:0.78rem;font-family:inherit;';};
+      el.innerHTML='<div style="display:flex;gap:6px;margin:0 0 8px;">'
+        +'<button type="button" data-cb="'+L.pos+'" data-v="0" style="'+st(!on,'#16a34a')+'cursor:pointer;">💵 Trả lẻ</button>'
+        +'<button type="button" data-cb="'+L.pos+'" data-v="1"'+(canOn?'':' disabled')+' style="'+st(on,'#5b21b6')+'cursor:'+(canOn?'pointer':'not-allowed')+';'+(canOn?'':'opacity:0.45;')+'">🎫 Dùng combo (còn '+L.avail+')</button></div>'
+        +((hasV&&!on)?'<div style="font-size:0.7rem;color:#92400e;margin:-4px 0 8px;">Đang chọn voucher giảm giá — voucher không dùng chung với combo.</div>':'');
+    });
+  }
   function recalc(){
-    var disc=bkState.voucherDiscount||0;var paid=Math.max(0,totalPrice-disc);
-    // Đủ số dư → trừ thẳng số dư (tích RP khi hoàn thành). Không đủ → vẫn đặt được, CHƯA THANH TOÁN: trả tiền mặt tại spa, không tích RP. (Gợi ý theo số dư đang hiển thị; máy chủ quyết định khi đặt.)
+    var comboSum=0,comboN=0;
+    comboLines.forEach(function(L){if(bkState.comboUse[L.pos]){comboSum+=L.price;comboN++;}});
+    var vs0=document.getElementById('voucher-sel');
+    if(comboN>0){bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;if(vs0){vs0.value='-1';vs0.disabled=true;}}else if(vs0){vs0.disabled=bkState.addonWalletIdx>=0;}
+    var as0=document.getElementById('addon-sel');if(as0)as0.disabled=bkState.voucherWalletIdx>=0;
+    var disc=bkState.voucherDiscount||0;var paid=Math.max(0,totalPrice-comboSum-disc);
+    // Đủ số dư cho phần KHÔNG dùng combo → trừ thẳng số dư (tích RP khi hoàn thành). Không đủ → vẫn đặt được, CHƯA THANH TOÁN: trả tiền mặt tại spa, không tích RP. Lượt combo chỉ giữ, trừ khi hoàn thành. (Gợi ý theo số dư đang hiển thị; máy chủ quyết định khi đặt.)
     var bal=c?(Number(c.balance)||0):0;var enough=bal>=paid;
     var earnRP=enough?Math.floor(paid*tier.earnRate/100):0;
     var el=document.getElementById('cfm-calc');if(!el)return;
-    el.innerHTML=(disc>0?'<div class="sum-row" style="color:#c07000;"><span>🎟 Giảm</span><span>-'+fmt(disc)+'đ</span></div>':'')
+    el.innerHTML=(comboN>0?'<div class="sum-row" style="color:#5b21b6;"><span>🎫 Dùng combo ('+comboN+' lượt)</span><span>-'+fmt(comboSum)+'đ</span></div>':'')
+      +(disc>0?'<div class="sum-row" style="color:#c07000;"><span>🎟 Giảm</span><span>-'+fmt(disc)+'đ</span></div>':'')
       +'<div style="border-top:1.5px solid var(--border);margin:6px 0;"></div>'
       +'<div class="sum-row sum-total"><span>Thực trả</span><span style="color:var(--g800);font-size:1.05rem;">'+fmt(paid)+'đ</span></div>'
       +'<div style="background:var(--bg3);border-radius:8px;padding:10px;margin-top:8px;font-size:0.82rem;">'
       +(enough?'<div class="sum-row" style="color:#a07830;"><span>🎁 RP nhận ('+tier.earnRate+'%)</span><span>+'+fmt(earnRP)+' RP</span></div>':'<div class="sum-row" style="color:var(--muted);"><span>🎁 RP nhận</span><span>0 RP (tiền mặt không tích RP)</span></div>')
       +'<div class="sum-row" style="color:var(--muted);"><span>💳 Số dư TK</span><span>'+fmt(bal)+'đ</span></div></div>'
       +(enough?(paid>0?'<div style="margin-top:8px;font-size:0.78rem;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:8px 10px;">✅ Sẽ trừ <b>'+fmt(paid)+'đ</b> từ số dư tài khoản khi đặt lịch.</div>':'')
-        :'<div style="margin-top:8px;font-size:0.78rem;color:#92400e;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;">💵 Số dư chưa đủ — lịch vẫn được đặt ở trạng thái <b>Chưa thanh toán</b>. Bạn thanh toán <b>tiền mặt</b> tại spa (không tích RP). Mỗi lần chỉ giữ 1 lịch chưa thanh toán, hãy chọn đủ dịch vụ trong cùng một lịch.</div>');
+        :'<div style="margin-top:8px;font-size:0.78rem;color:#92400e;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;">💵 Số dư chưa đủ — lịch vẫn được đặt ở trạng thái <b>Chưa thanh toán</b>. Bạn thanh toán <b>tiền mặt</b> tại spa'+(comboN>0?' cho phần không dùng combo':'')+' (không tích RP). Được giữ tối đa 4 lịch chưa thanh toán cùng lúc, hãy chọn đủ dịch vụ trong cùng một lịch.</div>')
+      +(comboN>0?'<div style="margin-top:8px;font-size:0.78rem;color:#5b21b6;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:8px 10px;">🎫 Lượt combo được giữ cho lịch này và chỉ trừ khi lịch hoàn thành. Huỷ lịch thì không mất lượt.</div>':'');
+    paintCombo();
   }
   setTimeout(function(){
-    var vs=document.getElementById('voucher-sel');if(vs)vs.addEventListener('change',function(){var idx=parseInt(this.value);if(isNaN(idx)||idx<0){bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;}else{bkState.voucherWalletIdx=idx;bkState.voucherDiscount=parseInt(this.options[this.selectedIndex].getAttribute('data-val'))||0;}recalc();});
-    var as=document.getElementById('addon-sel');if(as)as.addEventListener('change',function(){var idx=parseInt(this.value);bkState.addonWalletIdx=isNaN(idx)||idx<0?-1:idx;recalc();});
+    var vs=document.getElementById('voucher-sel');if(vs)vs.addEventListener('change',function(){var idx=parseInt(this.value);if(isNaN(idx)||idx<0){bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;}else{bkState.voucherWalletIdx=idx;bkState.voucherDiscount=parseInt(this.options[this.selectedIndex].getAttribute('data-val'))||0;var as1=document.getElementById('addon-sel');if(as1)as1.value='-1';bkState.addonWalletIdx=-1;}recalc();});
+    var as=document.getElementById('addon-sel');if(as)as.addEventListener('change',function(){var idx=parseInt(this.value);bkState.addonWalletIdx=isNaN(idx)||idx<0?-1:idx;if(bkState.addonWalletIdx>=0){bkState.voucherDiscount=0;bkState.voucherWalletIdx=-1;var vs1=document.getElementById('voucher-sel');if(vs1)vs1.value='-1';}recalc();});
+    var sumEl=document.getElementById('bk-sum');
+    if(sumEl)sumEl.onclick=function(e){var bt=e.target&&e.target.closest?e.target.closest('[data-cb]'):null;if(!bt||bt.disabled)return;bkState.comboUse[parseInt(bt.getAttribute('data-cb'))]=(bt.getAttribute('data-v')==='1');recalc();};
     recalc();
   },50);
 }
 
-// Mỗi khách chỉ giữ 1 lịch chưa thanh toán (chờ / đã xác nhận) tại một thời điểm — tránh đặt lịch tràn lan
+// Mỗi khách giữ tối đa 4 lịch chưa thanh toán (chờ / đã xác nhận) tại một thời điểm — tránh đặt lịch tràn lan (lịch chỉ dùng combo hoặc đã trừ số dư không tính)
 function showUnpaidLimit(msg){
   openModal('Chưa đặt được lịch','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.88rem;color:#92400e;margin-bottom:12px;line-height:1.5;">'+esc(msg)+'</div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;">Đã hiểu</button></div>');
 }
@@ -1405,15 +1579,22 @@ async function confirmBooking(){
     var wi=bkState.voucherWalletIdx,ai=bkState.addonWalletIdx;
     if(wi>=0){
       var vv=wallet[wi];
-      if(!vv||vv.used||vv.isAddon||!vv.id){stop('✗ Voucher giảm giá không còn hiệu lực');return;}
+      if(!vv||vv.used||vv.isAddon||vv.gift||!vv.id){stop('✗ Voucher giảm giá không còn hiệu lực');return;}
+      if(vchExpired(vv,today())){stop('✗ Voucher đã hết hạn (hạn '+vv.expires+')');return;}
       if(vv.minBill>0&&totalPrice<vv.minBill){stop('✗ Hoá đơn chưa đủ điều kiện dùng voucher');return;}
       disc=parseInt(vv.value)||0;voucherId=String(vv.id);
     }
     if(ai>=0){
       var av=wallet[ai];
-      if(!av||av.used||!av.isAddon||!av.id){stop('✗ Voucher add-on không còn hiệu lực');return;}
+      if(!av||av.used||!av.isAddon||av.gift||!av.id){stop('✗ Voucher add-on không còn hiệu lực');return;}
+      if(vchExpired(av,today())){stop('✗ Voucher add-on đã hết hạn (hạn '+av.expires+')');return;}
       addonId=String(av.id);
     }
+    if(voucherId&&addonId){stop('✗ Mỗi lịch chỉ dùng 1 voucher');return;}
+    var comboIdx=[];
+    Object.keys(bkState.comboUse||{}).forEach(function(k){if(bkState.comboUse[k])comboIdx.push(parseInt(k));});
+    comboIdx.sort(function(a,b){return a-b;});
+    if(comboIdx.length&&voucherId){stop('✗ Voucher giảm giá không dùng chung với combo');return;}
     // Tên nhân viên kèm giới tính: "Tên (nam/nữ)"
     var staffNames=bkState.staffIds.map(function(sid){
       var f=allStaff.find(function(s){return s.id===sid;});
@@ -1422,15 +1603,15 @@ async function confirmBooking(){
     });
 
     // 4) Đặt lịch TRỌN GÓI ở máy chủ: tính giá theo bảng dịch vụ, kiểm tra voucher + số dư, trừ tiền, ghi lịch, lịch sử, thông báo — hoặc xong hết, hoặc không đổi gì
-    var r=await api('/book','POST',{cust_id:c.id,service_ids:bkState.svcIds,staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,voucher_id:voucherId,addon_id:addonId});
+    var r=await api('/book','POST',{cust_id:c.id,service_ids:bkState.svcIds,staff_ids:bkState.staffIds,staff_names:staffNames.join(', '),date:bkDate,time:bkState.time,voucher_id:voucherId,addon_id:addonId,combo_units:comboIdx.length?comboIdx:undefined});
     showLoading(false);resetBtn();
     if(r&&r.ok===true){
-      showToast(r.pay_status==='unpaid'?'✓ Đặt lịch xong! Thanh toán tiền mặt tại spa (không tích RP)':'✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành');
+      showToast(r.combo?(r.pay_status==='unpaid'?'✓ Đặt lịch xong! Đã giữ lượt combo (trừ khi hoàn thành); phần còn lại thanh toán tiền mặt tại spa (không tích RP)':'✓ Đặt lịch xong! Đã giữ lượt combo, trừ khi hoàn thành'+(Number(r.paid)>0?' — RP sẽ cộng sau khi hoàn thành':'')):(r.pay_status==='unpaid'?'✓ Đặt lịch xong! Thanh toán tiền mặt tại spa (không tích RP)':'✓ Đặt lịch xong! RP sẽ cộng sau khi hoàn thành'));
       await reloadUser();
       showPage('home');
       return;
     }
-    if(r&&r.code==='unpaid_limit'){showUnpaidLimit(apiMsg(r,'Bạn đang có 1 lịch chưa thanh toán. Vui lòng hoàn thành hoặc huỷ lịch đó trước khi đặt thêm.'));return;}
+    if(r&&r.code==='unpaid_limit'){showUnpaidLimit(apiMsg(r,'Bạn đang có 4 lịch chưa thanh toán. Vui lòng hoàn thành hoặc huỷ bớt một lịch trước khi đặt thêm.'));return;}
     if(!r||!r.code||r.code==='upstream'){
       showToast('⚠ '+((r&&r.code==='upstream')?r.error+' — c':'C')+'hưa rõ lịch đã được đặt chưa, vui lòng kiểm tra mục Lịch sử trước khi đặt lại');
       await reloadUser();
@@ -1446,17 +1627,137 @@ async function confirmBooking(){
 // ============================================================
 // REWARDS
 // ============================================================
+// ============================================================
+// THẺ TEM — tích tem bằng RP, đổi tem lấy voucher / quà. Mọi thay đổi tem, RP, ví voucher do MÁY CHỦ làm; app chỉ hiển thị và gọi.
+// ============================================================
+var TEM_DEFAULT={rp_per_tem:4000,max_tem:20,max_unused:2,rewards:[
+  {id:'V5',tem:5,value:20000,min_bill:150000,days:30,gift:false,name:'Voucher giảm 20.000đ'},
+  {id:'V10',tem:10,value:40000,min_bill:250000,days:45,gift:false,name:'Voucher giảm 40.000đ'},
+  {id:'G20',tem:20,value:0,min_bill:0,days:0,gift:true,name:'Gấu bông (chọn tại quầy)'}]};
+var TEM_CFG=null,temQty=1,temBusy=false;
+async function loadTemCfg(){
+  if(TEM_CFG)return TEM_CFG;
+  var r=await api('/tem/config');
+  if(r&&!r.error&&Array.isArray(r.rewards)&&r.rewards.length&&r.rp_per_tem>0&&r.max_tem>0)TEM_CFG=r;
+  return TEM_CFG||TEM_DEFAULT;
+}
+function temOf(c){var n=parseInt(c&&c.tem);return isNaN(n)||n<0?0:n;}
+function temTxt(c){return temOf(c)+'/'+(TEM_CFG||TEM_DEFAULT).max_tem;}
+function dayDiff(a,b){var pa=String(a).split('-'),pb=String(b).split('-');return Math.round((Date.UTC(+pb[0],+pb[1]-1,+pb[2])-Date.UTC(+pa[0],+pa[1]-1,+pa[2]))/86400000);}
+// Voucher hết hạn khi ngày hôm nay > ngày hết hạn (hạn dùng tính cả ngày cuối). Phiếu cũ không có "expires" = không hết hạn.
+function vchExpired(v,d){return !!(v&&v.expires&&String(v.expires)<String(d||today()));}
+function vchUnusedCount(c){var d=today();return((c&&c.voucher_wallet)||[]).filter(function(v){return v&&!v.used&&!v.gift&&!v.isAddon&&!vchExpired(v,d);}).length;}
+
 async function refreshRewards(){
   if(!currentUser)return;
   await reloadUser();var c=currentUser;
   var tier=getTier(c.rank_points||0);var rwd=c.reward_points||0;
   document.getElementById('rwd-pts').innerHTML='<div style="font-size:1.6rem;font-weight:500;line-height:1;color:#fff;">'+fmt(rwd)+'</div><div style="font-size:0.72rem;opacity:0.75;margin-top:2px;color:#fff;">Reward Points khả dụng</div>';
+  await loadTemCfg();
+  renderTemBox();
+  // Ưu đãi đổi điểm kiểu cũ (chỉ hiện khi cấp bậc / add-on có cấu hình voucher)
   var vouchers=tier.vouchers.concat(ADDON_VOUCHERS);
+  var lt=document.getElementById('rwd-legacy-title');if(lt)lt.style.display=vouchers.length?'':'none';
   var html='';
-  if(rwd<20000){html='<div style="grid-column:span 2;background:#fffbf0;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:1.5rem;margin-bottom:6px;">🎁</div><div style="font-size:0.88rem;font-weight:500;color:#92400e;">Cần tối thiểu 20.000 RP</div><div style="font-size:0.78rem;color:#a07830;margin-top:6px;">Bạn có: <b>'+fmt(rwd)+' RP</b></div></div>';}
-  else{vouchers.forEach(function(v){if(rwd<v.rp)return;var ia=v.isAddon;html+='<div class="rwd-card" style="border:'+(ia?'1px solid #c07000':'1px solid var(--border)')+';cursor:pointer;" data-vid="'+v.id+'" data-rp="'+v.rp+'" data-name="'+esc(v.name)+'" data-val="'+esc(v.value)+'" data-minbill="'+v.minBill+'" data-addon="'+(ia?'1':'0')+'">'+(ia?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div class="rwd-val" style="color:'+(ia?'#c07000':'var(--gold2)')+';">'+esc(v.name)+'</div><div class="rwd-desc">'+(v.desc?esc(v.desc):(v.minBill>0?'HĐ từ '+fmt(v.minBill)+'đ':'Không giới hạn'))+'</div><div class="rwd-cost">⭐ '+fmt(v.rp)+' RP → Đổi ngay</div></div>';});}
+  if(vouchers.length){
+    if(rwd<20000){html='<div style="grid-column:span 2;background:#fffbf0;border:1px solid #fde68a;border-radius:12px;padding:16px;text-align:center;"><div style="font-size:1.5rem;margin-bottom:6px;">🎁</div><div style="font-size:0.88rem;font-weight:500;color:#92400e;">Cần tối thiểu 20.000 RP</div><div style="font-size:0.78rem;color:#a07830;margin-top:6px;">Bạn có: <b>'+fmt(rwd)+' RP</b></div></div>';}
+    else{vouchers.forEach(function(v){if(rwd<v.rp)return;var ia=v.isAddon;html+='<div class="rwd-card" style="border:'+(ia?'1px solid #c07000':'1px solid var(--border)')+';cursor:pointer;" data-vid="'+v.id+'" data-rp="'+v.rp+'" data-name="'+esc(v.name)+'" data-val="'+esc(v.value)+'" data-minbill="'+v.minBill+'" data-addon="'+(ia?'1':'0')+'">'+(ia?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div class="rwd-val" style="color:'+(ia?'#c07000':'var(--gold2)')+';">'+esc(v.name)+'</div><div class="rwd-desc">'+(v.desc?esc(v.desc):(v.minBill>0?'HĐ từ '+fmt(v.minBill)+'đ':'Không giới hạn'))+'</div><div class="rwd-cost">⭐ '+fmt(v.rp)+' RP → Đổi ngay</div></div>';});}
+  }
   document.getElementById('rwd-cards').innerHTML=html;
   document.querySelectorAll('.rwd-card[data-vid]').forEach(function(card){card.addEventListener('click',function(){redeemReward(this.getAttribute('data-vid'),parseInt(this.getAttribute('data-rp')),this.getAttribute('data-name'),parseInt(this.getAttribute('data-val')),parseInt(this.getAttribute('data-minbill')),this.getAttribute('data-addon')==='1');});});
+}
+function renderTemBox(){
+  var box=document.getElementById('tem-box');if(!box||!currentUser)return;
+  var cfg=TEM_CFG||TEM_DEFAULT,c=currentUser,tem=temOf(c),max=cfg.max_tem,rate=cfg.rp_per_tem,rwd=Number(c.reward_points)||0;
+  if(temQty<1)temQty=1;if(temQty>max)temQty=max;
+  var cost=temQty*rate,over=tem+temQty>max,short=rwd<cost;
+  var ms={};cfg.rewards.forEach(function(r){ms[r.tem]=r;});
+  var slots='';
+  for(var i=1;i<=max;i++){var r0=ms[i],on=i<=tem;slots+='<div class="tem-slot'+(on?' on':'')+(r0?' ms':'')+'">'+(on?'🌿':i)+(r0?'<span class="tem-flag">'+(r0.gift?'🧸 Gấu':'-'+Math.round(r0.value/1000)+'k')+'</span>':'')+'</div>';}
+  var html='<div class="tem-card">'
+    +'<div class="tem-head"><div style="font-size:1rem;font-weight:500;color:var(--g800);">🎫 Thẻ tem của bạn</div><div style="font-size:0.95rem;font-weight:600;color:var(--g600);">'+tem+'/'+max+' tem</div></div>'
+    +'<div class="tem-grid">'+slots+'</div>'
+    +'<div style="font-size:0.74rem;color:var(--muted);text-align:center;">1 tem = '+fmt(rate)+' RP · Tem không hết hạn · Giữ tối đa '+max+' tem</div></div>';
+  html+='<div class="tem-card">'
+    +'<div style="font-size:0.95rem;font-weight:500;color:var(--g800);">⭐ Đổi RP lấy tem</div>'
+    +'<div class="tem-step"><button type="button" data-tem="dec" aria-label="Giảm 1 tem"'+(temQty<=1?' disabled':'')+'>−</button><div class="tem-q">'+temQty+'</div><button type="button" data-tem="inc" aria-label="Tăng 1 tem"'+(temQty>=max?' disabled':'')+'>+</button></div>'
+    +'<div style="text-align:center;font-size:0.84rem;">Cần <b>'+fmt(cost)+' RP</b> · bạn có <b style="color:'+(short?'#dc2626':'inherit')+';">'+fmt(rwd)+' RP</b></div>'
+    +(over?'<div class="tem-note" style="background:#fef2f2;border:1px solid #fecaca;color:#b91c1c;">⚠ Thẻ tem chỉ giữ tối đa '+max+' tem (bạn đang có '+tem+' tem). Hãy đổi bớt tem lấy quà trước khi đổi thêm.</div>'
+      :(short?'<div class="tem-note" style="background:#fff8e1;border:1px solid #fde68a;color:#92400e;">Chưa đủ RP cho '+temQty+' tem — thiếu '+fmt(cost-rwd)+' RP.</div>':''))
+    +'<button type="button" class="tem-btn" data-tem="convert" style="margin-top:6px;"'+(rwd<rate?' disabled':'')+'>Đổi '+temQty+' tem</button>'
+    +(rwd<rate?'<div style="font-size:0.74rem;color:var(--muted);text-align:center;margin-top:6px;">Cần tối thiểu '+fmt(rate)+' RP để đổi 1 tem.</div>':'')
+    +'<div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-top:8px;">RP chỉ được tích khi thanh toán bằng số dư tài khoản.</div></div>';
+  var un=vchUnusedCount(c);
+  html+='<div class="tem-card"><div style="font-size:0.95rem;font-weight:500;color:var(--g800);margin-bottom:4px;">🎁 Đổi tem lấy quà</div>'
+    +(un>=cfg.max_unused?'<div class="tem-note" style="background:#fff8e1;border:1px solid #fde68a;color:#92400e;">Bạn đang có '+un+' voucher chưa dùng (tối đa '+cfg.max_unused+'). Hãy dùng bớt voucher trước khi đổi thêm voucher mới.</div>':'');
+  cfg.rewards.forEach(function(r){
+    var enough=tem>=r.tem;
+    var det=r.gift?'Chọn gấu bông yêu thích tại quầy · không hết hạn':'Giảm '+fmt(r.value)+'đ cho hoá đơn từ '+fmt(r.min_bill)+'đ · dùng trong '+r.days+' ngày';
+    html+='<div class="tem-ms"><div style="font-size:1.7rem;flex-shrink:0;">'+(r.gift?'🧸':'🎟')+'</div>'
+      +'<div style="flex:1;min-width:0;"><div style="font-size:0.9rem;font-weight:500;">'+esc(r.name)+'</div><div style="font-size:0.74rem;color:var(--muted);margin-top:2px;line-height:1.4;">'+det+'</div>'
+      +(enough?'':'<div style="font-size:0.72rem;color:#b45309;margin-top:2px;">Còn thiếu '+(r.tem-tem)+' tem</div>')+'</div>'
+      +'<button type="button" class="tem-btn" style="width:auto;padding:9px 14px;white-space:nowrap;flex-shrink:0;" data-tem="redeem" data-rid="'+esc(r.id)+'"'+(enough?'':' disabled')+'>Đổi '+r.tem+' tem</button></div>';
+  });
+  html+='<div style="font-size:0.72rem;color:var(--muted);line-height:1.5;border-top:1px dashed var(--border);padding-top:10px;">• Mỗi lịch dùng 1 voucher, không dùng chung với combo hoặc ưu đãi khác.<br>• Đổi tem lấy mốc nào sẽ trừ đúng số tem của mốc đó.<br>• Voucher và quà nằm trong <b>Kho Voucher</b> (mục Tài khoản).</div></div>';
+  box.innerHTML=html;
+  box.onclick=function(e){
+    var t=e.target&&e.target.closest?e.target.closest('[data-tem]'):null;if(!t||t.disabled)return;
+    var a=t.getAttribute('data-tem');
+    if(a==='dec'){temQty--;renderTemBox();}
+    else if(a==='inc'){temQty++;renderTemBox();}
+    else if(a==='convert')doTemConvert();
+    else if(a==='redeem')doTemRedeem(t.getAttribute('data-rid'));
+  };
+}
+function temFailModal(r){
+  var code=r&&r.code;
+  var icon=code==='tem_limit'?'🎫':(code==='voucher_limit'?'🎟':'⚠️');
+  var extra=code==='tem_limit'?'<div style="font-size:0.8rem;color:var(--muted);margin-bottom:12px;line-height:1.5;">Đổi bớt tem lấy voucher hoặc quà ở mục bên dưới, rồi quay lại đổi thêm.</div>':'';
+  openModal('Chưa đổi được','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">'+icon+'</div><div style="font-size:0.9rem;color:#92400e;margin-bottom:10px;line-height:1.5;">'+esc(apiMsg(r,'Chưa đổi được, vui lòng thử lại'))+'</div>'+extra+'<button type="button" onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-family:inherit;">Đã hiểu</button></div>');
+}
+// Gọi máy chủ rồi xử lý kết quả chung cho đổi tem / đổi quà. okFn(r) chạy khi thành công.
+async function temCall(path,body,okFn){
+  if(temBusy)return;temBusy=true;showLoading(true);
+  try{
+    var r=await api('/customers/'+currentUser.id+path,'POST',body);
+    if(r&&r.code==='auth_required'){closeModal();return;}
+    closeModal();
+    if(r&&r.ok===true){okFn(r);await refreshRewards();if(typeof refreshHomeSilent==='function'&&currentUser)refreshHomeSilent(currentUser);return;}
+    if(r&&r.code&&r.code!=='upstream'){temFailModal(r);await reloadUser();renderTemBox();return;}
+    showToast('⚠ Chưa rõ kết quả — hãy kiểm tra lại tem và RP');
+    await reloadUser();renderTemBox();
+  }catch(e){
+    closeModal();showToast('⚠ Có lỗi — hãy kiểm tra lại tem và RP');
+    try{await reloadUser();renderTemBox();}catch(e2){}
+  }finally{temBusy=false;showLoading(false);}
+}
+function temConfirmModal(title,icon,heading,bodyHtml,okText,onOk){
+  openModal(title,'<div style="text-align:center;"><div style="font-size:2rem;margin-bottom:8px;">'+icon+'</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;">'+heading+'</div><div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;font-size:0.85rem;line-height:1.6;">'+bodyHtml+'</div><div style="display:flex;gap:10px;"><button type="button" id="tem-cancel" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:inherit;">Huỷ</button><button type="button" id="tem-ok" style="flex:1;padding:12px;border-radius:100px;border:none;background:var(--g600);color:#fff;cursor:pointer;font-weight:500;font-family:inherit;">'+okText+'</button></div></div>');
+  var cc=document.getElementById('tem-cancel'),ok=document.getElementById('tem-ok');
+  if(cc)cc.addEventListener('click',closeModal);
+  if(ok)ok.addEventListener('click',function(){if(this.disabled)return;this.disabled=true;onOk();});
+}
+function doTemConvert(){
+  if(temBusy||!currentUser)return;
+  var cfg=TEM_CFG||TEM_DEFAULT,c=currentUser,q=temQty,cost=q*cfg.rp_per_tem,tem=temOf(c),rwd=Number(c.reward_points)||0;
+  // Đã biết trước sẽ không đổi được (quá 20 tem / thiếu RP): gửi thẳng để máy chủ trả đúng thông báo nhắc nhở và từ chối.
+  if(tem+q>cfg.max_tem||rwd<cost){temCall('/tem/convert',{qty:q},function(){});return;}
+  temConfirmModal('Đổi RP lấy tem','🎫','Đổi '+q+' tem','<div>⭐ Tốn: <b>'+fmt(cost)+' RP</b></div><div>RP còn lại: <b>'+fmt(rwd-cost)+' RP</b></div><div>Số tem sau khi đổi: <b>'+(tem+q)+'/'+cfg.max_tem+'</b></div>','Đổi ngay',function(){
+    temCall('/tem/convert',{qty:q},function(){temQty=1;showToast('✓ Đã đổi '+q+' tem');});
+  });
+}
+function doTemRedeem(rid){
+  if(temBusy||!currentUser)return;
+  var cfg=TEM_CFG||TEM_DEFAULT,r=null;cfg.rewards.forEach(function(x){if(x.id===rid)r=x;});if(!r)return;
+  var tem=temOf(currentUser);
+  var body='<div>🎫 Dùng: <b>'+r.tem+' tem</b> (còn lại '+Math.max(0,tem-r.tem)+' tem)</div>'
+    +(r.gift?'<div>🧸 Chọn gấu bông yêu thích tại quầy, không hết hạn.</div>':'<div>Giảm <b>'+fmt(r.value)+'đ</b> cho hoá đơn từ '+fmt(r.min_bill)+'đ</div><div>Hạn dùng: <b>'+r.days+' ngày</b> kể từ hôm nay</div>');
+  temConfirmModal(r.gift?'Đổi tem lấy quà':'Đổi tem lấy voucher',r.gift?'🧸':'🎟',esc(r.name),body,'Đổi ngay',function(){
+    temCall('/tem/redeem',{reward:r.id},function(res){
+      var en=res.entry||{};
+      showToast(r.gift?'✓ Đã đổi gấu bông — xem Kho Voucher':'✓ Đã đổi voucher, hạn '+(en.expires?fmtDate(en.expires):r.days+' ngày'));
+    });
+  });
 }
 async function redeemReward(vid,rp,name,val,minBill,isAddon){
   var c=currentUser;if((c.reward_points||0)<rp){showToast('✗ Không đủ RP');return;}
@@ -1493,34 +1794,11 @@ async function redeemReward(vid,rp,name,val,minBill,isAddon){
 // ============================================================
 // HISTORY
 // ============================================================
-var _histSeq=0;
-// Thẻ một lịch đặt trong Lịch sử (dùng cho mục "Đặt lịch" và cho lịch chưa thanh toán ở mục "Tất cả")
-function histBookingHtml(b){
-  var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};
-  // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
-  var amtHtml=(bkIsUnpaid(b)||bkIsCash(b))?'<div style="font-size:0.9rem;font-weight:700;color:'+(b.status==='cancelled'?'var(--muted)':bkIsUnpaid(b)?'#b45309':'var(--text)')+';">'+fmt(bkPaid(b))+' VND</div>':'<div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>';
-  return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;">'+amtHtml+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
-    +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
-    +(bkPayTag(b)?'<div style="margin-top:6px;">'+bkPayTag(b)+(bkIsUnpaid(b)&&b.status!=='cancelled'?' <span style="font-size:0.72rem;color:var(--muted);">trả tiền mặt tại spa (không tích RP)</span>':bkIsCash(b)?' <span style="font-size:0.72rem;color:var(--muted);">không tích RP</span>':'')+'</div>':'')
-    +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
-    +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
-    +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
-    +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Huỷ lịch</button></div>':'')
-    +'</div>';
-}
-function bindHistoryBookingBtns(bks,filter){
-  document.querySelectorAll('#history-list .review-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)showReviewPopup(bkObj);});});
-  document.querySelectorAll('#history-list .cancel-bk-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderHistory(filter);});});});
-}
 async function renderHistory(filter){
   if(!currentUser)return;
-  // Nút lọc đang sáng luôn khớp với danh sách được vẽ (trước đây mở lại Lịch sử vẫn sáng nút cũ, danh sách lại là "Tất cả")
-  var chip=document.getElementById('fh-'+filter);if(chip)setActiveFilter(chip);
-  var seq=++_histSeq;
   showLoading(true);
   var bks=await api('/bookings?cust_id='+currentUser.id)||[];
   var txs=await api('/transactions?cust_id='+currentUser.id)||[];
-  if(seq!==_histSeq)return;   // đã có lần vẽ mới hơn (khách bấm nút lọc khác) — bỏ kết quả cũ để không đè lên
   showLoading(false);
   var totalSpent=0,totalBks=0,totalEarnRP=0;
   bks.forEach(function(b){if(b.status==='done'){totalSpent+=bkPaid(b);totalBks++;}});
@@ -1530,15 +1808,28 @@ async function renderHistory(filter){
   var list=document.getElementById('history-list');
   if(filter==='booking'){
     if(!bks.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">Chưa có lịch đặt</div></div>';return;}
-    list.innerHTML=bks.map(histBookingHtml).join('');
-    bindHistoryBookingBtns(bks,filter);
+    var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};
+    var html='';
+    bks.forEach(function(b){
+      // Lịch chưa thanh toán / thu tiền mặt: KHÔNG trừ số dư nên không hiện dấu "-"
+      var amtHtml=(bkIsUnpaid(b)||bkIsCash(b)||bkIsCombo(b)||bkIsMixed(b)||(bkHasPlan(b)&&bkPaid(b)===0))?'<div style="font-size:0.9rem;font-weight:700;color:'+(b.status==='cancelled'?'var(--muted)':bkIsUnpaid(b)?'#b45309':'var(--text)')+';">'+fmt(bkPaid(b))+' VND</div>':'<div style="font-size:0.9rem;font-weight:700;color:#dc2626;">-'+fmt(bkPaid(b))+' VND</div>';
+      html+='<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(b.service)+'</div><div style="text-align:right;">'+amtHtml+(b.voucher_discount>0?'<div style="font-size:0.7rem;color:#c07000;">🎟 Giảm '+fmt(b.voucher_discount)+'đ</div>':'')+(b.addon_voucher?'<div style="font-size:0.7rem;color:#c07000;">✨ '+esc(b.addon_voucher)+'</div>':'')+'</div></div>'
+        +'<div class="hist-meta"><span>📅 '+fmtDate(b.date)+' '+esc(b.time)+'</span><span>👤 '+esc(b.staff_names||'')+'</span><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
+        +(bkPayTag(b)?'<div style="margin-top:6px;">'+bkPayTag(b)+(bkIsUnpaid(b)&&b.status!=='cancelled'?' <span style="font-size:0.72rem;color:var(--muted);">trả tiền mặt tại spa (không tích RP)</span>':(bkIsCash(b)||bkIsMixed(b))?' <span style="font-size:0.72rem;color:var(--muted);">không tích RP</span>':'')+'</div>':'')
+        +(b.reward_earned>0?'<div style="font-size:0.75rem;color:#a07830;margin-top:4px;">+'+fmt(b.reward_earned)+' RP nhận được</div>':'')
+        +(b.status==='done'&&!b.reviewed?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="review-btn" data-bid="'+b.id+'" style="padding:7px 14px;border-radius:100px;border:1px solid var(--accent);background:var(--accent-light);color:var(--accent);font-size:0.8rem;cursor:pointer;font-weight:500;">⭐ Đánh giá</button></div>':'')
+        +(b.reviewed?'<div style="margin-top:6px;font-size:0.75rem;color:var(--muted);">✓ Đã đánh giá</div>':'')
+        +(b.status==='confirmed'?'<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);"><button class="cancel-bk-btn" data-bid="'+b.id+'" style="padding:6px 14px;border-radius:100px;border:1px solid #ffcdd2;background:none;color:#c62828;font-size:0.78rem;cursor:pointer;">Huỷ lịch</button></div>':'')
+        +'</div>';
+    });
+    list.innerHTML=html;
+    document.querySelectorAll('.review-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)showReviewPopup(bkObj);});});
+    document.querySelectorAll('.cancel-bk-btn').forEach(function(btn){btn.addEventListener('click',function(){var bid=parseInt(this.getAttribute('data-bid'));var bkObj=bks.find(function(b){return b.id===bid;});if(bkObj)customerCancelBooking(bkObj,function(){renderHistory('booking');});});});
     return;
   }
   var filtered=txs.filter(function(t){if(filter==='topup')return t.type==='topup';if(filter==='earn')return t.type==='earn';if(filter==='redeem')return t.type==='redeem';return true;});
-  // Lịch đặt khi thiếu số dư (chưa thanh toán, trả tiền mặt tại spa) không tạo giao dịch số dư nên phải hiện riêng ở "Tất cả", nếu không khách đặt xong sẽ không thấy lịch ở đâu cả
-  var pend=filter==='all'?bks.filter(function(b){return bkIsUnpaid(b)&&b.status!=='cancelled';}):[];
-  if(!filtered.length&&!pend.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>';return;}
-  var tHtml=pend.length?'<div style="font-size:0.75rem;font-weight:600;color:#b45309;margin:2px 0 6px;">Lịch chưa thanh toán</div>'+pend.map(histBookingHtml).join('')+(filtered.length?'<div style="font-size:0.75rem;font-weight:600;color:var(--muted);margin:10px 0 6px;">Giao dịch</div>':''):'';
+  if(!filtered.length){list.innerHTML='<div class="empty-state"><div class="empty-icon">🌿</div><div class="empty-text">Không có dữ liệu</div></div>';return;}
+  var tHtml='';
   filtered.forEach(function(t){
     var amtLine='';
     if(t.type==='topup')amtLine='<div style="font-size:0.95rem;font-weight:700;color:#16a34a;">+'+fmt(t.amount)+' VND</div>';
@@ -1548,7 +1839,6 @@ async function renderHistory(filter){
     tHtml+='<div class="hist-item"><div class="hist-top"><div style="flex:1;"><div class="hist-svc" style="font-size:0.88rem;">'+label+'</div>'+(t.type!=='earn'?'<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+esc(t.note)+'</div>':'')+'</div><div style="text-align:right;min-width:100px;">'+amtLine+rpLine+'</div></div><div class="hist-meta"><span>📅 '+fmtDate(t.date)+'</span></div></div>';
   });
   list.innerHTML=tHtml;
-  if(pend.length)bindHistoryBookingBtns(bks,filter);
 }
 
 // ============================================================
@@ -1559,7 +1849,7 @@ function customerCancelBooking(bk,onDone){
   var hrs=hoursUntilBooking(bk);
   if(hrs<1){openModal('Không thể huỷ','<div style="text-align:center;padding:8px;"><div style="font-size:2rem;margin-bottom:8px;">⛔</div><div style="font-size:0.9rem;font-weight:500;margin-bottom:8px;color:#dc2626;">Không thể huỷ lịch</div><div style="font-size:0.82rem;color:var(--muted);margin-bottom:16px;">Chỉ được huỷ trước giờ hẹn ít nhất <b>1 giờ</b>.</div><button onclick="closeModal()" style="width:100%;padding:12px;border-radius:100px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-weight:500;">Đã hiểu</button></div>');return;}
   var paid=bkPaid(bk);var unpaidBk=bkIsUnpaid(bk);
-  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">'+(byCustomer?'Bạn có chắc muốn huỷ lịch?':'Bạn có chắc muốn huỷ lịch này?')+'</div>'+(unpaidBk?'<div style="font-size:0.82rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:16px;color:var(--muted);">💵 Lịch chưa thanh toán nên không có khoản hoàn tiền.</div>':'<div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản'+(byCustomer?'':' của khách')+'.</div>')+'<div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
+  openModal('Xác nhận huỷ lịch','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">📅</div><div style="font-size:0.9rem;margin-bottom:8px;">'+(byCustomer?'Bạn có chắc muốn huỷ lịch?':'Bạn có chắc muốn huỷ lịch này?')+'</div>'+(unpaidBk?'<div style="font-size:0.82rem;background:var(--bg3);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:16px;color:var(--muted);">💵 Lịch chưa thanh toán nên không có khoản hoàn tiền.'+(bkHasPlan(bk)?' Lượt combo đã giữ cho lịch này không bị trừ.':'')+'</div>':'<div style="font-size:0.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:10px;margin-bottom:16px;color:#15803d;">✅ Huỷ thành công sẽ hoàn <b>'+fmt(paid)+' VND</b> về tài khoản'+(byCustomer?'':' của khách')+'.'+(bkHasPlan(bk)?' Lượt combo đã giữ cho lịch này không bị trừ.':'')+'</div>')+'<div style="display:flex;gap:10px;"><button id="cc-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Không</button><button id="cc-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#dc2626;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Huỷ lịch</button></div></div>');
   setTimeout(function(){
     var no=document.getElementById('cc-no');var yes=document.getElementById('cc-yes');
     if(no)no.addEventListener('click',function(){closeModal();if(onDone)onDone();});
@@ -1585,7 +1875,7 @@ async function mgrCancelBooking(bkId,onDone){
   if(!bk){showToast('✗ Không tải được lịch đặt, vui lòng thử lại');return;}
   if(bk.status==='cancelled'){showToast('✗ Lịch này đã được huỷ trước đó');if(onDone)onDone();return;}
   if(bk.status==='done'){showToast('✗ Lịch đã hoàn thành (dịch vụ đã thực hiện) nên không thể huỷ');if(onDone)onDone();return;}
-  var cust=allCustomers.find(function(c){return c.id===bk.cust_id;});
+  var cust=bkWho(bk);
   var paid=bkPaid(bk);var custName=cust?cust.name:'Khách hàng';var unpaidBk=bkIsUnpaid(bk);
   var hrs=hoursUntilBooking(bk);
   var timeNote=hrs>=1?'<div style="font-size:0.78rem;color:#16a34a;margin-bottom:8px;">⏱ Còn '+hrs.toFixed(1)+' giờ</div>':'<div style="font-size:0.78rem;color:#f59e0b;margin-bottom:8px;">⚠️ Đã qua thời hạn – Admin vẫn có quyền huỷ.</div>';
@@ -1749,16 +2039,39 @@ async function refreshProfile(){
   if(!currentUser)return;await reloadUser();var c=currentUser;
   document.getElementById('prof-name').textContent=c.name;document.getElementById('prof-phone').textContent=c.phone;
   document.getElementById('ps-pts').textContent=fmt(c.rank_points||0);document.getElementById('ps-reward').textContent=fmt(c.reward_points||0);document.getElementById('ps-visits').textContent=c.visits||0;
+  var temEl=document.getElementById('ps-tem');if(temEl)temEl.textContent=temTxt(c);
   var balEl=document.getElementById('ps-balance');if(balEl){balEl.textContent=fmt(c.balance||0)+' VND';balEl.style.color=(c.balance||0)<500000?'#fca5a5':'#fff';}
 }
 function openVoucherWallet(){
-  if(!currentUser)return;var wallet=(currentUser.voucher_wallet||[]);
-  var active=wallet.filter(function(v){return !v.used;});var used=wallet.filter(function(v){return v.used;});
+  if(!currentUser)return;var wallet=(currentUser.voucher_wallet||[]);var td=today();
+  var active=[],expired=[],used=[];
+  wallet.forEach(function(v){if(!v)return;if(v.used)used.push(v);else if(vchExpired(v,td))expired.push(v);else active.push(v);});
+  // Sắp hết hạn trước; phiếu không có hạn xếp cuối
+  active.sort(function(a,b){var ea=a.expires||'9999-12-31',eb=b.expires||'9999-12-31';return ea<eb?-1:ea>eb?1:0;});
   var html='';
-  if(!active.length&&!used.length){html='<div class="empty-state"><div class="empty-icon">🎟</div><div class="empty-text">Chưa có voucher<br><span style="color:var(--accent);font-size:0.78rem;">Đổi RP tại mục Phần thưởng</span></div></div>';}
-  function vCard(v,isUsed){var ia=v.isAddon;return '<div style="background:'+(isUsed?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(isUsed?'var(--border)':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(isUsed?'0.6':'1')+';">'+(ia&&!isUsed?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')+'<div style="display:flex;justify-content:space-between;align-items:flex-start;"><div><div style="font-size:0.88rem;font-weight:500;">'+esc(v.name)+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+fmtDate(v.date||'')+(v.usedDate?' → Dùng: '+fmtDate(v.usedDate):'')+'</div>'+(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+'</div><div style="text-align:right;">'+(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+(isUsed?'var(--muted)':'#c07000')+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+(isUsed?'var(--muted)':'var(--accent)')+';">-'+fmt(v.value)+'đ</div>')+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(isUsed?'var(--bg3)':'var(--accent-light)')+';color:'+(isUsed?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+(isUsed?'Đã dùng':'Còn hiệu lực')+'</div></div></div></div>';}
-  if(active.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--accent);margin-bottom:8px;">Còn hiệu lực ('+active.length+')</div>';active.forEach(function(v){html+=vCard(v,false);});}
-  if(used.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--muted);margin:12px 0 8px;">Đã sử dụng</div>';used.forEach(function(v){html+=vCard(v,true);});}
+  if(!active.length&&!used.length&&!expired.length){html='<div class="empty-state"><div class="empty-icon">🎟</div><div class="empty-text">Chưa có voucher<br><span style="color:var(--accent);font-size:0.78rem;">Đổi tem tại mục Phần thưởng</span></div></div>';}
+  function vCard(v,st){
+    var isUsed=st==='used',isExp=st==='expired',dim=isUsed||isExp,ia=v.isAddon,gf=!!v.gift;
+    var col=dim?'var(--muted)':gf?'#d97706':ia?'#c07000':'var(--accent)';
+    var line2=fmtDate(v.date||'')+(v.usedDate?(gf?' → Nhận: ':' → Dùng: ')+fmtDate(v.usedDate):'');
+    var hsd='';
+    if(v.expires){
+      var left=dayDiff(td,v.expires);
+      hsd='<div style="font-size:0.72rem;margin-top:2px;color:'+(isExp?'#b91c1c':(!dim&&left<=7?'#b45309':'var(--muted)'))+';">Hạn dùng: '+fmtDate(v.expires)+(isExp?' (đã hết hạn)':(!dim&&left>=0&&left<=7?' · còn '+(left+1)+' ngày':''))+'</div>';
+    }
+    var right=gf?'<div style="font-size:1.3rem;">🧸</div>':(ia?'<div style="font-size:0.88rem;font-weight:600;color:'+col+';">Add-on</div>':'<div style="font-size:1rem;font-weight:600;color:'+col+';">-'+fmt(v.value)+'đ</div>');
+    var badge=isUsed?(gf?'Đã nhận':'Đã dùng'):isExp?'Đã hết hạn':(gf?'Chờ nhận tại quầy':'Còn hiệu lực');
+    return '<div style="background:'+(dim?'var(--bg3)':'var(--card-bg)')+';border:1px solid '+(dim?'var(--border)':gf?'#d97706':ia?'#c07000':'var(--accent)')+';border-radius:12px;padding:12px 14px;margin-bottom:8px;opacity:'+(dim?'0.65':'1')+';">'
+      +(ia&&!dim?'<div style="font-size:0.65rem;color:#c07000;font-weight:600;margin-bottom:4px;">✨ ADD-ON</div>':'')
+      +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;"><div style="min-width:0;"><div style="font-size:0.88rem;font-weight:500;">'+(gf?'🧸 ':'')+esc(v.name)+'</div><div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">'+line2+'</div>'
+      +(v.tem?'<div style="font-size:0.72rem;color:var(--muted);">Đổi bằng '+esc(v.tem)+' tem</div>':'')
+      +(gf&&!dim?'<div style="font-size:0.72rem;color:#92400e;">Đến quầy chọn gấu, nhân viên sẽ xác nhận trao quà</div>':'')
+      +(v.minBill>0?'<div style="font-size:0.72rem;color:#b45309;">HĐ từ '+fmt(v.minBill)+'đ</div>':'')+hsd+'</div>'
+      +'<div style="text-align:right;flex-shrink:0;">'+right+'<div style="font-size:0.68rem;padding:2px 8px;border-radius:100px;background:'+(dim?'var(--bg3)':'var(--accent-light)')+';color:'+(dim?'var(--muted)':'var(--accent)')+';margin-top:4px;">'+badge+'</div></div></div></div>';
+  }
+  if(active.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--accent);margin-bottom:8px;">Còn hiệu lực ('+active.length+')</div>';active.forEach(function(v){html+=vCard(v,'active');});}
+  if(expired.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:#b91c1c;margin:12px 0 8px;">Đã hết hạn</div>';expired.forEach(function(v){html+=vCard(v,'expired');});}
+  if(used.length>0){html+='<div style="font-size:0.8rem;font-weight:500;color:var(--muted);margin:12px 0 8px;">Đã sử dụng</div>';used.forEach(function(v){html+=vCard(v,'used');});}
   openModal('🎟 Kho Voucher',html);
 }
 var pendingReviewBkId=null;
@@ -1801,8 +2114,25 @@ async function renderCustomers(){
   document.querySelectorAll('.cust-item').forEach(function(item){item.addEventListener('click',function(){openCustDetail(parseInt(this.getAttribute('data-cid')));});});
 }
 
+function giftHandoverAsk(custId,vid,name,btn){
+  temConfirmModal('Xác nhận trao quà','🧸',esc(name),'<div>Chỉ bấm khi khách đã nhận gấu tại quầy.</div><div style="color:var(--muted);">Bấm xong không hoàn tác được.</div>','Đã trao',function(){giftHandover(custId,vid);});
+}
+async function giftHandover(custId,vid){
+  var by=(currentStaff&&currentStaff.name)||'Quản lý';
+  showLoading(true);
+  try{
+    var r=await api('/customers/'+custId+'/gift/handover','POST',{voucher_id:vid,by:by});
+    if(r&&r.code==='auth_required'){return;}
+    if(r&&r.ok===true){showToast('✓ Đã ghi nhận trao quà');}
+    else if(r&&r.code==='gift_done'){showToast('ℹ Quà này đã được trao trước đó');}
+    else{showToast('✗ '+apiMsg(r,'Chưa ghi nhận được, vui lòng thử lại'));closeModal();return;}
+    await reloadCustomers();openCustDetail(custId);
+  }finally{showLoading(false);}
+}
 function openCustDetail(id){
   var c=allCustomers.find(function(x){return x.id===id;});if(!c)return;
+  var gifts=(c.voucher_wallet||[]).filter(function(v){return v&&v.gift&&!v.used;});
+  var giftHtml=gifts.length?'<div style="margin-bottom:12px;"><div style="font-size:0.8rem;font-weight:500;margin-bottom:6px;">🧸 Quà đang chờ trao</div>'+gifts.map(function(g){return '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;border:1px solid #d97706;border-radius:10px;padding:8px 10px;margin-bottom:6px;"><div style="min-width:0;"><div style="font-size:0.85rem;font-weight:500;">'+esc(g.name)+'</div><div style="font-size:0.72rem;color:var(--muted);">Đổi ngày '+fmtDate(g.date||'')+'</div></div><button type="button" data-gift="'+esc(g.id)+'" data-gname="'+esc(g.name)+'" style="padding:8px 14px;border-radius:100px;border:none;background:#d97706;color:#fff;font-size:0.8rem;cursor:pointer;font-family:inherit;white-space:nowrap;">Đã trao</button></div>';}).join('')+'</div>':'';
   var tier=getTier(c.rank_points||0);
   var html='<div style="background:var(--bg3);border-radius:10px;padding:12px;margin-bottom:12px;">'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Cấp bậc</span><span>'+tier.icon+' '+tier.name+'</span></div>'
@@ -1811,10 +2141,12 @@ function openCustDetail(id){
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Reward Points</span><span>'+fmt(c.reward_points||0)+' RP</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số dư TK</span><span style="font-weight:600;color:var(--accent);">'+fmt(c.balance||0)+'đ</span></div>'
     +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Số lần đến</span><span>'+(c.visits||0)+'</span></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:0.85rem;padding:3px 0;"><span style="color:var(--muted);">Thẻ tem</span><span>'+temTxt(c)+' tem</span></div>'
     +'</div>'
-    +'<button id="btn-reset-pwd-'+id+'" data-cid="'+id+'" style="width:100%;padding:10px;border-radius:100px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-size:0.85rem;cursor:pointer;">🔑 Đặt lại mật khẩu</button>';
+    +giftHtml+'<button id="btn-reset-pwd-'+id+'" data-cid="'+id+'" style="width:100%;padding:10px;border-radius:100px;border:1.5px solid var(--border);background:var(--bg3);color:var(--text);font-size:0.85rem;cursor:pointer;">🔑 Đặt lại mật khẩu</button>';
   openModal(c.name,html);
   setTimeout(function(){
+    document.querySelectorAll('[data-gift]').forEach(function(gb){gb.addEventListener('click',function(){giftHandoverAsk(id,this.getAttribute('data-gift'),this.getAttribute('data-gname')||'Quà tem',this);});});
     var btn=document.getElementById('btn-reset-pwd-'+id);
     if(btn)btn.addEventListener('click',function(){
       var cid=parseInt(this.getAttribute('data-cid'));
@@ -1835,6 +2167,158 @@ async function renderPtsPage(){
     return '<div class="hist-item"><div class="hist-top"><div class="hist-svc">'+esc(cust?cust.name:'KH')+'</div><div style="text-align:right;">'+(amtStr?'<div style="font-size:0.82rem;font-weight:600;color:'+(t.amount>0?'#16a34a':'#dc2626')+';">'+amtStr+'</div>':'')+(rpStr?'<div style="font-size:0.75rem;color:'+(t.reward>0?'#a07830':'#e65c00')+';">'+rpStr+'</div>':'')+'</div></div><div class="hist-meta"><span>'+esc(t.note)+'</span><span>'+fmtDate(t.date)+'</span></div></div>';
   }).join('');
 }
+// Thưởng khi nạp tín dụng: từ 2 triệu 5%, từ 3 triệu 8%, từ 5 triệu 10% (giống máy chủ)
+function creditBonus(rev){var pct=rev>=5000000?10:rev>=3000000?8:rev>=2000000?5:0;return Math.round(rev*pct/100);}
+function ptsNoteFor(type,v){
+  if(!(v>0))return '';
+  if(type==='topup_tm')return 'nạp '+v+' tm';
+  if(type==='topup_ck')return 'nạp '+v+' ck';
+  if(type==='credit')return 'nạp tín dụng '+v;
+  return '';
+}
+function ptsPreviewText(type,v){
+  var f=function(n){return Number(n).toLocaleString('vi-VN');};
+  if(type==='topup_tm')return 'Nạp tiền mặt '+f(v)+' VND — tính doanh thu '+f(v)+' VND';
+  if(type==='topup_ck')return 'Nạp chuyển khoản '+f(v)+' VND — tính doanh thu '+f(v)+' VND';
+  if(type==='credit'){var b=creditBonus(v);return 'Khách trả '+f(v)+' VND'+(b>0?' · thưởng +'+f(b)+' · cộng vào ví '+f(v+b)+' VND':' · không có thưởng (dưới 2.000.000) · cộng vào ví '+f(v)+' VND');}
+  if(type==='topup')return 'Cộng '+f(v)+' VND vào ví — KHÔNG tính doanh thu';
+  if(type==='deduct')return f(v)+' VND';
+  return f(v)+' điểm';
+}
+// Đồng bộ giao diện theo loại thao tác: nhãn, nút chọn nhanh gói tín dụng, ô ghi chú tự động, dòng đối chiếu
+function ptsSyncUI(){
+  var typeEl=document.getElementById('pts-type');if(!typeEl)return;
+  var type=typeEl.value;
+  var amountEl=document.getElementById('pts-amount'),noteEl=document.getElementById('pts-note');
+  if(comboSyncUI(type))return;
+  var auto=(type==='topup_tm'||type==='topup_ck'||type==='credit');
+  var lbl=document.getElementById('pts-amount-lbl');if(lbl)lbl.textContent=type==='credit'?'Số tiền khách trả (chọn gói hoặc nhập)':(type==='topup_tm'||type==='topup_ck'||type==='topup'||type==='deduct')?'Số tiền (VND)':'Số điểm';
+  var chips=document.getElementById('pts-credit-chips');if(chips)chips.style.display=type==='credit'?'flex':'none';
+  var v=parseInt(amountEl.value);
+  if(noteEl){
+    if(auto){noteEl.readOnly=true;noteEl.value=ptsNoteFor(type,v);noteEl.placeholder='Tự động theo lựa chọn';}
+    else{if(noteEl.readOnly){noteEl.value='';}noteEl.readOnly=false;noteEl.placeholder='Lý do...';}
+  }
+  var pv=document.getElementById('pts-preview'),pvv=document.getElementById('pts-preview-val');
+  if(pv&&pvv){if(v&&v>0){pvv.textContent=ptsPreviewText(type,v);pv.style.display='block';}else{pv.style.display='none';}}
+}
+// ===== COMBO (TEST 27/10/2026): số lượt combo lấy từ bot thống kê =====
+function comboPoolsHtml(pools){
+  return pools.map(function(p){return '<div style="display:flex;justify-content:space-between;gap:8px;"><span>'+esc(p.label||p.combo)+'</span><span>'+fmt(p.remaining)+'/'+fmt(p.total)+' lượt</span></div>';}).join('');
+}
+async function loadHomeCombos(fresh){
+  var box=document.getElementById('home-combo-box'),list=document.getElementById('home-combo-list');
+  if(!box||!list||!currentUser||currentRole!=='customer')return;
+  var r=await api('/customers/'+currentUser.id+'/combos'+(fresh?'?fresh=1':''));
+  if(!r||r.ok!==true||!Array.isArray(r.pools))return;
+  var pools=r.pools.filter(function(p){return Number(p.total)>0;});
+  if(!pools.length){box.style.display='none';list.innerHTML='';return;}
+  list.innerHTML=comboPoolsHtml(pools)+(r.stale?'<div style="font-size:0.68rem;opacity:0.75;margin-top:2px;">Chưa đối chiếu được với bot thống kê — hiện số gần nhất</div>':'');
+  box.style.display='block';
+}
+async function comboShowHave(){
+  var box=document.getElementById('pts-combo-have');if(!box)return;
+  var t=document.getElementById('pts-type');
+  var cs=document.getElementById('pts-cust');
+  if(!t||!cs||(t.value!=='combo_green'&&t.value!=='combo_pkg')){box.innerHTML='';return;}
+  var cid=parseInt(cs.value);
+  if(!cid){box.innerHTML='';return;}
+  var cu=allCustomers.find(function(c){return c.id===cid;});
+  var bal='<div>Số dư app: <b>'+fmt(cu?cu.balance||0:0)+' VND</b></div>';
+  box.innerHTML=bal+'<div style="opacity:0.75;">Đang hỏi bot thống kê số lượt hiện có…</div>';
+  var r=await api('/customers/'+cid+'/combos?fresh=1');
+  if(parseInt((document.getElementById('pts-cust')||{}).value)!==cid)return;
+  var pools=(r&&r.ok===true&&Array.isArray(r.pools))?r.pools.filter(function(p){return Number(p.total)>0;}):[];
+  box.innerHTML=bal+(pools.length?'<div style="margin-top:4px;">Combo hiện có:</div>'+comboPoolsHtml(pools):'<div style="margin-top:4px;opacity:0.75;">Khách chưa có combo nào.</div>')+(r&&r.stale?'<div style="font-size:0.72rem;color:#92400e;">Chưa hỏi được bot thống kê — hiện số gần nhất của app.</div>':'');
+}
+async function comboWaitResult(ref,label,custName){
+  showToast('⏳ Đã gửi tin mua '+label+' — chờ bot thống kê ghi nhận…');
+  for(var i=0;i<26;i++){
+    await new Promise(function(res){setTimeout(res,2500);});
+    var q=await api('/combo/result?ref='+encodeURIComponent(ref)+(i>=5?'&ask=1':''));
+    if(q&&q.ok===true&&q.status==='COMMITTED'){showToast('✓ Bot thống kê đã ghi nhận '+label+' cho '+custName);await reloadCustomers();comboShowHave();return;}
+    if(q&&q.ok===true&&q.status==='BLOCKED'){showToast('✗ Bot thống kê KHÔNG ghi nhận: '+(q.reason||'xem nhóm Telegram')+(q.refunded?' — đã hoàn lại số dư app':''));await reloadCustomers();comboShowHave();return;}
+  }
+  showToast('⚠ Chưa nhận được kết quả từ bot sau ~1 phút — xem nhóm Telegram; app tự cập nhật khi bot ghi nhận');
+}
+// ===== COMBO (TEST 24/10/2026): mua combo trong "Quản lý điểm" =====
+var comboOpts=null;
+async function comboLoadOpts(){
+  if(comboOpts)return comboOpts;
+  var r=await api('/combo/options');
+  if(r&&r.green&&Array.isArray(r.packages)&&r.packages.length)comboOpts=r;
+  return comboOpts;
+}
+function comboPkgSel(){var sel=document.getElementById('pts-combo-pkg');var sid=sel?parseInt(sel.value):0;return comboOpts?comboOpts.packages.find(function(x){return x.service_id===sid;}):null;}
+function comboAmount(type){if(!comboOpts)return 0;if(type==='combo_green')return comboOpts.green.price;var p=comboPkgSel();return p?p.price:0;}
+function comboPreview(type){
+  var pv=document.getElementById('pts-preview'),pvv=document.getElementById('pts-preview-val');if(!pv||!pvv)return;
+  var t='';
+  if(comboOpts){
+    if(type==='combo_green')t='Combo Green: 10 lượt Green Touch — thu '+fmt(comboOpts.green.price)+' VND (giảm 10%)';
+    else{var p=comboPkgSel();if(p)t='Mua 10 gói '+p.stats+' — thu '+fmt(p.price)+' VND · được 12 lượt (11 lượt '+p.stats+' + 1 lượt Green Touch)';}
+  }else t='Chưa tải được bảng giá combo — thử lại sau';
+  pvv.textContent=t;pv.style.display=t?'block':'none';
+}
+async function comboFillSelects(){
+  var ps=document.getElementById('pts-combo-pkg');
+  if(ps&&!ps.options.length&&comboOpts)ps.innerHTML=comboOpts.packages.map(function(p){return '<option value="'+p.service_id+'">'+esc(p.stats)+' · '+fmt(p.price)+'</option>';}).join('');
+  var ss=document.getElementById('pts-combo-staff');
+  if(ss&&!ss.options.length){var st=allStaff.length?allStaff:(await api('/staff')||[]);ss.innerHTML=(Array.isArray(st)?st:[]).map(function(s){return '<option value="'+s.id+'">'+esc(s.name)+'</option>';}).join('');}
+}
+function comboSyncUI(type){
+  var isCombo=(type==='combo_green'||type==='combo_pkg');
+  var box=document.getElementById('pts-combo-box');if(box)box.style.display=isCombo?'block':'none';
+  if(!isCombo){var hv=document.getElementById('pts-combo-have');if(hv)hv.innerHTML='';}
+  var lb=document.getElementById('pts-amount-lbl'),a=document.getElementById('pts-amount'),n=document.getElementById('pts-note'),ch=document.getElementById('pts-credit-chips');
+  var nf=n&&n.closest?n.closest('.fg'):null;
+  if(lb)lb.style.display=isCombo?'none':'';
+  if(a)a.style.display=isCombo?'none':'';
+  if(nf)nf.style.display=isCombo?'none':'';
+  if(isCombo&&ch)ch.style.display='none';
+  if(!isCombo)return false;
+  var pf=document.getElementById('pts-combo-pkg-fg');if(pf)pf.style.display=type==='combo_pkg'?'':'none';
+  comboLoadOpts().then(function(){return comboFillSelects();}).then(function(){var cur=document.getElementById('pts-type');if(cur&&cur.value===type)comboPreview(type);});
+  comboShowHave();
+  return true;
+}
+function askComboBuy(html){
+  return new Promise(function(resolve){
+    openModal('Xác nhận mua combo','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">🎫</div><div style="font-size:0.9rem;margin-bottom:12px;">'+html+'</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:16px;color:#92400e;text-align:left;">Bấm xác nhận sẽ gửi tin "Mua combo" cho bot thống kê. Tin đã gửi không thu hồi được từ app.</div><div style="display:flex;gap:10px;"><button id="cb-no" style="flex:1;padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Huỷ</button><button id="cb-yes" style="flex:1;padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">Gửi tin mua combo</button></div></div>');
+    var settled=false;
+    function done(v){if(settled)return;settled=true;resolve(v);}
+    modalOnClose=function(){done(false);};
+    var no=document.getElementById('cb-no'),yes=document.getElementById('cb-yes');
+    if(no)no.addEventListener('click',function(){closeModal();});
+    if(yes)yes.addEventListener('click',function(){modalOnClose=null;closeModal();done(true);});
+  });
+}
+async function buyCombo(custId,type){
+  if(!custId){showToast('✗ Chọn khách hàng');return;}
+  var o=await comboLoadOpts();if(!o){showToast('✗ Chưa tải được bảng giá combo');return;}
+  await comboFillSelects();
+  var pttt=((document.getElementById('pts-combo-pttt')||{}).value)||'TM';
+  var staffSel=document.getElementById('pts-combo-staff');var staffId=parseInt(staffSel&&staffSel.value);
+  if(!staffId){showToast('✗ Chọn KTV');return;}
+  var body={action:'buy',combo:type==='combo_green'?'green':'pkg',pttt:pttt,staff_id:staffId};
+  var label='Combo Green (10 lượt)';
+  if(type==='combo_pkg'){var p=comboPkgSel();if(!p){showToast('✗ Chọn gói');return;}body.service_id=p.service_id;label='10 gói '+p.stats+' tặng 2 (12 lượt)';}
+  var amount=comboAmount(type);
+  var cust=allCustomers.find(function(c){return c.id===custId;});
+  var staffName=staffSel.options[staffSel.selectedIndex]?staffSel.options[staffSel.selectedIndex].text:'';
+  if(pttt==='APP'&&cust&&Number(cust.balance||0)<amount){showToast('✗ Số dư app của khách chỉ còn '+fmt(cust.balance||0)+' VND, không đủ '+fmt(amount)+' VND');return;}
+  var ok=await askComboBuy('Khách <b>'+esc(cust?cust.name:'')+'</b> mua <b>'+esc(label)+'</b><br>'+(pttt==='APP'?'Trừ số dư app':'Thu')+' <b>'+fmt(amount)+' VND</b> · '+(pttt==='CK'?'chuyển khoản':pttt==='APP'?'trừ số dư app (đang có '+fmt(cust?cust.balance||0:0)+' VND)':'tiền mặt')+' · KTV '+esc(staffName));
+  if(!ok)return;
+  showLoading(true);
+  var r=await api('/customers/'+custId+'/combo','POST',body);
+  if(!r||r.ok!==true){
+    if(!r||!r.code||r.code==='upstream'){showToast('⚠ '+((r&&r.error)||'Lỗi kết nối mạng')+' — chưa rõ tin mua combo đã gửi chưa, hãy xem nhóm Telegram trước khi gửi lại');return;}
+    showToast('✗ '+apiMsg(r,'Chưa gửi được tin mua combo'));return;
+  }
+  if(pttt==='APP')await reloadCustomers();
+  if(r.ref)comboWaitResult(r.ref,label,cust?cust.name:'khách');
+  else showToast('✓ Đã gửi tin mua '+label+' cho '+(cust?cust.name:'khách')+' – chờ bot thống kê ghi nhận (xem nhóm Telegram)');
+}
 async function adjustPoints(){
   var adjBtn=document.getElementById('btn-adj-pts');
   if(adjBtn&&adjBtn.disabled)return;
@@ -1844,13 +2328,21 @@ async function adjustPoints(){
     var type=document.getElementById('pts-type').value;
     var amount=parseInt(document.getElementById('pts-amount').value);
     var note=(document.getElementById('pts-note').value||'Điều chỉnh thủ công').slice(0,300);
+    if(type==='combo_green'||type==='combo_pkg'){await buyCombo(custId,type);return;}
     if(!amount||amount<=0){showToast('✗ Nhập số hợp lệ');return;}
     if(amount>1000000000){showToast('✗ Số quá lớn');return;}
     if(!custId){showToast('✗ Chọn khách hàng');return;}
+    // Nạp tiền (tiền mặt / chuyển khoản) và nạp tín dụng: ghi chú tự sinh đúng cú pháp để máy chủ gửi bot thống kê, không phải gõ tay
+    var sendAmount=amount,bonus=0,isAutoTop=(type==='topup_tm'||type==='topup_ck'||type==='credit');
+    if(isAutoTop){
+      if(amount<1000){showToast('✗ Số tiền nạp tối thiểu 1.000');return;}
+      if(type==='credit'){bonus=creditBonus(amount);sendAmount=amount+bonus;if(sendAmount>1000000000){showToast('✗ Số quá lớn');return;}note='nạp tín dụng '+amount;}
+      else note='nạp '+amount+(type==='topup_ck'?' ck':' tm');
+    }
     showLoading(true);
     // Máy chủ đọc số liệu mới nhất của khách, kiểm tra, cập nhật và ghi lịch sử trong MỘT bước (không phụ thuộc danh sách đã cũ trên máy)
-    var kind=type==='topup'?'topup':type==='deduct'?'deduct':type==='add'?'rank_add':'rank_sub';
-    var r=await api('/customers/'+custId+'/adjust','POST',{kind:kind,amount:amount,note:note});
+    var kind=(type==='topup'||isAutoTop)?'topup':type==='deduct'?'deduct':type==='add'?'rank_add':'rank_sub';
+    var r=await api('/customers/'+custId+'/adjust','POST',{kind:kind,amount:sendAmount,note:note});
     if(!r||r.ok!==true){
       var msg;
       if(!r||!r.code||r.code==='upstream'){
@@ -1863,13 +2355,17 @@ async function adjustPoints(){
       showToast('✗ '+msg);return;
     }
     var cname=(r.customer&&r.customer.name)||'';
-    var okMsg=kind==='topup'?'✓ Nạp '+fmt(amount)+' VND cho '+cname
+    var okMsg=type==='credit'?'✓ Nạp tín dụng '+fmt(amount)+' VND'+(bonus>0?' (+'+fmt(bonus)+' thưởng)':'')+' cho '+cname
+      :type==='topup_tm'?'✓ Nạp tiền mặt '+fmt(amount)+' VND cho '+cname
+      :type==='topup_ck'?'✓ Nạp chuyển khoản '+fmt(amount)+' VND cho '+cname
+      :kind==='topup'?'✓ Cộng số dư '+fmt(amount)+' VND (không tính doanh thu) cho '+cname
       :kind==='deduct'?'✓ Trừ '+fmt(amount)+' VND của '+cname
       :kind==='rank_add'?'✓ Cộng +'+fmt(amount)+' điểm cho '+cname
       :'✓ Trừ '+fmt(amount)+' điểm của '+cname;
     await reloadCustomers();
     document.getElementById('pts-amount').value='';document.getElementById('pts-note').value='';
     var pv=document.getElementById('pts-preview');if(pv)pv.style.display='none';
+    ptsSyncUI();
     showToast(okMsg);
     await renderPtsPage();
   }finally{
@@ -1945,8 +2441,8 @@ async function renderAllBookings(filter){
   var bks=filterDeletedBks(bks0);
   var stLbl={pending:'Chờ',confirmed:'Xác nhận',done:'Hoàn thành',cancelled:'Huỷ'};var html='';
   bks.filter(function(b){return filter==='all'||b.status===filter;}).forEach(function(b){
-    var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
-    html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div>'
+    var cust=bkWho(b);
+    html+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+(bkSrcTag(b)?' '+bkSrcTag(b):'')+'</div>'
       +'<select data-bid="'+b.id+'" data-st="'+esc(b.status)+'"'+((b.status==='done'||b.status==='cancelled')?' disabled title="Trạng thái cuối, không thể đổi"':'')+' style="border:1px solid var(--border);border-radius:8px;padding:4px 8px;font-size:0.75rem;background:var(--card-bg);color:var(--text);">'
       +['pending','confirmed','done','cancelled'].map(function(st){return '<option value="'+st+'"'+(b.status===st?' selected':'')+'>'+stLbl[st]+'</option>';}).join('')+'</select></div>'
       +'<div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+' · <b>'+fmt(bkPaid(b))+' VND</b>'+(bkPayTag(b)?' '+bkPayTag(b):'')+'</div>'
@@ -2444,14 +2940,14 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
     var h='<div style="font-family:\'Cormorant Garamond\',serif;font-size:1.3rem;color:var(--g800);margin-bottom:12px;">Lịch của '+esc(stf.name)+(gShort?' <span style="font-size:0.85rem;font-weight:400;color:'+gColor+';">('+gShort+')</span>':'')+'</div>';
     if(!myBks.length)return h+'<div class="empty-state"><div class="empty-icon">📅</div><div class="empty-text">'+(bksFailed?'Không tải được lịch, vui lòng tải lại trang':'Chưa có lịch được phân công')+'</div></div>';
     myBks.slice(0,20).forEach(function(b){
-      var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
+      var cust=bkWho(b);
       h+='<div style="background:var(--card-bg);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px;"><div><div style="font-weight:600;font-size:0.92rem;">'+esc(cust?cust.name:'Khách')+'</div><div style="font-size:0.78rem;color:var(--muted);">📞 '+esc(cust?cust.phone:'')+'</div></div>'
         +'<span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span></div>'
-        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+(bkPayTag(b)?' '+bkPayTag(b):'')+'</div>'
+        +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+(bkPayTag(b)?' '+bkPayTag(b):'')+(bkSrcTag(b)?' '+bkSrcTag(b):'')+'</div>'
         +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+esc(b.addon_voucher)+'</div>':'')
         +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div>'
-        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?'Đã thu tiền mặt:':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
+        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?'Đã thu tiền mặt:':bkIsMixed(b)?'Đã thu tiền mặt (phần còn lại dùng combo):':bkIsComboBal(b)?'Trả bằng số dư (phần còn lại dùng combo):':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
           ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Huỷ</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
         +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+starStr(b.review.stars)+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+esc(b.review.comment)+'</div>':'')+'</div>':'')
@@ -2648,7 +3144,7 @@ async function bgPoll(){
     if(currentRole==='admin'){
       var bks=await apiBg('/bookings');
       if(Array.isArray(bks)){
-        if(bks.some(function(b){return !allCustomers.some(function(c){return c.id===b.cust_id;});})){var csNew=await apiBg('/customers');if(Array.isArray(csNew))allCustomers=csNew;}
+        if(bks.some(function(b){return b.cust_id&&!allCustomers.some(function(c){return c.id===b.cust_id;});})){var csNew=await apiBg('/customers');if(Array.isArray(csNew))allCustomers=csNew;}
         _bgBks=bks;updateNotifBadge(bks);
         var ap=document.querySelector('.mgr-page.active');
         if(ap){
@@ -2662,6 +3158,7 @@ async function bgPoll(){
         var chg=(u.balance!==currentUser.balance)||(u.rank_points!==currentUser.rank_points)||(u.reward_points!==currentUser.reward_points);
         currentUser=u;saveSession();
         if(chg)refreshHomeSilent(u);
+        loadHomeCombos(false);
       }
     }
   }catch(e){}pollingBusy=false;
@@ -2674,7 +3171,7 @@ function refreshHomeSilent(c){
   var s=function(id,v){var el=document.getElementById(id);if(el)el.textContent=v;};
   s('home-name',c.name);s('home-pts',fmt(c.rank_points||0));
   s('home-tier-bdg',tier.icon+' '+tier.name);s('home-balance',fmt(c.balance||0)+' VND');
-  s('home-reward-pts',fmt(c.reward_points||0)+' RP');
+  s('home-reward-pts',fmt(c.reward_points||0)+' RP');s('home-tem',temTxt(c)+' tem');s('ps-tem',temTxt(c));
   s('ps-pts',fmt(c.rank_points||0));s('ps-reward',fmt(c.reward_points||0));
   s('ps-visits',c.visits||0);
   var balEl=document.getElementById('ps-balance');if(balEl){balEl.textContent=fmt(c.balance||0)+' VND';balEl.style.color=(c.balance||0)<500000?'#fca5a5':'#fff';}
@@ -2700,7 +3197,7 @@ function renderDashboardWith(bks){
   var unpaidSum=0;unpaidAct.forEach(function(b){unpaidSum+=bkPaid(b);});
   var bkHtml='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px;"><div style="background:var(--card-bg);border:2px solid #c07000;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#c07000;">'+pending+'</div><div style="font-size:0.7rem;color:var(--muted);">⏳ Chờ xác nhận</div></div><div style="background:var(--card-bg);border:2px solid var(--accent);border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:var(--accent);">'+confirmed+'</div><div style="font-size:0.7rem;color:var(--muted);">✓ Đã xác nhận</div></div><div style="background:var(--card-bg);border:2px solid #16a34a;border-radius:10px;padding:10px;text-align:center;"><div style="font-size:1.4rem;font-weight:700;color:#16a34a;">'+doneBks+'</div><div style="font-size:0.7rem;color:var(--muted);">✅ Hoàn thành</div></div></div>';
   if(unpaidAct.length)bkHtml+='<div style="display:flex;justify-content:space-between;align-items:center;background:#fff8e1;border:1px solid #fde68a;border-radius:10px;padding:10px 12px;margin-bottom:12px;font-size:0.8rem;color:#92400e;"><span>💵 Chưa thu tiền mặt: <b>'+unpaidAct.length+' lịch</b></span><b>'+fmt(unpaidSum)+' VND</b></div>';
-  active.forEach(function(b){var cust=allCustomers.find(function(c){return c.id===b.cust_id;});bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+(bkPayTag(b)?' '+bkPayTag(b)+' <b>'+fmt(bkPaid(b))+'đ</b>':'')+'</div></div>';});
+  active.forEach(function(b){var cust=bkWho(b);bkHtml+='<div class="bk-item"><div class="bk-top"><div class="bk-name">'+esc(cust?cust.name:'KH')+' – '+esc(b.service)+(bkSrcTag(b)?' '+bkSrcTag(b):'')+'</div><div style="display:flex;gap:6px;align-items:center;"><span class="st-bdg st-'+esc(b.status)+'">'+(stLbl[b.status]||esc(b.status))+'</span><button class="mgr-done-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#16a34a;color:#fff;font-size:0.7rem;cursor:pointer;">✓ Xong</button><button class="mgr-cancel-btn" data-bid="'+b.id+'" style="padding:3px 10px;border-radius:100px;border:none;background:#ef4444;color:#fff;font-size:0.7rem;cursor:pointer;">✗</button></div></div><div class="bk-meta">⏰ '+fmtDate(b.date)+' '+esc(b.time)+' · 👤 '+esc(b.staff_names||'')+(bkPayTag(b)?' '+bkPayTag(b)+' <b>'+fmt(bkPaid(b))+'đ</b>':'')+'</div></div>';});
   if(!active.length)bkHtml+='<div class="empty-state" style="padding:1rem;"><div class="empty-text">Không có lịch đang chờ</div></div>';
   var tbEl=document.getElementById('today-bookings');if(tbEl)tbEl.innerHTML=bkHtml;
   document.querySelectorAll('.mgr-done-btn').forEach(function(btn){btn.addEventListener('click',async function(){if(this.disabled)return;this.disabled=true;var bid=parseInt(this.getAttribute('data-bid'));var dr=await markBookingDone(bid);doneToast(dr);renderDashboard();});});
@@ -2733,7 +3230,7 @@ function updateNotifBadge(bks){
 function showBookingToastPopup(bk,total){
   var el=document.getElementById('bk-toast-popup');
   if(!el)return;
-  var cust=allCustomers.find(function(c){return c.id===bk.cust_id;});
+  var cust=bkWho(bk);
   el.innerHTML='<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
     +'<div style="font-size:1.1rem;">📅</div>'
     +'<div style="flex:1;">'
@@ -2763,7 +3260,7 @@ function openNotifPanel(){
   if(!recent.length){html='<div class="empty-state" style="padding:1.5rem;"><div class="empty-icon">📅</div><div class="empty-text">Chưa có đặt lịch đang chờ</div></div>';}
   else{
     recent.forEach(function(b){
-      var cust=allCustomers.find(function(c){return c.id===b.cust_id;});
+      var cust=bkWho(b);
       var isPending=b.status==='pending';
       html+='<div style="padding:12px 14px;border-bottom:1px solid var(--border);cursor:pointer;" onclick="closeModal();showMgrPage(\'mgr-bookings\',\'mnav-bk\');">'
         +'<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;">'
@@ -2903,23 +3400,12 @@ async function openCustNotif(){
   document.getElementById('cust-search').addEventListener('input',renderCustomers);
   document.getElementById('btn-adj-pts').addEventListener('click',adjustPoints);
   // Live amount preview: 1000000 → 1.000.000 VND
-  document.getElementById('pts-amount').addEventListener('input',function(){
-    var preview=document.getElementById('pts-preview');
-    var previewVal=document.getElementById('pts-preview-val');
-    var v=parseInt(this.value);
-    var type=document.getElementById('pts-type').value;
-    if(v&&v>0){
-      var unit=(type==='topup'||type==='deduct')?' VND':' điểm';
-      previewVal.textContent=v.toLocaleString('vi-VN')+unit;
-      preview.style.display='block';
-    }else{
-      preview.style.display='none';
-    }
-  });
-  document.getElementById('pts-type').addEventListener('change',function(){
-    var amountEl=document.getElementById('pts-amount');
-    if(amountEl.value)amountEl.dispatchEvent(new Event('input'));
-  });
+  document.getElementById('pts-amount').addEventListener('input',ptsSyncUI);
+  document.getElementById('pts-type').addEventListener('change',ptsSyncUI);
+  var _cbPkg=document.getElementById('pts-combo-pkg');if(_cbPkg)_cbPkg.addEventListener('change',function(){comboPreview('combo_pkg');});
+  var _cbCust=document.getElementById('pts-cust');if(_cbCust)_cbCust.addEventListener('change',comboShowHave);
+  document.querySelectorAll('#pts-credit-chips .pts-chip').forEach(function(b){b.addEventListener('click',function(){document.getElementById('pts-amount').value=this.getAttribute('data-v');ptsSyncUI();});});
+  ptsSyncUI();
   document.getElementById('btn-add-svc').addEventListener('click',openAddService);
   document.getElementById('btn-import-svc').addEventListener('click',openImportServices);document.getElementById('svc-search').addEventListener('input',function(){renderServicesPage();});
   document.getElementById('btn-add-account').addEventListener('click',openAddAccount);
