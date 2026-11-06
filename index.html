@@ -757,6 +757,7 @@ function bkIsUnpaid(b){return !!b&&b.pay_status==='unpaid';}
 function bkIsCash(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='cash';}
 function bkIsCombo(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='combo';}
 function bkIsMixed(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='mixed';}
+function bkIsTransfer(b){return !!b&&b.pay_via==='transfer';}
 function bkHasPlan(b){return !!b&&!!b.combo_plan&&Array.isArray(b.combo_plan.units)&&b.combo_plan.units.length>0;}
 function bkPlanNames(b){return bkHasPlan(b)?b.combo_plan.units.map(function(x){return x&&x.name;}).filter(Boolean).join(', '):'';}
 function bkIsComboBal(b){return !!b&&b.pay_status==='paid'&&b.pay_method==='combo_balance';}
@@ -764,10 +765,10 @@ function bkPlanTag(b){return '<span class="pay-tag pay-cash" style="background:#
 function bkPayTag(b){
   var openPlan=bkHasPlan(b)&&(b.status==='pending'||b.status==='confirmed');
   if(bkIsUnpaid(b))return (b.status==='cancelled'?'<span class="pay-tag pay-none">Chưa thanh toán · đã huỷ</span>':'<span class="pay-tag pay-unpaid">💵 Chưa thanh toán</span>')+(openPlan?' '+bkPlanTag(b):'');
-  if(bkIsMixed(b)){var cu=Array.isArray(b.combo_units)?b.combo_units.map(function(x){return x&&x.name;}).filter(Boolean).join(', '):'';return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Combo'+(cu?' ('+esc(cu)+')':'')+' + 💵 tiền mặt</span>';}
+  if(bkIsMixed(b)){var cu=Array.isArray(b.combo_units)?b.combo_units.map(function(x){return x&&x.name;}).filter(Boolean).join(', '):'';return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Combo'+(cu?' ('+esc(cu)+')':'')+' + '+(bkIsTransfer(b)?'🏦 chuyển khoản':'💵 tiền mặt')+'</span>';}
   if(bkIsCombo(b))return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Dùng combo</span>';
   if(bkIsComboBal(b)){var cnb=bkPlanNames(b);return '<span class="pay-tag pay-cash" style="background:#ede9fe;color:#5b21b6;">🎫 Combo'+(cnb?' ('+esc(cnb)+')':'')+' + 💳 số dư</span>';}
-  if(bkIsCash(b))return '<span class="pay-tag pay-cash">💵 Đã thu tiền mặt</span>';
+  if(bkIsCash(b))return bkIsTransfer(b)?'<span class="pay-tag pay-cash">🏦 Đã nhận chuyển khoản</span>':'<span class="pay-tag pay-cash">💵 Đã thu tiền mặt</span>';
   if(openPlan)return bkPlanTag(b);
   return '';
 }
@@ -787,18 +788,19 @@ async function cancelBookingAndRefund(bkId,custId){
 // Lịch CHƯA THANH TOÁN chỉ hoàn thành khi nhân viên / quản lý xác nhận đã thu tiền mặt (máy chủ trả mã 'unpaid' kèm số tiền cần thu → hỏi lại rồi gửi cash_confirmed).
 function askPayChoice(due){
   return new Promise(function(resolve){
-    openModal('Hoàn tất lịch chưa thanh toán','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.9rem;margin-bottom:10px;">Lịch này <b>chưa thanh toán</b> ('+fmt(due)+' VND). Khách thanh toán bằng cách nào?</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:14px;color:#92400e;text-align:left;"><b>Tiền mặt:</b> chỉ bấm khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê; dịch vụ thêm (nếu có) vẫn thu tiền mặt riêng. App không trừ số dư.</div><div style="display:flex;flex-direction:column;gap:8px;"><button id="pay-cash" style="padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">💵 Đã thu '+fmt(due)+'đ tiền mặt</button><button id="pay-combo" style="padding:12px;border-radius:100px;border:none;background:#5b21b6;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">🎫 Dùng combo (1 lượt)</button><button id="pay-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Chưa hoàn tất</button></div></div>');
+    openModal('Hoàn tất lịch chưa thanh toán','<div style="text-align:center;padding:4px;"><div style="font-size:2rem;margin-bottom:8px;">💵</div><div style="font-size:0.9rem;margin-bottom:10px;">Lịch này <b>chưa thanh toán</b> ('+fmt(due)+' VND). Khách thanh toán bằng cách nào?</div><div style="font-size:0.78rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:10px;margin-bottom:14px;color:#92400e;text-align:left;"><b>Tiền mặt:</b> chỉ bấm khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Chuyển khoản:</b> chỉ bấm khi đã nhận đủ tiền trong tài khoản (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê; dịch vụ thêm (nếu có) vẫn thu tiền mặt riêng. App không trừ số dư.</div><div style="display:flex;flex-direction:column;gap:8px;"><button id="pay-cash" style="padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">💵 Đã thu '+fmt(due)+'đ tiền mặt</button><button id="pay-ck" style="padding:12px;border-radius:100px;border:none;background:#0369a1;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">🏦 Đã nhận '+fmt(due)+'đ chuyển khoản</button><button id="pay-combo" style="padding:12px;border-radius:100px;border:none;background:#5b21b6;color:#fff;cursor:pointer;font-weight:500;font-family:\'DM Sans\',sans-serif;">🎫 Dùng combo (1 lượt)</button><button id="pay-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:\'DM Sans\',sans-serif;">Chưa hoàn tất</button></div></div>');
     var settled=false;
     function done(v){if(settled)return;settled=true;resolve(v);}
     modalOnClose=function(){done(false);};
-    var no=document.getElementById('pay-no'),cash=document.getElementById('pay-cash'),cb=document.getElementById('pay-combo');
+    var no=document.getElementById('pay-no'),cash=document.getElementById('pay-cash'),cb=document.getElementById('pay-combo'),ck=document.getElementById('pay-ck');
     if(no)no.addEventListener('click',function(){closeModal();});
     if(cash)cash.addEventListener('click',function(){modalOnClose=null;closeModal();done('cash');});
+    if(ck)ck.addEventListener('click',function(){modalOnClose=null;closeModal();done('transfer');});
     if(cb)cb.addEventListener('click',function(){modalOnClose=null;closeModal();done('combo');});
   });
 }
 // Hoàn tất lịch chưa thanh toán: mỗi dịch vụ chính chọn "Tiền mặt" hoặc "Dùng combo" (dịch vụ thêm luôn thu tiền mặt).
-// Trả về: false (chưa hoàn tất) | 'cash' (tất cả tiền mặt) | 'combo' (tất cả combo, không có khoản tiền mặt) | {mixed:[chỉ số dịch vụ dùng combo]}.
+// Trả về: false (chưa hoàn tất) | 'cash' (tất cả tiền mặt) | 'transfer' (tất cả chuyển khoản) | 'combo' (tất cả combo, không có khoản tiền mặt) | {mixed:[chỉ số dịch vụ dùng combo], via:'cash'|'transfer'}.
 function askPayPlan(po){
   return new Promise(function(resolve){
     var lines=po.lines||[];
@@ -806,6 +808,8 @@ function askPayPlan(po){
     var pick=lines.map(function(ln,i){return !!ln.combo_ok&&planIdx.indexOf(i)>-1;});
     function cashDue(){var s=0;lines.forEach(function(ln,i){if(!pick[i])s+=Number(ln.price)||0;(ln.addons||[]).forEach(function(a){s+=Number(a.price)||0;});});return s;}
     function nCombo(){return pick.filter(function(x){return x;}).length;}
+    var via='cash';
+    function viaLbl(){return via==='transfer'?'chuyển khoản':'tiền mặt';}
     var rows=lines.map(function(ln,i){
       var ad=(ln.addons&&ln.addons.length)?'<div style="font-size:0.74rem;color:#92400e;margin-top:6px;">+ Dịch vụ thêm: '+ln.addons.map(function(a){return esc(a.name)+' ('+fmt(a.price)+'đ)';}).join(', ')+' — luôn thu tiền mặt</div>':'';
       var cb=ln.combo_ok?'🎫 Dùng combo'+(ln.combo?' '+esc(ln.combo):'')+((ln.combo&&po.combo_left&&po.combo_left[ln.combo]!==undefined)?' (còn '+po.combo_left[ln.combo]+')':''):'🎫 Không áp dụng combo';
@@ -817,8 +821,9 @@ function askPayPlan(po){
     }).join('');
     openModal('Hoàn tất lịch chưa thanh toán','<div style="padding:4px;"><div style="font-size:0.88rem;margin-bottom:10px;text-align:center;">Lịch này <b>chưa thanh toán</b> ('+fmt(Number(po.due)||0)+' VND). Chọn cách thanh toán cho <b>từng dịch vụ</b>:</div>'+(planIdx.length?'<div style="font-size:0.78rem;color:#5b21b6;text-align:center;margin-bottom:8px;">🎫 Khách đã chọn dùng combo cho '+planIdx.length+' dịch vụ khi đặt (đã chọn sẵn, có thể đổi).</div>':'')
       +'<div style="max-height:44vh;overflow:auto;">'+rows+'</div>'
+      +'<div id="pp-via-wrap"><div style="display:flex;gap:6px;margin:8px 0 2px;"><button type="button" class="pv-btn" data-v="cash" style="flex:1;padding:9px 6px;border-radius:100px;border:1px solid var(--border);cursor:pointer;font-size:0.8rem;font-family:inherit;">💵 Tiền mặt</button><button type="button" class="pv-btn" data-v="transfer" style="flex:1;padding:9px 6px;border-radius:100px;border:1px solid var(--border);cursor:pointer;font-size:0.8rem;font-family:inherit;">🏦 Chuyển khoản</button></div><div style="font-size:0.72rem;color:var(--muted);text-align:center;margin-bottom:4px;">Cách khách trả phần phải thu (áp dụng chung cho cả lịch)</div></div>'
       +'<div id="pp-sum" style="font-size:0.84rem;text-align:center;margin:8px 0 6px;"></div>'
-      +'<div style="font-size:0.74rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:12px;color:#92400e;text-align:left;"><b>Tiền mặt:</b> chỉ xác nhận khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê (app hỏi bot trước, hết lượt thì không hoàn tất). App không trừ số dư.</div>'
+      +'<div style="font-size:0.74rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin-bottom:12px;color:#92400e;text-align:left;"><b>Tiền mặt / chuyển khoản:</b> chỉ xác nhận khi đã nhận đủ tiền (không cộng điểm RP).<br><b>Dùng combo:</b> trừ 1 lượt combo của khách trong bot thống kê (app hỏi bot trước, hết lượt thì không hoàn tất). App không trừ số dư.</div>'
       +'<div style="display:flex;flex-direction:column;gap:8px;"><button id="pp-ok" style="padding:12px;border-radius:100px;border:none;color:#fff;cursor:pointer;font-weight:500;font-family:inherit;"></button><button id="pp-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);cursor:pointer;font-family:inherit;">Chưa hoàn tất</button></div></div>');
     var settled=false;
     function done(v){if(settled)return;settled=true;resolve(v);}
@@ -827,18 +832,28 @@ function askPayPlan(po){
       document.querySelectorAll('#modal-body .pp-btn').forEach(function(btn){
         var i=parseInt(btn.getAttribute('data-i')),v=btn.getAttribute('data-v');
         var sel=((v==='combo')===pick[i]);
-        btn.style.background=sel?(v==='combo'?'#5b21b6':'#16a34a'):'var(--bg3)';
+        btn.style.background=sel?(v==='combo'?'#5b21b6':(via==='transfer'?'#0369a1':'#16a34a')):'var(--bg3)';
         btn.style.color=sel?'#fff':'var(--text)';
         btn.style.fontWeight=sel?'600':'400';
         btn.style.borderColor=sel?'transparent':'var(--border)';
       });
       var c=cashDue(),k=nCombo();
+      document.querySelectorAll('#modal-body .pp-btn[data-v="cash"]').forEach(function(btn){btn.textContent=(via==='transfer'?'🏦 Chuyển khoản':'💵 Tiền mặt');});
+      document.querySelectorAll('#modal-body .pv-btn').forEach(function(btn){
+        var sel=(btn.getAttribute('data-v')===via);
+        btn.style.background=sel?(via==='transfer'?'#0369a1':'#16a34a'):'var(--bg3)';
+        btn.style.color=sel?'#fff':'var(--text)';
+        btn.style.fontWeight=sel?'600':'400';
+        btn.style.borderColor=sel?'transparent':'var(--border)';
+      });
+      var vw=document.getElementById('pp-via-wrap');
+      if(vw)vw.style.display=(c>0)?'':'none';
       var sum=document.getElementById('pp-sum');
-      if(sum)sum.innerHTML='Thu tiền mặt: <b>'+fmt(c)+'đ</b> · Dùng combo: <b>'+k+' lượt</b>';
+      if(sum)sum.innerHTML='Thu '+viaLbl()+': <b>'+fmt(c)+'đ</b> · Dùng combo: <b>'+k+' lượt</b>';
       var ok=document.getElementById('pp-ok');
       if(ok){
-        ok.style.background=(c===0)?'#5b21b6':'#16a34a';
-        ok.textContent=(k===0)?'💵 Đã thu '+fmt(c)+'đ tiền mặt':(c>0)?'✓ Đã thu '+fmt(c)+'đ + dùng combo '+k+' dịch vụ':'🎫 Dùng combo ('+k+' lượt)';
+        ok.style.background=(c===0)?'#5b21b6':(via==='transfer'?'#0369a1':'#16a34a');
+        ok.textContent=(k===0)?(via==='transfer'?'🏦 Đã nhận '+fmt(c)+'đ chuyển khoản':'💵 Đã thu '+fmt(c)+'đ tiền mặt'):(c>0)?(via==='transfer'?'✓ Đã nhận '+fmt(c)+'đ chuyển khoản + dùng combo '+k+' dịch vụ':'✓ Đã thu '+fmt(c)+'đ + dùng combo '+k+' dịch vụ'):'🎫 Dùng combo ('+k+' lượt)';
       }
     }
     document.querySelectorAll('#modal-body .pp-btn').forEach(function(btn){
@@ -848,11 +863,14 @@ function askPayPlan(po){
         paint();
       });
     });
+    document.querySelectorAll('#modal-body .pv-btn').forEach(function(btn){
+      btn.addEventListener('click',function(){via=(btn.getAttribute('data-v')==='transfer')?'transfer':'cash';paint();});
+    });
     var no=document.getElementById('pp-no'),ok2=document.getElementById('pp-ok');
     if(no)no.addEventListener('click',function(){closeModal();});
     if(ok2)ok2.addEventListener('click',function(){
       var k=nCombo(),c=cashDue();
-      var res=(k===0)?'cash':(c===0&&k===lines.length)?'combo':{mixed:pick.map(function(v,i){return v?i:-1;}).filter(function(i){return i>=0;})};
+      var res=(k===0)?(via==='transfer'?'transfer':'cash'):(c===0&&k===lines.length)?'combo':{mixed:pick.map(function(v,i){return v?i:-1;}).filter(function(i){return i>=0;}),via:via};
       modalOnClose=null;closeModal();done(res);
     });
     paint();
@@ -879,8 +897,10 @@ async function markBookingDone(bkId){
     var choice=(po&&po.ok===true&&Array.isArray(po.lines)&&po.lines.length)?await askPayPlan(po):await askPayChoice(due0);
     if(!choice)return{ok:false,declined:true,msg:'Chưa hoàn thành – chưa xác nhận thanh toán'};
     if(choice&&choice.mixed){
-      r=await api('/bookings/'+bkId+'/complete','POST',{combo_units:choice.mixed,cash_confirmed:true});
-      if(r&&r.ok===true)return{ok:true,mixed:true,units:choice.mixed.length,collected:Number(r.collected)||0};
+      var mbody={combo_units:choice.mixed,cash_confirmed:true};
+      if(choice.via==='transfer')mbody.pay_via='transfer';
+      r=await api('/bookings/'+bkId+'/complete','POST',mbody);
+      if(r&&r.ok===true)return{ok:true,mixed:true,units:choice.mixed.length,collected:Number(r.collected)||0,via:choice.via==='transfer'?'transfer':'cash'};
       return{ok:false,msg:apiMsg(r,'Chưa hoàn tất được, vui lòng thử lại')};
     }
     if(choice==='combo'){
@@ -888,13 +908,15 @@ async function markBookingDone(bkId){
       if(r&&r.ok===true)return{ok:true,combo:true};
       return{ok:false,msg:apiMsg(r,'Chưa dùng combo được, vui lòng thử lại')};
     }
-    r=await api('/bookings/'+bkId+'/complete','POST',{cash_confirmed:true});
-    if(r&&r.ok===true)return{ok:true,cash:true,collected:Number(r.collected)||0};
+    var cbody={cash_confirmed:true};
+    if(choice==='transfer')cbody.pay_via='transfer';
+    r=await api('/bookings/'+bkId+'/complete','POST',cbody);
+    if(r&&r.ok===true)return{ok:true,cash:true,collected:Number(r.collected)||0,via:choice==='transfer'?'transfer':'cash'};
   }
   return{ok:false,msg:apiMsg(r,'Không cập nhật được, vui lòng thử lại')};
 }
 function doneToast(dr){
-  if(dr.ok)showToast(dr.comboBal?'✓ Hoàn thành – đã trừ '+dr.units+' lượt combo (đã gửi tin cho bot thống kê)'+(dr.paid>0?', phần còn lại '+fmt(dr.paid)+' VND đã trả bằng số dư app':''):dr.mixed?'✓ Hoàn thành – '+dr.units+' dịch vụ dùng combo (đã gửi tin cho bot thống kê), đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':dr.combo?'✓ Hoàn thành – dùng combo (đã gửi tin cho bot thống kê, không thu tiền)':dr.cash?'✓ Hoàn thành – đã thu '+fmt(dr.collected)+' VND tiền mặt (không tích RP)':'✓ Hoàn thành');
+  if(dr.ok)showToast(dr.comboBal?'✓ Hoàn thành – đã trừ '+dr.units+' lượt combo (đã gửi tin cho bot thống kê)'+(dr.paid>0?', phần còn lại '+fmt(dr.paid)+' VND đã trả bằng số dư app':''):dr.mixed?'✓ Hoàn thành – '+dr.units+' dịch vụ dùng combo (đã gửi tin cho bot thống kê), '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':dr.combo?'✓ Hoàn thành – dùng combo (đã gửi tin cho bot thống kê, không thu tiền)':dr.cash?'✓ Hoàn thành – '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':'✓ Hoàn thành');
   else if(dr.declined)showToast('Chưa hoàn thành lịch – chưa xác nhận thu tiền');
   else showToast('✗ '+dr.msg);
 }
@@ -2976,7 +2998,7 @@ if(!allCustomers.length){var custs=await api('/customers');allCustomers=Array.is
         +'<div style="font-size:0.85rem;margin-bottom:4px;">🛎 '+esc(b.service)+(bkPayTag(b)?' '+bkPayTag(b):'')+(bkSrcTag(b)?' '+bkSrcTag(b):'')+'</div>'
         +(b.addon_voucher?'<div style="font-size:0.78rem;color:#c07000;margin-bottom:4px;">✨ Add-on: '+esc(b.addon_voucher)+'</div>':'')
         +'<div style="font-size:0.82rem;color:var(--muted);margin-bottom:6px;">⏰ '+fmtDate(b.date)+' '+esc(b.time)+'</div>'
-        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?'Đã thu tiền mặt:':bkIsMixed(b)?'Đã thu tiền mặt (phần còn lại dùng combo):':bkIsComboBal(b)?'Trả bằng số dư (phần còn lại dùng combo):':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
+        +'<div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);"><span style="font-size:0.82rem;color:var(--muted);">'+(bkIsUnpaid(b)?(b.status==='cancelled'?'Chưa thanh toán:':'Cần thu (tiền mặt):'):bkIsCash(b)?(bkIsTransfer(b)?'Đã nhận chuyển khoản:':'Đã thu tiền mặt:'):bkIsMixed(b)?(bkIsTransfer(b)?'Đã nhận chuyển khoản (phần còn lại dùng combo):':'Đã thu tiền mặt (phần còn lại dùng combo):'):bkIsComboBal(b)?'Trả bằng số dư (phần còn lại dùng combo):':'Thanh toán:')+'</span><span style="font-weight:700;font-size:1rem;color:'+(bkIsUnpaid(b)&&b.status!=='cancelled'?'#b45309':'var(--accent)')+';">'+fmt(bkPaid(b))+' VND</span></div>'
         +(b.status==='confirmed'||b.status==='pending'
           ?'<div style="display:flex;gap:8px;margin-top:10px;"><button class="staff-cancel-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:1px solid #fca5a5;background:none;color:#dc2626;font-size:0.82rem;cursor:pointer;">✗ Huỷ</button><button class="staff-done-btn" data-bid="'+b.id+'" style="flex:1;padding:8px;border-radius:100px;border:none;background:var(--g600);color:#fff;font-size:0.82rem;cursor:pointer;font-weight:500;">✓ Hoàn thành</button></div>':'')
         +(b.review?'<div style="margin-top:8px;padding:8px;background:var(--bg3);border-radius:8px;font-size:0.78rem;"><div style="color:#c07000;">'+starStr(b.review.stars)+'</div>'+(b.review.comment?'<div style="color:var(--text);margin-top:2px;">'+esc(b.review.comment)+'</div>':'')+'</div>':'')
