@@ -887,8 +887,107 @@ function askCashConfirm(due){
     if(yes)yes.addEventListener('click',function(){modalOnClose=null;closeModal();done(true);});
   });
 }
+// ===== TĂNG CA (TEST 05/11/2026): hoàn thành lịch => hỏi tăng ca của từng KTV; mỗi KTV chỉ khai 1 lần mỗi ngày (máy chủ giữ sổ) =====
+var _otPending=null,_otResult=null;
+function otBody(b){if(_otPending&&Object.keys(_otPending).length)b.overtime=_otPending;return b;}
+async function completeCall(bkId,body){var r=await api('/bookings/'+bkId+'/complete','POST',otBody(body));if(r&&r.ok===true&&Array.isArray(r.overtime))_otResult=r.overtime;return r;}
+function otNote(res){
+  if(!Array.isArray(res)||!res.length)return'';
+  var ok=[],dup=[],bad=[];
+  res.forEach(function(x){var nm=x.name||'';if(x.error)bad.push(nm);else if(x.recorded)ok.push(nm+' '+x.minutes+' phút');else dup.push(nm);});
+  var s='';
+  if(ok.length)s+=' · Tăng ca: '+ok.join(', ');
+  if(dup.length)s+=' · '+dup.join(', ')+': hôm nay đã khai trước đó, không tính lại';
+  if(bad.length)s+=' · ⚠ chưa ghi được tăng ca của '+bad.join(', ');
+  return s;
+}
+function askOvertime(info){
+  return new Promise(function(resolve){
+    var staff=info.staff||[],declared=info.items||{};
+    var sel={},oth={};
+    var CH=[[30,'30 phút'],[60,'1 giờ'],[90,'1 giờ 30'],[120,'2 giờ'],['other','Khác']];
+    var cardCss='border:1px solid var(--border);border-radius:12px;padding:10px 12px;margin-bottom:8px;text-align:left;background:var(--card-bg);';
+    var rows=staff.map(function(s){
+      var sid=String(s.id),dm=declared[sid];
+      var head='<div style="font-weight:600;font-size:0.9rem;">KTV: '+esc(s.name)+'</div>';
+      if(dm!==undefined&&dm!==null)return '<div class="ot-card" style="'+cardCss+'">'+head+'<div class="ot-done" style="font-size:0.8rem;color:#92400e;margin-top:6px;">⏱ Hôm nay đã khai '+esc(String(dm))+' phút – không khai thêm</div></div>';
+      var chips=CH.map(function(c){return '<button type="button" class="ot-chip" data-id="'+esc(sid)+'" data-v="'+c[0]+'" style="padding:8px 12px;border-radius:100px;border:1px solid var(--border);cursor:pointer;font-size:0.8rem;font-family:inherit;">'+c[1]+'</button>';}).join('');
+      return '<div class="ot-card" style="'+cardCss+'">'+head+'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+chips+'</div>'
+        +'<div class="ot-oth" data-id="'+esc(sid)+'" style="display:none;margin-top:8px;"><input type="number" class="ot-in" data-id="'+esc(sid)+'" inputmode="numeric" min="1" max="600" step="1" placeholder="Số phút (1–600)" style="width:150px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);font-family:inherit;font-size:0.9rem;background:var(--bg3);color:var(--text);"> <span style="font-size:0.8rem;color:var(--muted);">phút</span></div></div>';
+    }).join('');
+    openModal('Tăng ca (nếu có)','<div style="padding:4px;"><div style="font-size:0.84rem;margin-bottom:10px;text-align:center;">Chọn thời gian tăng ca cho <b>từng KTV</b> của lịch này. Không chọn = không tăng ca.</div>'
+      +'<div style="max-height:46vh;overflow:auto;">'+rows+'</div>'
+      +'<div id="ot-err" style="display:none;font-size:0.78rem;color:#dc2626;margin:6px 0;text-align:center;"></div>'
+      +'<div style="font-size:0.74rem;background:#fff8e1;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;margin:8px 0 12px;color:#92400e;text-align:left;">Mỗi KTV chỉ khai tăng ca <b>1 lần mỗi ngày</b>. Khai xong không sửa được trong app.</div>'
+      +'<div style="display:flex;flex-direction:column;gap:8px;"><button id="ot-ok" style="padding:12px;border-radius:100px;border:none;background:#16a34a;color:#fff;cursor:pointer;font-weight:500;font-family:inherit;">✓ Hoàn thành lịch</button><button id="ot-no" style="padding:12px;border-radius:100px;border:1px solid var(--border);background:var(--bg3);color:var(--text);cursor:pointer;font-family:inherit;">Quay lại</button></div></div>');
+    var settled=false;
+    function done(v){if(settled)return;settled=true;resolve(v);}
+    modalOnClose=function(){done(false);};
+    function paint(){
+      document.querySelectorAll('#modal-body .ot-chip').forEach(function(btn){
+        var id=btn.getAttribute('data-id'),v=btn.getAttribute('data-v');
+        var on=String(sel[id])===v;
+        btn.style.background=on?'#16a34a':'var(--bg3)';
+        btn.style.color=on?'#fff':'var(--text)';
+        btn.style.fontWeight=on?'600':'400';
+        btn.style.borderColor=on?'transparent':'var(--border)';
+      });
+      document.querySelectorAll('#modal-body .ot-oth').forEach(function(box){box.style.display=(sel[box.getAttribute('data-id')]==='other')?'block':'none';});
+    }
+    document.querySelectorAll('#modal-body .ot-chip').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        var id=btn.getAttribute('data-id'),v=btn.getAttribute('data-v');
+        var cur=sel[id];
+        var nv=(v==='other')?'other':parseInt(v,10);
+        sel[id]=(String(cur)===String(nv))?undefined:nv;
+        var er=document.getElementById('ot-err');if(er)er.style.display='none';
+        paint();
+        if(sel[id]==='other'){var inp=document.querySelector('#modal-body .ot-in[data-id="'+id+'"]');if(inp)inp.focus();}
+      });
+    });
+    document.querySelectorAll('#modal-body .ot-in').forEach(function(inp){
+      inp.addEventListener('input',function(){oth[inp.getAttribute('data-id')]=inp.value;var er=document.getElementById('ot-err');if(er)er.style.display='none';});
+    });
+    var no=document.getElementById('ot-no'),ok=document.getElementById('ot-ok');
+    if(no)no.addEventListener('click',function(){closeModal();});
+    if(ok)ok.addEventListener('click',function(){
+      var res={},bad=null;
+      staff.forEach(function(s){
+        var id=String(s.id);
+        if(declared[id]!==undefined&&declared[id]!==null)return;
+        var v=sel[id];
+        if(v==='other'){
+          var t=String(oth[id]||'').trim();
+          var n=/^\d{1,3}$/.test(t)?parseInt(t,10):0;
+          if(n<1||n>600){bad=s.name;return;}
+          res[id]=n;
+        }else if(typeof v==='number'){res[id]=v;}
+      });
+      if(bad){var er=document.getElementById('ot-err');if(er){er.textContent='Số phút tăng ca của '+bad+' phải từ 1 đến 600';er.style.display='block';}return;}
+      modalOnClose=null;closeModal();done(res);
+    });
+    paint();
+  });
+}
+async function askOvertimeFor(bkId){
+  var r=await api('/overtime/today?booking_id='+bkId);
+  if(!(r&&r.ok===true&&Array.isArray(r.staff)))return{unavailable:true};
+  if(!r.staff.length)return{};
+  var res=await askOvertime(r);
+  if(res===false)return false;
+  return{ot:res};
+}
 async function markBookingDone(bkId){
-  var r=await api('/bookings/'+bkId+'/complete','POST',{});
+  var info=await askOvertimeFor(bkId);
+  if(info===false)return{ok:false,skipped:true,msg:'Chưa hoàn thành lịch'};
+  _otPending=info.ot||null;_otResult=null;
+  var dr;
+  try{dr=await markBookingDoneCore(bkId);}finally{_otPending=null;}
+  if(dr&&dr.ok){if(info.unavailable)dr.overtimeNote=' · (chưa hỏi được tăng ca)';else if(_otResult)dr.overtimeNote=otNote(_otResult);}
+  return dr;
+}
+async function markBookingDoneCore(bkId){
+  var r=await completeCall(bkId,{});
   if(r&&r.ok===true&&r.combo_balance)return{ok:true,comboBal:true,units:Array.isArray(r.combo_units)?r.combo_units.length:0,paid:Number(r.booking&&r.booking.actual_paid)||0};
   if(r&&r.ok===true)return{ok:true};
   if(r&&r.code==='unpaid'){
@@ -899,24 +998,25 @@ async function markBookingDone(bkId){
     if(choice&&choice.mixed){
       var mbody={combo_units:choice.mixed,cash_confirmed:true};
       if(choice.via==='transfer')mbody.pay_via='transfer';
-      r=await api('/bookings/'+bkId+'/complete','POST',mbody);
+      r=await completeCall(bkId,mbody);
       if(r&&r.ok===true)return{ok:true,mixed:true,units:choice.mixed.length,collected:Number(r.collected)||0,via:choice.via==='transfer'?'transfer':'cash'};
       return{ok:false,msg:apiMsg(r,'Chưa hoàn tất được, vui lòng thử lại')};
     }
     if(choice==='combo'){
-      r=await api('/bookings/'+bkId+'/complete','POST',{combo:true});
+      r=await completeCall(bkId,{combo:true});
       if(r&&r.ok===true)return{ok:true,combo:true};
       return{ok:false,msg:apiMsg(r,'Chưa dùng combo được, vui lòng thử lại')};
     }
     var cbody={cash_confirmed:true};
     if(choice==='transfer')cbody.pay_via='transfer';
-    r=await api('/bookings/'+bkId+'/complete','POST',cbody);
+    r=await completeCall(bkId,cbody);
     if(r&&r.ok===true)return{ok:true,cash:true,collected:Number(r.collected)||0,via:choice==='transfer'?'transfer':'cash'};
   }
   return{ok:false,msg:apiMsg(r,'Không cập nhật được, vui lòng thử lại')};
 }
 function doneToast(dr){
-  if(dr.ok)showToast(dr.comboBal?'✓ Hoàn thành – đã trừ '+dr.units+' lượt combo (đã gửi tin cho bot thống kê)'+(dr.paid>0?', phần còn lại '+fmt(dr.paid)+' VND đã trả bằng số dư app':''):dr.mixed?'✓ Hoàn thành – '+dr.units+' dịch vụ dùng combo (đã gửi tin cho bot thống kê), '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':dr.combo?'✓ Hoàn thành – dùng combo (đã gửi tin cho bot thống kê, không thu tiền)':dr.cash?'✓ Hoàn thành – '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':'✓ Hoàn thành');
+  if(dr.ok)showToast((dr.comboBal?'✓ Hoàn thành – đã trừ '+dr.units+' lượt combo (đã gửi tin cho bot thống kê)'+(dr.paid>0?', phần còn lại '+fmt(dr.paid)+' VND đã trả bằng số dư app':''):dr.mixed?'✓ Hoàn thành – '+dr.units+' dịch vụ dùng combo (đã gửi tin cho bot thống kê), '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':dr.combo?'✓ Hoàn thành – dùng combo (đã gửi tin cho bot thống kê, không thu tiền)':dr.cash?'✓ Hoàn thành – '+(dr.via==='transfer'?'đã nhận '+fmt(dr.collected)+' VND chuyển khoản':'đã thu '+fmt(dr.collected)+' VND tiền mặt')+' (không tích RP)':'✓ Hoàn thành')+(dr.overtimeNote||''));
+  else if(dr.skipped)showToast('Chưa hoàn thành lịch');
   else if(dr.declined)showToast('Chưa hoàn thành lịch – chưa xác nhận thu tiền');
   else showToast('✗ '+dr.msg);
 }
